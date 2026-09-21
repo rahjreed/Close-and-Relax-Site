@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Phone,
   MessageSquare,
   Check,
-  X,
-  ChevronDown,
-  ChevronUp,
   Smartphone,
   ShieldCheck,
   ArrowRight,
@@ -14,15 +11,17 @@ import {
   Wrench,
   Truck,
   Sparkles,
-  Award,
   Menu,
   X as CloseIcon,
-  HelpCircle,
-  Share2,
-  BookmarkCheck,
   User,
+  Sliders,
+  CheckSquare,
+  Video,
+  Layers,
+  LogIn,
+  Mail,
   Building,
-  Mail
+  Key
 } from 'lucide-react';
 
 const LIZ_VENDORS = [
@@ -56,17 +55,17 @@ const COMPARISON_ROWS = [
   {
     feature: "Directory Scope",
     portal: "Huge, overwhelming searchable directories with hundreds of unfamiliar contractors.",
-    closeAndRelax: "A small, hand-selected list of vetted providers recommended with genuine confidence.",
+    closeAndRelax: "A small, curated list of trusted local providers recommended with genuine confidence.",
   },
   {
     feature: "Brand Prominence",
     portal: "Platform logo first; agent photo and brand obscured or buried in footers.",
-    closeAndRelax: "Realtor-first experience; your portrait, direct line, brokerage, and voice lead the hub.",
+    closeAndRelax: "Realtor-first experience; your photo, contact info, brokerage, and voice lead the hub.",
   },
   {
     feature: "Client Access",
     portal: "Client logins, forgotten passwords, mandatory downloads, and sign-up friction.",
-    closeAndRelax: "Open-and-use web experience; zero login, zero password, zero friction.",
+    closeAndRelax: "Open-and-use web experience; zero client login, zero password, zero friction.",
   },
   {
     feature: "Vendor Placement",
@@ -75,11 +74,11 @@ const COMPARISON_ROWS = [
   },
   {
     feature: "Realtor Overhead",
-    portal: "Another complicated CRM or software dashboard to configure and maintain.",
-    closeAndRelax: "A thoughtful, completely done-for-you closing gift ready to gift in minutes.",
+    portal: "Another bloated CRM or complex software suite requiring weeks of setup and maintenance.",
+    closeAndRelax: "An intuitive self-service dashboard. Personalize and publish your hub in under five minutes.",
   },
   {
-    feature: "Recommendation Depth",
+    feature: "Recommendation Context",
     portal: "Generic crowd-sourced reviews and star ratings easily gamed online.",
     closeAndRelax: "Your authentic one-line Realtor recommendation under every vendor explaining why you trust them.",
   },
@@ -92,85 +91,113 @@ const COMPARISON_ROWS = [
 
 const PRICING_TIERS = [
   {
+    id: "partner",
     name: "Partner",
-    badge: "Standard",
+    badge: "Entry Level",
     price: "Free",
     period: "/ forever",
-    description: "Ideal for individual agents wanting an elegant, dependable closing concierge ready to share today.",
+    description: "A genuinely useful closing concierge. Includes your profile image, essential contact identity, and up to 3 of your own preferred vendors.",
     popular: false,
-    ctaText: "Get My Free Hub",
+    ctaText: "Create Free Account",
+    ctaAction: "signup",
     features: [
-      "Personalized Realtor hub & headshot",
-      "Realtor contact & direct Call/Text links",
-      "Standard Close & Relax resource network",
-      "Dedicated shareable subdomain",
-      "Print-ready QR code for closing folders",
-      "Fully responsive mobile web experience",
+      "Instant self-service dashboard access",
+      "Essential identity fields: profile image, name, brokerage, phone, email & location",
+      "Direct Call & Text contact actions for buyers",
+      "Standard Close & Relax verified resource network",
+      "Add up to 3 of your own preferred vendors",
+      "Dedicated shareable link & subdomain",
+      "Fully responsive mobile & save-to-phone PWA experience",
       "Subtle Close & Relax branding mark",
     ],
   },
   {
+    id: "pro",
     name: "Pro",
-    badge: "Bespoke",
+    badge: "Most Popular",
     price: "$29",
     period: "/ month",
-    description: "For top producers who have preferred local contractors and want a customized home-screen experience.",
+    description: "The ideal plan for active producers wanting richer self-service branding, personalized welcome messaging, and expanded vendor additions.",
     popular: true,
-    ctaText: "Talk About Pro",
+    ctaText: "Choose Pro",
+    ctaAction: "signup",
     features: [
-      "Everything in Free, plus:",
-      "Branded installable PWA / homeowner app",
-      "Personalized 'Add-to-Phone' experience",
-      "Custom domain connection support",
-      "Enhanced Realtor personal branding",
-      "Add your own Realtor-selected vendors (including competing providers alongside defaults)",
-      "Limited managed changes & priority support",
+      "Everything in Free, plus broader dashboard customization:",
+      "Add up to 5 of your own preferred vendors alongside standard network",
+      "Full profile bio and personalized welcome message editing",
+      "Social media and professional website profile links",
+      "Personal one-line recommendation notes under each vendor",
+      "Enhanced branded installable homeowner app experience",
+      "Personalized 'Add-to-Phone' prompt for your buyers",
+      "Edit and publish updates instantly anytime",
+      "Standard email customer support",
     ],
   },
   {
+    id: "premier",
     name: "Premier",
-    badge: "White-Glove",
+    badge: "Ultimate Control",
     price: "$79",
     period: "/ month",
-    description: "Full control for luxury teams and premier solo agents demanding near-white-label exclusivity.",
+    description: "Substantial control and a near-white-label experience for luxury specialists who demand bespoke curation and full vendor control.",
     popular: false,
-    ctaText: "Talk About Premier",
+    ctaText: "Choose Premier",
+    ctaAction: "signup",
     features: [
-      "Full vendor control: replace or remove default Close & Relax partners",
-      "Realtor-first near-white-label branding",
-      "Dedicated custom domain connection",
-      "Expanded bespoke design & theme curation",
-      "Custom curated sections & client categories",
-      "Additional managed changes & direct concierge support",
-      "Enhanced private hub engagement analytics",
+      "Everything in Pro, plus advanced hub controls:",
+      "Add up to 8 of your own preferred vendors",
+      "Full vendor control: replace or remove standard default vendors",
+      "Realtor-first near-white-label presentation",
+      "Custom home-screen app icon using your 2 chosen initials",
+      "Short personal video greeting welcome (up to ~30 seconds)",
+      "Interactive homeowner checklist built directly into the hub",
+      "Custom sections & tailored home service categories",
+      "Expanded image and homeowner resource controls",
+      "Stronger priority customer & technical support",
     ],
   },
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "I already have a website.",
-    answer: "Close & Relax does not replace your marketing website. Your website helps prospective buyers and sellers discover and hire you; Close & Relax serves them after the transaction closes by providing an intimate, focused post-closing concierge saved directly on their phone.",
+    question: "What profile information can I customize on the Free plan?",
+    answer: "The Free Partner tier includes all your essential identity fields: your uploaded profile headshot, full name, brokerage or team affiliation, direct phone number, email address, and primary market location. Richer profile content—such as a personalized written welcome message, detailed bio narrative, professional website, and social media links—is unlocked on Pro and Premier.",
   },
   {
-    question: "I already have a vendor list.",
-    answer: "Close & Relax turns your static PDF or text list into an interactive, mobile-accessible resource clients can actually keep, install, and refer to whenever an emergency or home upgrade occurs.",
+    question: "Can I add my own vendors on the Free plan?",
+    answer: "Yes! The Free Partner tier is designed to be genuinely useful right out of the box. You can upload your profile photo, display your essential contact identity, and add up to 3 of your own preferred vendors in addition to the standard Close & Relax network.",
   },
   {
-    question: "Do my clients download an app?",
-    answer: "No. There is no App Store or Google Play download. The hub works immediately in any mobile browser and can optionally be saved to their home screen with a single tap as an app-like Progressive Web App (PWA).",
+    question: "What is the difference in vendor control between Pro and Premier?",
+    answer: "On Pro ($29/month), you can add up to 5 of your own preferred vendors alongside the standard Close & Relax network, complete with your personal recommendation notes. On Premier ($79/month), you can add up to 8 preferred vendors AND you gain full vendor control—meaning you can replace or remove standard default vendors where allowed for a tailored, near-white-label experience.",
   },
   {
-    question: "Do vendors pay to appear?",
-    answer: "No. Close & Relax does not charge vendors for recommendation placement. Recommendations are grounded strictly in trust, quality, and your authentic guidance.",
+    question: "How do I create and manage my hub?",
+    answer: "You simply create an account on Close & Relax to access your personal Realtor dashboard. From there, fill in your profile details, upload your image, select or add your trusted vendors according to your plan, and click publish. Your hub is generated instantly and ready to share.",
   },
   {
-    question: "Do I have to run email campaigns?",
-    answer: "No. This is not another CRM or marketing automation system that burdens you with newsletters. It is simply a thoughtful, functional closing gift that lives quietly on your client's phone until they need help.",
+    question: "Can I edit my hub after publishing?",
+    answer: "Yes, at any time. Log in to your Close & Relax dashboard to update your phone number, revise a vendor's contact details, or add new recommendation notes. All changes publish immediately to your live homeowner hub without requiring your clients to update anything.",
   },
   {
-    question: "What happens if I stop paying for Pro?",
-    answer: "Your client never encounters an error screen or paywall. If you ever downgrade, your hub smoothly returns to the standard Close & Relax verified network experience rather than disappearing or leaving your buyers stranded.",
+    question: "I already have a real estate website. Why do I need this?",
+    answer: "Your public website exists to attract and win prospective clients. Close & Relax serves them after the keys are handed over, providing a clean, distraction-free homeowner concierge saved right on their mobile phone for ongoing home ownership needs.",
+  },
+  {
+    question: "I already have a vendor PDF list. How is this different?",
+    answer: "PDFs get buried in email archives or left in moving boxes within days. Close & Relax transforms your static list into an interactive mobile experience that clients install to their home screen with one-tap dialing and your contact buttons always visible.",
+  },
+  {
+    question: "Do my home buyers need to create an account or download an app?",
+    answer: "Never. Homeowners do not create an account, enter a password, or download anything from the App Store or Google Play. The hub opens directly in their browser and can be saved to their home screen as a Progressive Web App (PWA) with a single tap.",
+  },
+  {
+    question: "Do vendors pay Close & Relax to appear?",
+    answer: "No. Close & Relax never charges vendors for recommendation placement, lead referrals, or sponsored ad slots. Recommendations are grounded strictly in authenticity, local reputation, and your personal guidance.",
+  },
+  {
+    question: "What happens if I ever downgrade from Pro or Premier?",
+    answer: "Your clients are never stranded or shown a broken link. If you change or cancel your paid plan, your hub gracefully transitions to the standard Close & Relax Partner experience, preserving their basic utility without interruption.",
   },
 ];
 
@@ -222,20 +249,32 @@ const customStyles = `
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveDemoModalOpen, setLiveDemoModalOpen] = useState(false);
-  const [leadModalOpen, setLeadModalOpen] = useState(false);
-  const [selectedPlanIntent, setSelectedPlanIntent] = useState("Partner (Free Hub)");
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("partner");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
-  const [leadSubmitted, setLeadSubmitted] = useState(false);
 
-  // Form State
-  const [formData, setFormData] = useState({
+  const [signupSubmitted, setSignupSubmitted] = useState(false);
+  const [signupData, setSignupData] = useState({
     name: "",
     brokerage: "",
     marketCity: "",
     email: "",
-    phone: "",
-    notes: ""
+    password: "",
+  });
+
+  const [loginData, setLoginData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [contactData, setContactData] = useState({
+    name: "",
+    email: "",
+    message: "",
   });
 
   const showToast = (msg) => {
@@ -245,15 +284,32 @@ export default function App() {
     }, 2800);
   };
 
-  const handleOpenLeadModal = (intent = "Partner (Free Hub)") => {
-    setSelectedPlanIntent(intent);
-    setLeadSubmitted(false);
-    setLeadModalOpen(true);
+  const handleOpenSignup = (planId = "partner") => {
+    setSelectedPlan(planId);
+    setSignupSubmitted(false);
+    setLoginModalOpen(false);
+    setSignupModalOpen(true);
   };
 
-  const handleLeadSubmit = (e) => {
+  const handleOpenLogin = () => {
+    setSignupModalOpen(false);
+    setLoginModalOpen(true);
+  };
+
+  const handleSignupSubmit = (e) => {
     e.preventDefault();
-    setLeadSubmitted(true);
+    setSignupSubmitted(true);
+  };
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    showToast(`Welcome back, ${loginData.email || "Realtor"}. Loading dashboard...`);
+    setLoginModalOpen(false);
+  };
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    setContactSubmitted(true);
   };
 
   const toggleFaq = (index) => {
@@ -264,15 +320,15 @@ export default function App() {
     <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
       <style>{customStyles}</style>
 
-      {/* Toast Notification */}
+      {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#191816] text-[#FAF7F2] px-5 py-3 rounded-2xl shadow-luxury text-xs font-medium border border-neutral-700 animate-fade-in flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#191816] text-[#FAF7F2] px-5 py-3 rounded-2xl shadow-luxury text-xs font-medium border border-neutral-700 flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-[#B5966B]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header / Navigation */}
+      {/* Navigation Header */}
       <header className="sticky top-0 z-40 bg-cream-warm/90 backdrop-blur-md border-b border-cream-border transition-all">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-3 group">
@@ -289,7 +345,7 @@ export default function App() {
             </div>
           </a>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-charcoal-muted">
             <a href="#how-it-works" className="hover:text-charcoal-deep transition-colors">How It Works</a>
             <a href="#features" className="hover:text-charcoal-deep transition-colors">Features</a>
@@ -299,34 +355,41 @@ export default function App() {
             <a href="#faq" className="hover:text-charcoal-deep transition-colors">FAQ</a>
           </nav>
 
-          {/* Actions */}
-          <div className="hidden sm:flex items-center gap-4">
+          {/* Header Action Items */}
+          <div className="hidden sm:flex items-center gap-3.5">
             <button
               onClick={() => setLiveDemoModalOpen(true)}
-              className="text-sm font-medium text-charcoal-muted hover:text-charcoal-deep px-3 py-2 transition-colors flex items-center gap-1.5"
+              className="text-sm font-medium text-charcoal-muted hover:text-charcoal-deep px-2.5 py-2 transition-colors flex items-center gap-1.5"
             >
               <span>Live Example</span>
               <ExternalLink className="w-3.5 h-3.5 text-gold-accent" />
             </button>
             <button
-              onClick={() => handleOpenLeadModal("Header CTA")}
+              onClick={handleOpenLogin}
+              className="text-sm font-medium text-charcoal-body hover:text-charcoal-deep px-3 py-2 transition-colors flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5 text-charcoal-muted" />
+              <span>Log In</span>
+            </button>
+            <button
+              onClick={() => handleOpenSignup("partner")}
               className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-medium px-5 py-2.5 rounded-full border border-[#191816] shadow-sm hover:shadow transition-all"
             >
-              Get My Free Hub
+              Start Free
             </button>
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile Menu Hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Menu"
+            aria-label="Toggle Navigation"
             className="md:hidden p-2 rounded-lg text-charcoal-body hover:bg-cream-subtle transition-colors"
           >
             {mobileMenuOpen ? <CloseIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile menu dropdown */}
+        {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-cream-card border-b border-cream-border px-6 py-6 transition-all space-y-3">
             <a
@@ -371,24 +434,34 @@ export default function App() {
             >
               FAQ
             </a>
-            <div className="pt-4 border-t border-cream-border flex flex-col gap-3">
+            <div className="pt-4 border-t border-cream-border flex flex-col gap-2.5">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleOpenLogin();
+                }}
+                className="w-full py-2.5 text-sm font-medium text-charcoal-deep border border-cream-border rounded-full text-center flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4 text-charcoal-muted" />
+                <span>Realtor Log In</span>
+              </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setLiveDemoModalOpen(true);
                 }}
-                className="w-full py-3 text-sm font-medium text-charcoal-deep border border-cream-border rounded-full text-center"
+                className="w-full py-2.5 text-sm font-medium text-charcoal-deep border border-cream-border rounded-full text-center"
               >
                 See Live Example
               </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleOpenLeadModal("Mobile Menu");
+                  handleOpenSignup("partner");
                 }}
-                className="w-full py-3 text-sm font-medium text-[#FAF7F2] bg-[#191816] rounded-full text-center"
+                className="w-full py-2.5 text-sm font-medium text-[#FAF7F2] bg-[#191816] rounded-full text-center"
               >
-                Get My Free Hub
+                Create Free Account
               </button>
             </div>
           </div>
@@ -399,7 +472,7 @@ export default function App() {
       <section className="pt-14 pb-20 md:pt-24 md:pb-32 px-6 sm:px-8 lg:px-12 max-w-7xl mx-auto overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* Left Hero Copy */}
+          {/* Left Hero Column */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cream-subtle border border-cream-border text-xs font-medium text-charcoal-muted mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-gold-accent"></span>
@@ -417,10 +490,10 @@ export default function App() {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto mb-8">
               <button
-                onClick={() => handleOpenLeadModal("Hero Primary CTA")}
+                onClick={() => handleOpenSignup("partner")}
                 className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all text-center"
               >
-                Get My Free Hub
+                Start Free
               </button>
               <button
                 onClick={() => setLiveDemoModalOpen(true)}
@@ -448,7 +521,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Phone Mockup - Liz Marks-Strauss Showcase */}
+          {/* Right Hero Column - Interactive Phone Simulator */}
           <div className="lg:col-span-5 flex justify-center relative">
             <div className="absolute -inset-6 bg-[#E4D5BE]/35 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -499,7 +572,7 @@ export default function App() {
                 <div className="bg-cream-card rounded-xl p-3 border border-cream-border mb-3 text-left">
                   <span className="text-[9px] uppercase tracking-wider font-semibold text-gold-accent block">Homeowner Concierge</span>
                   <p className="font-editorial text-sm font-semibold text-charcoal-deep mt-0.5">Welcome home, Sarah &amp; David.</p>
-                  <p className="text-[10px] text-charcoal-muted mt-0.5 leading-snug">My private book of vetted home specialists you can rely on anytime.</p>
+                  <p className="text-[10px] text-charcoal-muted mt-0.5 leading-snug">My personal roster of trusted home specialists you can rely on anytime.</p>
                 </div>
 
                 {/* Add to Home Screen Banner inside Mockup */}
@@ -571,7 +644,7 @@ export default function App() {
               Closing Day Shouldn’t Be the End of the Relationship.
             </h2>
             <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-              Buyers walk away from the closing table thrilled, but their real homeowner journey has just begun. They immediately need locksmiths, security setup, emergency plumbers, HVAC checkups, movers, cleaners, and painters. Yet your recommendations usually get buried in fragmented text message threads, scattered emails, or a lost paper PDF.
+              Buyers walk away from the closing table thrilled, but their real homeowner journey has just begun. They immediately need locksmiths, security setup, plumbers, HVAC checkups, movers, cleaners, and painters. Yet your recommendations usually get buried in fragmented text message threads, scattered emails, or a lost paper PDF.
             </p>
           </div>
 
@@ -635,7 +708,7 @@ export default function App() {
                 <ul className="space-y-4 text-sm text-charcoal-body">
                   <li className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                    <span><strong>One branded digital home concierge:</strong> all your trusted specialists right at hand.</span>
+                    <span><strong>One branded digital home concierge:</strong> your profile photo, essential contact info, and preferred specialists.</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
@@ -643,7 +716,7 @@ export default function App() {
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                    <span><strong>Personal guidance from you:</strong> notes detailing why you trust each pro and who to ask for.</span>
+                    <span><strong>Personal guidance from you:</strong> your own handpicked vendors (3 on Free, 5 on Pro, up to 8 on Premier).</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
@@ -672,7 +745,7 @@ export default function App() {
             Your Homeowner Concierge. Branded Around You.
           </h2>
           <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-            Everything your client needs to settle into their home with total peace of mind, delivered with the understated elegance of a luxury residential service.
+            Everything your client needs to settle into their home with total peace of mind, managed directly from your simple Realtor dashboard.
           </p>
         </div>
 
@@ -686,10 +759,10 @@ export default function App() {
                 <User className="w-6 h-6" />
               </div>
               <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
-                Realtor Photo &amp; Contact Branding
+                Realtor Profile Image &amp; Identity
               </h3>
               <p className="text-sm text-charcoal-muted leading-relaxed">
-                Your portrait, brokerage name, phone number, and personalized greeting anchor the top of the hub. It looks, acts, and feels like your personal client concierge.
+                Upload your professional headshot, brokerage details, direct line, and location to anchor the top of your concierge. Free plans include essential identity branding from day one.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -707,7 +780,7 @@ export default function App() {
                 Curated Trusted Professionals
               </h3>
               <p className="text-sm text-charcoal-muted leading-relaxed">
-                Pre-populated with the verified Close &amp; Relax network of local home specialists—locksmiths, security, emergency plumbers, HVAC, and movers—or customized with your own roster.
+                Pre-populated with the verified Close &amp; Relax network, plus add your own preferred vendors: up to 3 on Free, up to 5 on Pro, or up to 8 with full vendor replacement on Premier.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -715,7 +788,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Benefit 3 */}
+          {/* Benefit 3 - Clarified for Pro/Premier vs Free */}
           <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
@@ -725,7 +798,7 @@ export default function App() {
                 Personal Realtor Recommendations
               </h3>
               <p className="text-sm text-charcoal-muted leading-relaxed">
-                Every vendor card features your personal one-line endorsement (e.g., “Ask for Marco, used on 14+ client purchases”), cementing your authority as their trusted local expert.
+                Pro and Premier users can add a personal one-line endorsement or recommendation note beneath their preferred vendors (e.g., “Ask for Marco, used on 14+ client purchases”), reinforcing your trusted authority. Free users can add preferred vendors without custom recommendation notes.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -743,7 +816,7 @@ export default function App() {
                 One-Tap Call &amp; Website Actions
               </h3>
               <p className="text-sm text-charcoal-muted leading-relaxed">
-                Zero friction for the homeowner. One tap dials the emergency dispatcher directly or launches the provider's private scheduling page directly in their browser.
+                Zero friction for the homeowner. One tap dials the dispatcher directly or launches the provider's private scheduling page directly in their browser.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -899,7 +972,7 @@ export default function App() {
               How It Works
             </h2>
             <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-              No complex dashboards or onboarding sprints. We prepare your bespoke concierge hub so you can focus on closing deals and serving your clients.
+              No complicated onboarding sprints or frustrating technical barriers. Set up your bespoke concierge hub from your dashboard in minutes.
             </p>
           </div>
 
@@ -910,14 +983,14 @@ export default function App() {
               <div>
                 <div className="font-editorial text-4xl font-light text-gold-accent mb-4">01</div>
                 <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
-                  We Create Your Hub
+                  Create Your Account
                 </h3>
                 <p className="text-sm text-charcoal-muted leading-relaxed">
-                  We apply your headshot, contact phone number, brokerage branding, and personalized welcome greeting so the concierge is instantly recognizable to your clients.
+                  Sign up in seconds to access your personal Realtor dashboard. Choose your preferred plan to begin building your custom hub immediately.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
-                Takes less than 5 minutes to request
+                Instant self-service setup
               </div>
             </div>
 
@@ -926,14 +999,14 @@ export default function App() {
               <div>
                 <div className="font-editorial text-4xl font-light text-gold-accent mb-4">02</div>
                 <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
-                  Choose Your Trusted Pros
+                  Personalize Your Hub
                 </h3>
                 <p className="text-sm text-charcoal-muted leading-relaxed">
-                  Begin immediately with the verified standard Close &amp; Relax network of home professionals, or customize your preferred vendors depending on your plan tier.
+                  Enter your contact details, upload your profile photo, add personal recommendation notes, and curate your trusted local professionals according to your plan.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
-                Vetted quality standards
+                Intuitive field editing
               </div>
             </div>
 
@@ -942,14 +1015,14 @@ export default function App() {
               <div>
                 <div className="font-editorial text-4xl font-light text-gold-accent mb-4">03</div>
                 <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
-                  Give It to Every Buyer
+                  Publish &amp; Share
                 </h3>
                 <p className="text-sm text-charcoal-muted leading-relaxed">
-                  Send the private link via text or congratulatory email, slip a custom luxury QR card into their key box, and help them save it directly to their phone.
+                  Publish your hub instantly. Send the dedicated link via text or email, and guide your home buyers to save it directly to their phone home screen.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
-                A memorable closing gift
+                A closing gift they'll keep
               </div>
             </div>
 
@@ -1070,10 +1143,10 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => handleOpenLeadModal("Save To Phone Section")}
+              onClick={() => handleOpenSignup("partner")}
               className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-3.5 rounded-full shadow-md transition-all"
             >
-              Create Your Realtor Hub
+              Build My Hub
             </button>
           </div>
 
@@ -1092,15 +1165,15 @@ export default function App() {
               Invest in Relationships, Not Ad Clicks.
             </h2>
             <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-              Start completely free with our verified resource network, or elevate to bespoke branding and custom vendor curation.
+              Start completely free with your profile image and up to 3 preferred vendors, or unlock full self-service customization whenever you are ready.
             </p>
           </div>
 
           {/* Pricing Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            {PRICING_TIERS.map((tier, idx) => (
+            {PRICING_TIERS.map((tier) => (
               <div
-                key={idx}
+                key={tier.id}
                 className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${
                   tier.popular
                     ? 'bg-cream-warm border-2 border-gold-accent shadow-luxury'
@@ -1148,7 +1221,7 @@ export default function App() {
 
                 <div>
                   <button
-                    onClick={() => handleOpenLeadModal(`${tier.name} Plan`)}
+                    onClick={() => handleOpenSignup(tier.id)}
                     className={`w-full py-3.5 px-6 rounded-full text-sm font-semibold transition-all text-center ${
                       tier.popular
                         ? 'bg-gold-accent hover:bg-[#9B7E54] text-[#FAF7F2] shadow-sm'
@@ -1162,10 +1235,10 @@ export default function App() {
             ))}
           </div>
 
-          {/* Consultation Note */}
+          {/* Self-Service Empowering Note */}
           <div className="mt-12 text-center max-w-2xl mx-auto bg-cream-subtle/60 rounded-2xl p-5 border border-cream-border">
             <p className="text-xs text-charcoal-muted leading-relaxed">
-              <strong className="text-charcoal-deep">Why a conversation first?</strong> Pro and Premier plans are activated after a short consultation because your custom branding and vendor customization are currently handled manually by our team to ensure white-glove luxury quality.
+              <strong className="text-charcoal-deep">Instant Self-Service:</strong> All plans include immediate dashboard access upon sign up. Upgrade, downgrade, or update your concierge fields at any time with instant live publishing.
             </p>
           </div>
 
@@ -1182,7 +1255,7 @@ export default function App() {
             Frequently Asked Questions
           </h2>
           <p className="text-base text-charcoal-muted">
-            Everything you need to know about gifting Close &amp; Relax to your clients.
+            Everything you need to know about setting up and gifting Close &amp; Relax.
           </p>
         </div>
 
@@ -1204,7 +1277,7 @@ export default function App() {
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-6 text-sm sm:text-base text-charcoal-muted leading-relaxed animate-fade-in">
+                  <div className="px-6 pb-6 text-sm sm:text-base text-charcoal-muted leading-relaxed">
                     {item.answer}
                   </div>
                 )}
@@ -1232,7 +1305,7 @@ export default function App() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => handleOpenLeadModal("Final CTA")}
+              onClick={() => handleOpenSignup("partner")}
               className="w-full sm:w-auto bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-4 rounded-full shadow-md transition-all"
             >
               Get Your Free Close &amp; Relax Hub
@@ -1267,8 +1340,11 @@ export default function App() {
             <a href="#features" className="hover:text-charcoal-deep transition-colors">Features</a>
             <a href="#pricing" className="hover:text-charcoal-deep transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-charcoal-deep transition-colors">FAQ</a>
-            <button onClick={() => handleOpenLeadModal("Footer Inquire")} className="hover:text-charcoal-deep transition-colors">
-              Contact
+            <button onClick={handleOpenLogin} className="hover:text-charcoal-deep transition-colors">
+              Realtor Log In
+            </button>
+            <button onClick={() => setContactModalOpen(true)} className="hover:text-charcoal-deep transition-colors">
+              Contact Support
             </button>
           </div>
 
@@ -1402,11 +1478,11 @@ export default function App() {
               <button
                 onClick={() => {
                   setLiveDemoModalOpen(false);
-                  handleOpenLeadModal("From Live Demo Modal");
+                  handleOpenSignup("partner");
                 }}
                 className="bg-[#191816] text-[#FAF7F2] px-4 py-2 rounded-full font-medium hover:bg-[#262421]"
               >
-                Get Your Own Hub
+                Create Your Own Hub
               </button>
             </div>
 
@@ -1415,21 +1491,21 @@ export default function App() {
       )}
 
       {}
-      {leadModalOpen && (
+      {signupModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="bg-cream-warm rounded-3xl max-w-lg w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
             
             <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
-                  {selectedPlanIntent}
+                  Self-Service Onboarding
                 </span>
                 <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
-                  Request Your Realtor Hub
+                  Create Your Realtor Account
                 </h3>
               </div>
               <button
-                onClick={() => setLeadModalOpen(false)}
+                onClick={() => setSignupModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
               >
                 <CloseIcon className="w-4 h-4" />
@@ -1437,13 +1513,51 @@ export default function App() {
             </div>
 
             <div className="p-6 sm:p-8">
-              {!leadSubmitted ? (
+              {!signupSubmitted ? (
                 <>
-                  <p className="text-xs text-charcoal-muted mb-6">
-                    Tell us where to send your personalized hub preview link. No credit card required.
-                  </p>
+                  {/* Plan Selector Tab inside Signup Modal */}
+                  <div className="mb-6">
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-2">
+                      Selected Plan
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 bg-cream-card p-1 rounded-xl border border-cream-border">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan("partner")}
+                        className={`py-2 px-2 text-xs rounded-lg font-medium transition-all ${
+                          selectedPlan === "partner"
+                            ? "bg-[#191816] text-[#FAF7F2] shadow-sm"
+                            : "text-charcoal-muted hover:text-charcoal-deep"
+                        }`}
+                      >
+                        Partner (Free)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan("pro")}
+                        className={`py-2 px-2 text-xs rounded-lg font-medium transition-all ${
+                          selectedPlan === "pro"
+                            ? "bg-[#191816] text-[#FAF7F2] shadow-sm"
+                            : "text-charcoal-muted hover:text-charcoal-deep"
+                        }`}
+                      >
+                        Pro ($29/mo)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan("premier")}
+                        className={`py-2 px-2 text-xs rounded-lg font-medium transition-all ${
+                          selectedPlan === "premier"
+                            ? "bg-[#191816] text-[#FAF7F2] shadow-sm"
+                            : "text-charcoal-muted hover:text-charcoal-deep"
+                        }`}
+                      >
+                        Premier ($79/mo)
+                      </button>
+                    </div>
+                  </div>
 
-                  <form onSubmit={handleLeadSubmit} className="space-y-4 text-left">
+                  <form onSubmit={handleSignupSubmit} className="space-y-4 text-left">
                     <div>
                       <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="realtorName">
                         Full Name *
@@ -1452,8 +1566,8 @@ export default function App() {
                         type="text"
                         id="realtorName"
                         required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={signupData.name}
+                        onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
                         placeholder="e.g. Liz Marks-Strauss"
                         className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                       />
@@ -1468,71 +1582,56 @@ export default function App() {
                           type="text"
                           id="brokerage"
                           required
-                          value={formData.brokerage}
-                          onChange={(e) => setFormData({ ...formData, brokerage: e.target.value })}
+                          value={signupData.brokerage}
+                          onChange={(e) => setSignupData({ ...signupData, brokerage: e.target.value })}
                           placeholder="e.g. Sotheby's, Compass"
                           className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="marketCity">
-                          Primary City / Market *
+                          Primary Market / City *
                         </label>
                         <input
                           type="text"
                           id="marketCity"
                           required
-                          value={formData.marketCity}
-                          onChange={(e) => setFormData({ ...formData, marketCity: e.target.value })}
+                          value={signupData.marketCity}
+                          onChange={(e) => setSignupData({ ...signupData, marketCity: e.target.value })}
                           placeholder="e.g. Scottsdale, AZ"
                           className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="email">
-                          Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="liz@luxuryhomes.com"
-                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="phone">
-                          Phone Number *
-                        </label>
-                        <input
-                          type="tel"
-                          id="phone"
-                          required
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          placeholder="(555) 234-5678"
-                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="signupEmail">
+                        Work Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        id="signupEmail"
+                        required
+                        value={signupData.email}
+                        onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                        placeholder="liz@luxuryhomes.com"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="notes">
-                        Notes or Questions (Optional)
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="signupPassword">
+                        Create Password *
                       </label>
-                      <textarea
-                        id="notes"
-                        rows={2}
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        placeholder="Let us know if you already have a preferred vendor list..."
+                      <input
+                        type="password"
+                        id="signupPassword"
+                        required
+                        value={signupData.password}
+                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                        placeholder="Minimum 8 characters"
                         className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                      ></textarea>
+                      />
                     </div>
 
                     <div className="pt-2">
@@ -1540,29 +1639,236 @@ export default function App() {
                         type="submit"
                         className="w-full py-3.5 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md"
                       >
-                        Create My Hub Preview
+                        Create Account &amp; Open Dashboard
                       </button>
                     </div>
 
-                    <p className="text-[11px] text-center text-charcoal-muted">
-                      We respect your privacy. No spam. You will receive an email preview within 24 hours.
-                    </p>
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={handleOpenLogin}
+                        className="text-xs text-charcoal-muted hover:text-charcoal-deep"
+                      >
+                        Already have an account? <span className="underline font-semibold">Log in</span>
+                      </button>
+                    </div>
                   </form>
                 </>
               ) : (
-                /* Success State */
+                /* Success State - Entering Dashboard */
                 <div className="text-center py-6">
                   <div className="w-12 h-12 rounded-full bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] flex items-center justify-center mx-auto mb-4 font-editorial text-2xl font-bold">
                     ✓
                   </div>
                   <h4 className="font-editorial text-2xl font-bold text-charcoal-deep mb-2">
-                    Thank You, {formData.name || "Agent"}!
+                    Welcome to Close &amp; Relax, {signupData.name || "Agent"}!
                   </h4>
                   <p className="text-sm text-charcoal-muted leading-relaxed max-w-sm mx-auto mb-6">
-                    We’ve received your details. Our concierge design team will prepare your preview hub and send your personalized link shortly.
+                    Your {selectedPlan.toUpperCase()} dashboard is ready. Upload your profile photo, configure your preferred specialists, and publish your homeowner hub.
                   </p>
                   <button
-                    onClick={() => setLeadModalOpen(false)}
+                    onClick={() => {
+                      setSignupModalOpen(false);
+                      showToast("Entering your Close & Relax dashboard...");
+                    }}
+                    className="px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-xs font-medium hover:bg-[#262421]"
+                  >
+                    Go to My Dashboard
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {}
+      {loginModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-md w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
+                  Realtor Portal
+                </span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
+                  Log In to Your Dashboard
+                </h3>
+              </div>
+              <button
+                onClick={() => setLoginModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="loginEmail">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="loginEmail"
+                    required
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    placeholder="you@brokerage.com"
+                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-semibold text-charcoal-deep" htmlFor="loginPassword">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => showToast("Password reset instructions sent.")}
+                      className="text-[11px] text-charcoal-muted hover:text-charcoal-deep"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
+                  <input
+                    type="password"
+                    id="loginPassword"
+                    required
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    placeholder="••••••••"
+                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md"
+                  >
+                    Log In to Dashboard
+                  </button>
+                </div>
+
+                <div className="text-center pt-3 border-t border-cream-border">
+                  <p className="text-xs text-charcoal-muted">
+                    New to Close &amp; Relax?{' '}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSignup("partner")}
+                      className="font-semibold text-charcoal-deep underline hover:text-gold-accent"
+                    >
+                      Create your free hub
+                    </button>
+                  </p>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {}
+      {contactModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-md w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
+                  Assistance
+                </span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
+                  Contact Support
+                </h3>
+              </div>
+              <button
+                onClick={() => setContactModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              {!contactSubmitted ? (
+                <form onSubmit={handleContactSubmit} className="space-y-4 text-left">
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactName">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      id="contactName"
+                      required
+                      value={contactData.name}
+                      onChange={(e) => setContactData({ ...contactData, name: e.target.value })}
+                      placeholder="Your full name"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactEmail">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="contactEmail"
+                      required
+                      value={contactData.email}
+                      onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
+                      placeholder="your@email.com"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactMessage">
+                      How can we assist?
+                    </label>
+                    <textarea
+                      id="contactMessage"
+                      required
+                      rows={3}
+                      value={contactData.message}
+                      onChange={(e) => setContactData({ ...contactData, message: e.target.value })}
+                      placeholder="Ask a question about setup, plans, or features..."
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md"
+                    >
+                      Send Message
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] flex items-center justify-center mx-auto mb-4 font-editorial text-2xl font-bold">
+                    ✓
+                  </div>
+                  <h4 className="font-editorial text-2xl font-bold text-charcoal-deep mb-2">
+                    Message Received
+                  </h4>
+                  <p className="text-sm text-charcoal-muted leading-relaxed max-w-sm mx-auto mb-6">
+                    Thank you for reaching out. Our support desk will respond to your inquiry via email shortly.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setContactModalOpen(false);
+                      setContactSubmitted(false);
+                    }}
                     className="px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-xs font-medium hover:bg-[#262421]"
                   >
                     Done
