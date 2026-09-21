@@ -27,6 +27,7 @@ import {
   Network,
   X
 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const apiKey = "";
 
@@ -782,6 +783,7 @@ const App = () => {
   return (
     <div className="font-sans antialiased bg-slate-950 w-full overflow-x-hidden selection:bg-amber-500 selection:text-slate-950">
       {view === 'home' ? <PageOne /> : <PageTwo />}
+      <SpeedInsights />
     </div>
   );
 };
