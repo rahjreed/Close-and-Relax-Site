@@ -1,789 +1,1580 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Instagram, 
-  ExternalLink, 
-  CheckCircle2, 
-  ArrowRight, 
-  ChevronRight, 
-  User, 
-  Layout, 
-  Zap, 
-  History,
-  Sparkles,
-  Globe,
-  Loader2,
-  Camera,
-  Star,
+import React, { useState, useEffect } from 'react';
+import {
+  Phone,
+  MessageSquare,
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Smartphone,
   ShieldCheck,
-  ZapOff,
-  ShoppingBag,
-  Timer,
-  CreditCard,
-  Clock,
-  Mail,
-  XCircle,
-  Info,
-  Home,
-  Network,
-  X
+  ArrowRight,
+  ExternalLink,
+  Lock,
+  Wrench,
+  Truck,
+  Sparkles,
+  Award,
+  Menu,
+  X as CloseIcon,
+  HelpCircle,
+  Share2,
+  BookmarkCheck,
+  User,
+  Building,
+  Mail
 } from 'lucide-react';
 
-const apiKey = "";
+const LIZ_VENDORS = [
+  {
+    category: "Locksmith & Security",
+    name: "Apex Key & Secure Solutions",
+    note: "Liz's Note: Re-keyed over 14 client properties for my buyers. Ask for Marco for priority next-day service.",
+    phone: "(480) 555-0192",
+    tag: "Priority Service",
+    icon: Lock,
+  },
+  {
+    category: "HVAC & Climate Systems",
+    name: "Highland Air & Heating",
+    note: "Liz's Note: Honest diagnostics, 24/7 winter emergency response, and punctual seasonal tune-ups.",
+    phone: "(480) 555-0144",
+    tag: "Available 24/7",
+    icon: Wrench,
+  },
+  {
+    category: "White-Glove Moving",
+    name: "Vanguard Relocations",
+    note: "Liz's Note: Experienced with fragile art, piano moves, and historic millwork. Respectful and meticulous crew.",
+    phone: "(480) 555-0188",
+    tag: "Trusted Crew",
+    icon: Truck,
+  },
+];
 
-// Reusable Scroll Reveal Component
-const ScrollReveal = ({ children, width = "w-full" }) => {
-  const ref = useRef(null);
-  const [isVisible, setIsVisible] = useState(false);
+const COMPARISON_ROWS = [
+  {
+    feature: "Directory Scope",
+    portal: "Huge, overwhelming searchable directories with hundreds of unfamiliar contractors.",
+    closeAndRelax: "A small, hand-selected list of vetted providers recommended with genuine confidence.",
+  },
+  {
+    feature: "Brand Prominence",
+    portal: "Platform logo first; agent photo and brand obscured or buried in footers.",
+    closeAndRelax: "Realtor-first experience; your portrait, direct line, brokerage, and voice lead the hub.",
+  },
+  {
+    feature: "Client Access",
+    portal: "Client logins, forgotten passwords, mandatory downloads, and sign-up friction.",
+    closeAndRelax: "Open-and-use web experience; zero login, zero password, zero friction.",
+  },
+  {
+    feature: "Vendor Placement",
+    portal: "Vendors pay ad dollars, bidding fees, or referral percentages for lead-generation visibility.",
+    closeAndRelax: "No vendors pay Close & Relax for recommendation placement. Strictly curated on trust.",
+  },
+  {
+    feature: "Realtor Overhead",
+    portal: "Another complicated CRM or software dashboard to configure and maintain.",
+    closeAndRelax: "A thoughtful, completely done-for-you closing gift ready to gift in minutes.",
+  },
+  {
+    feature: "Recommendation Depth",
+    portal: "Generic crowd-sourced reviews and star ratings easily gamed online.",
+    closeAndRelax: "Your authentic one-line Realtor recommendation under every vendor explaining why you trust them.",
+  },
+  {
+    feature: "Longevity on Device",
+    portal: "Browser bookmarks or emails lost within two weeks of unpacking boxes.",
+    closeAndRelax: "One-tap 'Add to Phone' PWA; lives gracefully right on their home screen for years.",
+  },
+];
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
+const PRICING_TIERS = [
+  {
+    name: "Partner",
+    badge: "Standard",
+    price: "Free",
+    period: "/ forever",
+    description: "Ideal for individual agents wanting an elegant, dependable closing concierge ready to share today.",
+    popular: false,
+    ctaText: "Get My Free Hub",
+    features: [
+      "Personalized Realtor hub & headshot",
+      "Realtor contact & direct Call/Text links",
+      "Standard Close & Relax resource network",
+      "Dedicated shareable subdomain",
+      "Print-ready QR code for closing folders",
+      "Fully responsive mobile web experience",
+      "Subtle Close & Relax branding mark",
+    ],
+  },
+  {
+    name: "Pro",
+    badge: "Bespoke",
+    price: "$29",
+    period: "/ month",
+    description: "For top producers who have preferred local contractors and want a customized home-screen experience.",
+    popular: true,
+    ctaText: "Talk About Pro",
+    features: [
+      "Everything in Free, plus:",
+      "Branded installable PWA / homeowner app",
+      "Personalized 'Add-to-Phone' experience",
+      "Custom domain connection support",
+      "Enhanced Realtor personal branding",
+      "Add your own Realtor-selected vendors (including competing providers alongside defaults)",
+      "Limited managed changes & priority support",
+    ],
+  },
+  {
+    name: "Premier",
+    badge: "White-Glove",
+    price: "$79",
+    period: "/ month",
+    description: "Full control for luxury teams and premier solo agents demanding near-white-label exclusivity.",
+    popular: false,
+    ctaText: "Talk About Premier",
+    features: [
+      "Full vendor control: replace or remove default Close & Relax partners",
+      "Realtor-first near-white-label branding",
+      "Dedicated custom domain connection",
+      "Expanded bespoke design & theme curation",
+      "Custom curated sections & client categories",
+      "Additional managed changes & direct concierge support",
+      "Enhanced private hub engagement analytics",
+    ],
+  },
+];
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+const FAQ_ITEMS = [
+  {
+    question: "I already have a website.",
+    answer: "Close & Relax does not replace your marketing website. Your website helps prospective buyers and sellers discover and hire you; Close & Relax serves them after the transaction closes by providing an intimate, focused post-closing concierge saved directly on their phone.",
+  },
+  {
+    question: "I already have a vendor list.",
+    answer: "Close & Relax turns your static PDF or text list into an interactive, mobile-accessible resource clients can actually keep, install, and refer to whenever an emergency or home upgrade occurs.",
+  },
+  {
+    question: "Do my clients download an app?",
+    answer: "No. There is no App Store or Google Play download. The hub works immediately in any mobile browser and can optionally be saved to their home screen with a single tap as an app-like Progressive Web App (PWA).",
+  },
+  {
+    question: "Do vendors pay to appear?",
+    answer: "No. Close & Relax does not charge vendors for recommendation placement. Recommendations are grounded strictly in trust, quality, and your authentic guidance.",
+  },
+  {
+    question: "Do I have to run email campaigns?",
+    answer: "No. This is not another CRM or marketing automation system that burdens you with newsletters. It is simply a thoughtful, functional closing gift that lives quietly on your client's phone until they need help.",
+  },
+  {
+    question: "What happens if I stop paying for Pro?",
+    answer: "Your client never encounters an error screen or paywall. If you ever downgrade, your hub smoothly returns to the standard Close & Relax verified network experience rather than disappearing or leaving your buyers stranded.",
+  },
+];
 
-    return () => {
-      if (ref.current) observer.unobserve(ref.current);
-    };
-  }, []);
-
-  return (
-    <div 
-      ref={ref} 
-      className={`${width} transition-all duration-1000 ease-out ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
-    >
-      {children}
-    </div>
-  );
-};
-
-// Countdown Timer Component
-const CountdownTimer = ({ targetDate }) => {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = new Date(targetDate).getTime() - now;
-
-      if (distance < 0) {
-        clearInterval(timer);
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      } else {
-        setTimeLeft({
-          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((distance % (1000 * 60)) / 1000)
-        });
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  const TimeBlock = ({ value, label }) => (
-    <div className="flex flex-col items-center flex-1">
-      <div className="w-full h-12 flex items-center justify-center bg-slate-950 border border-amber-500/20 rounded-xl mb-1">
-        <span className="text-xl font-black text-white">{value}</span>
-      </div>
-      <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
-    </div>
-  );
-
-  return (
-    <div className="flex justify-center items-center space-x-2 w-full">
-      <TimeBlock value={timeLeft.days} label="Days" />
-      <span className="text-amber-500 font-bold mb-4">:</span>
-      <TimeBlock value={timeLeft.hours} label="Hours" />
-      <span className="text-amber-500 font-bold mb-4">:</span>
-      <TimeBlock value={timeLeft.minutes} label="Mins" />
-      <span className="text-amber-500 font-bold mb-4">:</span>
-      <TimeBlock value={timeLeft.seconds} label="Secs" />
-    </div>
-  );
-};
-
-// Glowing Button Component
-const GlowingButton = ({ 
-  onClick, 
-  children, 
-  className = "", 
-  isLink = false, 
-  href = "", 
-  small = false,
-  theme = "gold",
-  variant = "spin" // "spin" or "none"
-}) => {
-  const themes = {
-    gold: {
-      spark: "conic-gradient(from 90deg at 50% 50%, transparent 0%, transparent 25%, #D4AF37 30%, transparent 35%, transparent 100%)",
-      shadow: "shadow-[0_20px_40px_-15px_rgba(212,175,55,0.3)]",
-      border: "border-amber-500/20"
-    },
-    silver: {
-      spark: "conic-gradient(from 90deg at 50% 50%, transparent 0%, transparent 25%, #94a3b8 30%, transparent 35%, transparent 100%)",
-      shadow: "shadow-[0_20px_40px_-15px_rgba(148,163,184,0.1)]",
-      border: "border-stone-700"
-    }
-  };
-
-  const currentTheme = themes[theme] || themes.gold;
-
-  const buttonContent = (
-    <>
-      {variant === 'spin' && (
-        <div 
-          className="absolute inset-[-100%] animate-[spin_4s_linear_infinite] group-hover:animate-[spin_1.5s_linear_infinite]" 
-          style={{ background: currentTheme.spark }}
-        />
-      )}
-      <div className={`relative z-10 bg-slate-950 flex items-center justify-center text-white font-bold w-full h-full rounded-full border ${currentTheme.border} ${small ? 'px-4 py-2 text-[10px]' : 'px-10 py-5 text-base'}`}>
-        {children}
-      </div>
-    </>
-  );
-
-  const classes = `group relative p-[1.5px] inline-block overflow-hidden rounded-full transition-all duration-300 hover:scale-[1.03] active:scale-95 ${currentTheme.shadow} ${className}`;
-
-  if (isLink) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
-        {buttonContent}
-      </a>
-    );
+const customStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+  
+  .font-editorial {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    letter-spacing: -0.015em;
   }
+  .font-body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .bg-cream-warm {
+    background-color: #FAF7F2;
+  }
+  .bg-cream-card {
+    background-color: #FDFBF7;
+  }
+  .bg-cream-subtle {
+    background-color: #F3EEE7;
+  }
+  .text-charcoal-deep {
+    color: #191816;
+  }
+  .text-charcoal-body {
+    color: #262421;
+  }
+  .text-charcoal-muted {
+    color: #58524B;
+  }
+  .border-cream-border {
+    border-color: #E8E2D8;
+  }
+  .text-gold-accent {
+    color: #B5966B;
+  }
+  .bg-gold-accent {
+    background-color: #B5966B;
+  }
+  .shadow-luxury {
+    box-shadow: 0 20px 40px -15px rgba(25, 24, 22, 0.07);
+  }
+  .shadow-phone {
+    box-shadow: 0 30px 60px -12px rgba(25, 24, 22, 0.18), 0 0 0 1px rgba(25, 24, 22, 0.08);
+  }
+`;
 
-  return (
-    <button onClick={onClick} className={classes}>
-      {buttonContent}
-    </button>
-  );
-};
+export default function App() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [liveDemoModalOpen, setLiveDemoModalOpen] = useState(false);
+  const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [selectedPlanIntent, setSelectedPlanIntent] = useState("Partner (Free Hub)");
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
 
-const App = () => {
-  const [view, setView] = useState('home');
-  const [heroImage, setHeroImage] = useState(null);
-  const [aboutImage, setAboutImage] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    brokerage: "",
+    marketCity: "",
+    email: "",
+    phone: "",
+    notes: ""
+  });
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [view]);
-
-  useEffect(() => {
-    if (!heroImage && !isGenerating) {
-      generateImages();
-    }
-  }, []);
-
-  const generateImages = async () => {
-    setIsGenerating(true);
-    try {
-      const heroPrompt = "Ultra-modern minimalist office, blurred background, navy and gold lighting, cinematic photography";
-      const heroRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
-        method: "POST",
-        body: JSON.stringify({ instances: [{ prompt: heroPrompt }], parameters: { sampleCount: 1 } })
-      });
-      const heroData = await heroRes.json();
-      if (heroData.predictions?.[0]?.bytesBase64Encoded) {
-        setHeroImage(`data:image/png;base64,${heroData.predictions[0].bytesBase64Encoded}`);
-      }
-
-      const aboutPrompt = "Confident Black woman creative professional, minimalist fashion, warm gold studio lighting, navy shadows";
-      const aboutRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
-        method: "POST",
-        body: JSON.stringify({ instances: [{ prompt: aboutPrompt }], parameters: { sampleCount: 1 } })
-      });
-      const aboutData = await aboutRes.json();
-      if (aboutData.predictions?.[0]?.bytesBase64Encoded) {
-        setAboutImage(`data:image/png;base64,${aboutData.predictions[0].bytesBase64Encoded}`);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsGenerating(false);
-    }
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
   };
 
-  const Header = () => (
-    <nav className="fixed top-0 left-0 w-full z-50 px-4 py-4">
-      <div className="max-w-6xl mx-auto flex justify-between items-center bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-full px-4 md:px-6 py-2 shadow-2xl">
-        <div className="flex items-center space-x-2 group cursor-pointer" onClick={() => setView('home')}>
-          <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center transition-transform group-hover:rotate-12">
-            <span className="text-slate-950 font-black text-[10px] tracking-tighter uppercase">CD</span>
+  const handleOpenLeadModal = (intent = "Partner (Free Hub)") => {
+    setSelectedPlanIntent(intent);
+    setLeadSubmitted(false);
+    setLeadModalOpen(true);
+  };
+
+  const handleLeadSubmit = (e) => {
+    e.preventDefault();
+    setLeadSubmitted(true);
+  };
+
+  const toggleFaq = (index) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  return (
+    <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
+      <style>{customStyles}</style>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#191816] text-[#FAF7F2] px-5 py-3 rounded-2xl shadow-luxury text-xs font-medium border border-neutral-700 animate-fade-in flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-[#B5966B]" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Header / Navigation */}
+      <header className="sticky top-0 z-40 bg-cream-warm/90 backdrop-blur-md border-b border-cream-border transition-all">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
+          <a href="#" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-full border border-[#B5966B]/70 flex items-center justify-center bg-cream-card text-charcoal-deep font-editorial font-semibold text-xl group-hover:border-[#9B7E54] transition-colors">
+              C
+            </div>
+            <div className="flex flex-col">
+              <span className="font-editorial text-2xl font-semibold tracking-tight text-charcoal-deep leading-none">
+                Close &amp; Relax
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-charcoal-muted font-medium mt-0.5">
+                Homeowner Concierge
+              </span>
+            </div>
+          </a>
+
+          {/* Desktop Nav Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-charcoal-muted">
+            <a href="#how-it-works" className="hover:text-charcoal-deep transition-colors">How It Works</a>
+            <a href="#features" className="hover:text-charcoal-deep transition-colors">Features</a>
+            <a href="#comparison" className="hover:text-charcoal-deep transition-colors">Comparison</a>
+            <a href="#philosophy" className="hover:text-charcoal-deep transition-colors">Philosophy</a>
+            <a href="#pricing" className="hover:text-charcoal-deep transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-charcoal-deep transition-colors">FAQ</a>
+          </nav>
+
+          {/* Actions */}
+          <div className="hidden sm:flex items-center gap-4">
+            <button
+              onClick={() => setLiveDemoModalOpen(true)}
+              className="text-sm font-medium text-charcoal-muted hover:text-charcoal-deep px-3 py-2 transition-colors flex items-center gap-1.5"
+            >
+              <span>Live Example</span>
+              <ExternalLink className="w-3.5 h-3.5 text-gold-accent" />
+            </button>
+            <button
+              onClick={() => handleOpenLeadModal("Header CTA")}
+              className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-medium px-5 py-2.5 rounded-full border border-[#191816] shadow-sm hover:shadow transition-all"
+            >
+              Get My Free Hub
+            </button>
           </div>
-          <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white">
-            CALLISTA DIGITAL
-          </span>
-        </div>
-        <GlowingButton 
-          small 
-          theme="silver"
-          onClick={() => setView(view === 'home' ? 'contact' : 'home')}
-        >
-          {view === 'home' ? 'Pricing' : 'Home'}
-        </GlowingButton>
-      </div>
-    </nav>
-  );
 
-  const PageOne = () => (
-    <div className="relative overflow-hidden bg-slate-950 selection:bg-amber-500/30 text-white w-full font-sans">
-      <Header />
-      
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center px-4 md:px-6 pt-24 pb-12 overflow-hidden w-full">
-        <div className="absolute inset-0 z-0">
-          {heroImage ? (
-            <div className="absolute inset-0 transition-opacity duration-1000 opacity-40">
-              <img src={heroImage} alt="Background" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-950/60 to-slate-950" />
-            </div>
-          ) : (
-             <div className="absolute inset-0 bg-slate-900 animate-pulse" />
-          )}
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Menu"
+            className="md:hidden p-2 rounded-lg text-charcoal-body hover:bg-cream-subtle transition-colors"
+          >
+            {mobileMenuOpen ? <CloseIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto text-center w-full">
-          <ScrollReveal>
-            <div className="inline-flex items-center space-x-2 px-4 py-2 mb-8 text-[10px] font-black tracking-[0.3em] uppercase bg-amber-500/10 text-amber-500 rounded-full border border-amber-500/20 backdrop-blur-sm">
-              <Sparkles className="w-3 h-3" />
-              <span>Personal Brand Excellence</span>
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-cream-card border-b border-cream-border px-6 py-6 transition-all space-y-3">
+            <a
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              How It Works
+            </a>
+            <a
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              Features
+            </a>
+            <a
+              href="#comparison"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              Comparison
+            </a>
+            <a
+              href="#philosophy"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              Philosophy
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              Pricing
+            </a>
+            <a
+              href="#faq"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-base font-medium text-charcoal-deep hover:text-gold-accent"
+            >
+              FAQ
+            </a>
+            <div className="pt-4 border-t border-cream-border flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setLiveDemoModalOpen(true);
+                }}
+                className="w-full py-3 text-sm font-medium text-charcoal-deep border border-cream-border rounded-full text-center"
+              >
+                See Live Example
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleOpenLeadModal("Mobile Menu");
+                }}
+                className="w-full py-3 text-sm font-medium text-[#FAF7F2] bg-[#191816] rounded-full text-center"
+              >
+                Get My Free Hub
+              </button>
             </div>
-            <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white mb-8 leading-[0.9] uppercase">
-              LOOK <span className="text-amber-500">LEGIT</span> <br className="hidden md:block" /> 
-              <span className="text-white/90">EVERYWHERE.</span>
+          </div>
+        )}
+      </header>
+
+      {}
+      <section className="pt-14 pb-20 md:pt-24 md:pb-32 px-6 sm:px-8 lg:px-12 max-w-7xl mx-auto overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          {/* Left Hero Copy */}
+          <div className="lg:col-span-7 flex flex-col items-start text-left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cream-subtle border border-cream-border text-xs font-medium text-charcoal-muted mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-accent"></span>
+              <span>A Personally Branded Post-Closing Gift for Realtors</span>
+            </div>
+
+            <h1 className="font-editorial text-4xl sm:text-5xl lg:text-6xl text-charcoal-deep font-semibold leading-[1.14] mb-6">
+              The Closing Gift They’ll <span className="italic font-normal text-gold-accent">Actually Keep.</span>
             </h1>
-            <p className="text-xl md:text-2xl text-slate-300 mb-12 leading-relaxed max-w-2xl mx-auto font-light">
-              Stop using messy bio links. I build <span className="text-white font-bold underline decoration-amber-500 underline-offset-8 decoration-4">high-performance</span> splash pages for leaders.
+
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed max-w-2xl mb-8 font-normal">
+              Give every buyer a personally branded homeowner concierge with your trusted professionals, your contact information, and one-tap access from their phone.
             </p>
-            <GlowingButton onClick={() => setView('contact')} theme="gold" className="w-full md:w-auto">
-              Get Your Page Built
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </GlowingButton>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      {/* The Authority Section */}
-      <section className="px-6 py-24 md:py-32 bg-slate-900 relative">
-        <div className="max-w-6xl mx-auto">
-          <ScrollReveal>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20 items-center">
-              <div className="relative">
-                <div className="absolute -top-10 -left-10 w-32 h-32 bg-amber-500/10 blur-[60px] rounded-full" />
-                <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-6 md:mb-8">The Authority</h2>
-                <p className="text-3xl md:text-6xl font-black leading-[1.1] mb-6 md:mb-8">
-                  I replace <span className="text-slate-500">cluttered links</span> with professional power.
-                </p>
-                <div className="h-1 w-20 bg-amber-500" />
-              </div>
-              <div className="space-y-8">
-                <p className="text-lg md:text-xl text-slate-400 leading-relaxed font-light">
-                  Most online creators lose business because their "digital front door" is a mess. I design hosted personal brand splash pages that help you look professional and guide visitors to the next step instantly.
-                </p>
-                <div className="grid grid-cols-2 gap-4 md:gap-6">
-                   <div className="p-5 md:p-6 bg-white/5 rounded-2xl border border-white/5">
-                      <p className="text-2xl md:text-3xl font-black text-white">100%</p>
-                      <p className="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 tracking-widest">Mobile Optimized</p>
-                   </div>
-                   <div className="p-5 md:p-6 bg-white/5 rounded-2xl border border-white/5">
-                      <p className="text-2xl md:text-3xl font-black text-white">Fast</p>
-                      <p className="text-[9px] md:text-[10px] uppercase font-bold text-slate-500 tracking-widest">Turnaround</p>
-                   </div>
-                </div>
-              </div>
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto mb-8">
+              <button
+                onClick={() => handleOpenLeadModal("Hero Primary CTA")}
+                className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-3.5 rounded-full shadow-md hover:shadow-lg transition-all text-center"
+              >
+                Get My Free Hub
+              </button>
+              <button
+                onClick={() => setLiveDemoModalOpen(true)}
+                className="bg-cream-card hover:bg-cream-subtle text-charcoal-body border border-cream-border text-base font-medium px-7 py-3.5 rounded-full transition-all text-center flex items-center justify-center gap-2"
+              >
+                <span>See a Live Example</span>
+                <ArrowRight className="w-4 h-4 text-gold-accent" />
+              </button>
             </div>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      {/* Core Expertise Section */}
-      <section className="px-6 py-24 md:py-32 max-w-6xl mx-auto">
-        <ScrollReveal>
-          <div className="text-center mb-16 md:mb-20">
-            <h2 className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mb-4">Core Expertise</h2>
-            <p className="text-2xl md:text-3xl font-bold">What I Build For You</p>
+            {/* Reassurance Line */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-charcoal-muted font-medium pt-3 border-t border-cream-border w-full">
+              <span className="flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-gold-accent" />
+                No client login
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-gold-accent" />
+                No App Store download
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-gold-accent" />
+                No vendor fees
+              </span>
+            </div>
           </div>
-        </ScrollReveal>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {[
-            { title: "Splash Page Design", desc: "Minimalist, high-conversion layouts.", icon: <Layout /> },
-            { title: "2-Page Strategy", desc: "Brand page + your specific next step.", icon: <ChevronRight /> },
-            { title: "Social Traffic Mastery", desc: "Built specifically for profile clicks.", icon: <Zap /> },
-            { title: "Turnkey Hosting", desc: "No tech headaches. I host it for you.", icon: <Globe /> }
-          ].map((s, i) => (
-            <ScrollReveal key={i}>
-              <div className="group p-8 md:p-10 h-full rounded-[30px] md:rounded-[40px] bg-slate-900 border border-white/5 hover:border-amber-500/50 hover:bg-slate-800 transition-all duration-500 shadow-2xl">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-950 flex items-center justify-center mb-6 md:mb-8 text-amber-500 group-hover:scale-110 transition-transform">
-                  {s.icon}
-                </div>
-                <h3 className="text-xl md:text-2xl font-bold mb-4">{s.title}</h3>
-                <p className="text-slate-400 font-light text-base md:text-lg">{s.desc}</p>
-              </div>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
 
-      {/* SaaS Comparison Section */}
-      <section className="px-6 py-24 md:py-32 bg-slate-950">
-        <ScrollReveal>
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-20 md:mb-24">
-              <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-6">The Infrastructure</h2>
-              <h3 className="text-4xl md:text-7xl font-black tracking-tighter uppercase mb-8 leading-none">BUILT DIFFERENT.</h3>
-              <p className="text-slate-400 text-lg md:text-xl font-light max-w-3xl mx-auto leading-relaxed">
-                Most websites sit on one cheap server. Ours run on the same global edge network used by modern apps — so your site is fast, secure, and maintenance-free.
-              </p>
-            </div>
+          {/* Right Phone Mockup - Liz Marks-Strauss Showcase */}
+          <div className="lg:col-span-5 flex justify-center relative">
+            <div className="absolute -inset-6 bg-[#E4D5BE]/35 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-0 items-stretch relative">
-              {/* Background Halo for Callista Card */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full lg:w-1/2 h-full bg-amber-500/5 blur-[120px] rounded-full pointer-events-none hidden lg:block" />
+            {/* Phone Device Frame */}
+            <div className="relative w-full max-w-[340px] bg-[#191816] rounded-[44px] p-3 shadow-phone border border-neutral-700">
               
-              {/* Traditional Card */}
-              <div className="bg-slate-900/50 p-8 md:p-12 rounded-t-[40px] lg:rounded-tr-none lg:rounded-l-[40px] border border-white/5 border-b-0 lg:border-b lg:border-r-0 relative z-10">
-                <div className="flex items-center space-x-4 mb-10">
-                   <div className="p-3 bg-slate-800 rounded-xl">
-                      <Home className="w-6 h-6 text-slate-500" />
-                   </div>
-                   <div>
-                     <h4 className="text-xl font-bold text-slate-300">Traditional Hosting</h4>
-                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black">"The Single House"</p>
-                   </div>
-                </div>
-
-                <div className="space-y-8">
-                  {[
-                    { label: "Server Type", val: "Single Location", icon: <X className="w-4 h-4 text-slate-500" /> },
-                    { label: "Load Speed", val: "Variable / Slow", icon: <X className="w-4 h-4 text-slate-500" /> },
-                    { label: "Security Updates", val: "Manual / Required", icon: <X className="w-4 h-4 text-slate-500" /> },
-                    { label: "Traffic Handling", val: "Struggles Under Traffic", icon: <X className="w-4 h-4 text-slate-500" /> },
-                    { label: "Maintenance", val: "Ongoing Effort", icon: <X className="w-4 h-4 text-slate-500" /> }
-                  ].map((row, i) => (
-                    <div key={i} className="flex items-center justify-between border-b border-white/5 pb-4">
-                      <div>
-                        <p className="text-[10px] text-slate-600 uppercase font-black tracking-widest mb-1">{row.label}</p>
-                        <p className="text-sm text-slate-300 font-medium">{row.val}</p>
-                      </div>
-                      <div className="shrink-0 ml-4 p-1.5 rounded-full bg-slate-800/50">
-                        {row.icon}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Speaker / Notch */}
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4 bg-[#191816] rounded-full z-30 flex items-center justify-center">
+                <div className="w-10 h-1 bg-neutral-700 rounded-full"></div>
+                <div className="w-2.5 h-2.5 bg-neutral-800 rounded-full ml-2"></div>
               </div>
 
-              {/* Callista Card */}
-              <div className="relative bg-slate-900 p-8 md:p-12 rounded-b-[40px] lg:rounded-bl-none lg:rounded-r-[40px] border-2 border-amber-500/30 shadow-[0_0_100px_rgba(212,175,55,0.08)] overflow-hidden z-20">
-                {/* Internal highlight glow */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[100px] pointer-events-none" />
+              {/* Inner Screen */}
+              <div className="w-full bg-[#FAF7F2] rounded-[36px] overflow-hidden border border-cream-border relative text-charcoal-body flex flex-col pt-7 pb-5 px-3.5 min-h-[570px]">
                 
-                <div className="flex items-center space-x-4 mb-10 relative z-10">
-                   <div className="p-3 bg-amber-500/10 rounded-xl">
-                      <Network className="w-6 h-6 text-amber-500" />
-                   </div>
-                   <div>
-                     <h4 className="text-xl font-bold text-white">Callista Digital</h4>
-                     <p className="text-[9px] text-amber-500 uppercase tracking-widest font-black">"The Global Network"</p>
-                   </div>
+                {/* Hub Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-cream-border mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-11 h-11 rounded-full overflow-hidden border border-gold-accent/80 bg-cream-subtle shrink-0">
+                      <img
+                        src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
+                        alt="Liz Marks-Strauss"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-editorial font-bold text-charcoal-deep leading-tight">Liz Marks-Strauss</h4>
+                      <p className="text-[10px] text-charcoal-muted">Associate Broker • Sotheby's</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => showToast("Simulating call to Liz...")}
+                      className="text-[10px] bg-[#191816] text-[#FAF7F2] px-2.5 py-1 rounded-full font-medium"
+                    >
+                      Call
+                    </button>
+                    <button
+                      onClick={() => showToast("Simulating text to Liz...")}
+                      className="text-[10px] bg-cream-card border border-cream-border text-charcoal-deep px-2.5 py-1 rounded-full font-medium"
+                    >
+                      Text
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-8 relative z-10">
-                  {[
-                    { label: "Server Type", val: "Global Edge Network", icon: <CheckCircle2 className="w-4 h-4 text-amber-500" /> },
-                    { label: "Load Speed", val: "Instant Everywhere", icon: <CheckCircle2 className="w-4 h-4 text-amber-500" /> },
-                    { label: "Security Updates", val: "Fully Automated", icon: <CheckCircle2 className="w-4 h-4 text-amber-500" /> },
-                    { label: "Traffic Handling", val: "Unlimited Scaling", icon: <CheckCircle2 className="w-4 h-4 text-amber-500" /> },
-                    { label: "Maintenance", val: "Zero Required", icon: <CheckCircle2 className="w-4 h-4 text-amber-500" /> }
-                  ].map((row, i) => (
-                    <div key={i} className="flex items-center justify-between border-b border-amber-500/10 pb-4">
-                      <div>
-                        <p className="text-[10px] text-amber-500/60 uppercase font-black tracking-widest mb-1">{row.label}</p>
-                        <p className="text-sm text-white font-bold tracking-wide">{row.val}</p>
+                {/* Welcome Card */}
+                <div className="bg-cream-card rounded-xl p-3 border border-cream-border mb-3 text-left">
+                  <span className="text-[9px] uppercase tracking-wider font-semibold text-gold-accent block">Homeowner Concierge</span>
+                  <p className="font-editorial text-sm font-semibold text-charcoal-deep mt-0.5">Welcome home, Sarah &amp; David.</p>
+                  <p className="text-[10px] text-charcoal-muted mt-0.5 leading-snug">My private book of vetted home specialists you can rely on anytime.</p>
+                </div>
+
+                {/* Add to Home Screen Banner inside Mockup */}
+                <div className="bg-[#FAF6EF] border border-[#E4D5BE] rounded-lg p-2.5 mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-[#191816] text-[#FAF7F2] flex items-center justify-center text-[9px] font-bold font-editorial">
+                      LMS
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-bold text-charcoal-deep leading-tight">Save to Home Screen</p>
+                      <p className="text-[9px] text-charcoal-muted">One tap to access Liz anytime</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => showToast("Simulating 1-tap PWA install")}
+                    className="text-[9px] bg-[#191816] text-[#FAF7F2] px-2 py-0.5 rounded font-medium"
+                  >
+                    Save
+                  </button>
+                </div>
+
+                {/* Mini Cards Container */}
+                <div className="space-y-2 flex-1 text-left">
+                  {LIZ_VENDORS.slice(0, 2).map((vendor, idx) => (
+                    <div key={idx} className="bg-cream-card rounded-xl p-2.5 border border-cream-border">
+                      <div className="flex items-start justify-between mb-1">
+                        <div>
+                          <span className="text-[9px] font-semibold text-gold-accent uppercase tracking-wider">{vendor.category}</span>
+                          <h5 className="text-[11px] font-semibold text-charcoal-deep">{vendor.name}</h5>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => showToast(`Calling ${vendor.name}`)}
+                            className="text-[9px] text-charcoal-deep bg-cream-subtle px-2 py-0.5 rounded font-medium"
+                          >
+                            Call
+                          </button>
+                        </div>
                       </div>
-                      <div className="shrink-0 ml-4 p-1.5 rounded-full bg-amber-500/10">
-                        {row.icon}
-                      </div>
+                      <p className="text-[9px] text-charcoal-muted italic bg-cream-subtle/70 p-1.5 rounded border border-cream-border/60">
+                        {vendor.note}
+                      </p>
                     </div>
                   ))}
                 </div>
+
+                {/* Phone Mockup Footer */}
+                <div className="pt-2 text-center border-t border-cream-border mt-2">
+                  <span className="text-[8px] tracking-wider text-charcoal-muted uppercase">Powered by Close &amp; Relax</span>
+                </div>
+
               </div>
             </div>
 
-            <div className="mt-16 text-center space-y-12">
-              <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-amber-500/80">
-                Modern businesses don't run on single servers anymore.
-              </p>
-              
-              <div className="max-w-4xl mx-auto">
-                <p className="text-slate-400 text-sm md:text-base font-light italic leading-relaxed px-4">
-                  “Our client sites are hosted on the same global edge infrastructure used by modern streaming platforms and SaaS companies — meaning ultra-fast load times, automatic scaling, and zero downtime.”
-                </p>
-              </div>
-            </div>
           </div>
-        </ScrollReveal>
+
+        </div>
       </section>
 
-      {/* Leaders Stars Section */}
-      <section className="px-6 py-24 bg-white text-slate-950 text-center">
-        <ScrollReveal>
-          <div className="flex justify-center space-x-2 mb-10">
-            {[1, 2, 3, 4, 5].map(i => (
-              <Star key={i} className="w-8 h-8 md:w-12 md:h-12 text-amber-500 fill-amber-500" />
-            ))}
-          </div>
-          <h2 className="text-4xl md:text-7xl font-black mb-16 tracking-tighter leading-none uppercase text-slate-950">
-            TRUSTED BY <br/> MODERN LEADERS.
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto text-left">
-            {[
-              { label: "Experience", val: "10+ Years" },
-              { label: "Focus", val: "Conversion" },
-              { label: "Systems", val: "Custom Built" }
-            ].map((stat, i) => (
-              <div key={i} className="border-t-4 border-slate-950 pt-8">
-                <p className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-2">{stat.label}</p>
-                <p className="text-3xl font-black">{stat.val}</p>
-              </div>
-            ))}
-          </div>
-        </ScrollReveal>
-      </section>
-
-      {/* About Section */}
-      <section className="px-6 py-32 max-w-6xl mx-auto">
-        <ScrollReveal>
-          <div className="grid grid-cols-1 lg:grid-cols-2 bg-slate-900 rounded-[60px] border border-white/5 overflow-hidden">
-            <div className="p-10 md:p-24 flex flex-col justify-center">
-               <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-8">The Studio</h2>
-               <p className="text-3xl md:text-4xl font-bold leading-tight mb-8">
-                I help creators replace cluttered bio links with a <span className="italic underline decoration-amber-500 decoration-4">clean brand page.</span>
-               </p>
-               <p className="text-slate-400 text-lg font-light leading-relaxed">
-                 My goal is simple: make you look legit online and give people one clear place to go next—without funnels, tech overwhelm, or complicated systems.
-               </p>
-               <div className="mt-8 flex items-center space-x-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">CALLISTA DIGITAL STRATEGY</p>
-               </div>
-            </div>
-            <div className="relative min-h-[400px] md:min-h-[600px] bg-slate-950 overflow-hidden">
-                {aboutImage && <img src={aboutImage} alt="Founder" className="w-full h-full object-cover opacity-80" />}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
-            </div>
-          </div>
-        </ScrollReveal>
-      </section>
-
-      {/* Ready CTA */}
-      <section className="px-6 py-24 md:py-32 bg-slate-950">
-        <ScrollReveal>
-          <div className="text-center">
-            <h2 className="text-4xl md:text-6xl font-black mb-12 tracking-tighter leading-none uppercase">
-              READY TO <br/> <span className="text-amber-500">GET STARTED?</span>
+      {}
+      <section className="py-20 md:py-28 bg-cream-card border-y border-cream-border">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+              The Post-Closing Dilemma
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+              Closing Day Shouldn’t Be the End of the Relationship.
             </h2>
-            <GlowingButton className="w-full md:w-auto" onClick={() => setView('contact')}>
-               Get Your Page Built
-               <ArrowRight className="ml-2 w-5 h-5" />
-            </GlowingButton>
-            <p className="mt-10 text-sm text-slate-500 font-medium text-center">
-              Founders pricing is available for a limited time. <br/>
-              <span className="italic">No pressure — if it’s not a fit, I’ll tell you.</span>
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
+              Buyers walk away from the closing table thrilled, but their real homeowner journey has just begun. They immediately need locksmiths, security setup, emergency plumbers, HVAC checkups, movers, cleaners, and painters. Yet your recommendations usually get buried in fragmented text message threads, scattered emails, or a lost paper PDF.
             </p>
           </div>
-        </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto items-stretch">
+            
+            {/* Without Close & Relax */}
+            <div className="bg-cream-warm rounded-3xl p-8 sm:p-10 border border-cream-border flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-cream-border">
+                  <span className="text-xs uppercase tracking-wider font-bold text-charcoal-muted">The Status Quo</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-neutral-200 text-charcoal-body rounded-full">
+                    Without Close &amp; Relax
+                  </span>
+                </div>
+                
+                <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-4">
+                  Scattered, Forgotten &amp; Frustrating
+                </h3>
+
+                <ul className="space-y-4 text-sm text-charcoal-muted">
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cream-subtle text-charcoal-body flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
+                    <span>Recommendations buried across SMS chains and old email threads.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cream-subtle text-charcoal-body flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
+                    <span>Paper vendor handouts and PDF attachments lost in moving boxes or downloads folders.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cream-subtle text-charcoal-body flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
+                    <span>Clients forced to rely on desperate Google and Yelp searches for unvetted strangers.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-cream-subtle text-charcoal-body flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✕</span>
+                    <span>Your contact information slips away into the contact graveyard within months.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-cream-border text-xs text-charcoal-muted italic">
+                Result: Forgotten relationships, lost referrals, and unsupported homeowners.
+              </div>
+            </div>
+
+            {/* With Close & Relax */}
+            <div className="bg-cream-card rounded-3xl p-8 sm:p-10 border border-[#B5966B]/60 shadow-luxury flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-36 h-36 bg-[#E4D5BE]/40 rounded-full blur-2xl pointer-events-none"></div>
+
+              <div>
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E8E2D8]">
+                  <span className="text-xs uppercase tracking-wider font-bold text-gold-accent">The Elevated Standard</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] rounded-full">
+                    With Close &amp; Relax
+                  </span>
+                </div>
+
+                <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-4">
+                  One Elegant Hub Saved on Their Phone
+                </h3>
+
+                <ul className="space-y-4 text-sm text-charcoal-body">
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                    <span><strong>One branded digital home concierge:</strong> all your trusted specialists right at hand.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                    <span><strong>Saved directly to their home screen</strong> as a fast web app with zero App Store friction.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                    <span><strong>Personal guidance from you:</strong> notes detailing why you trust each pro and who to ask for.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                    <span><strong>You remain their lifelong real estate advisor:</strong> one-tap Call and Text buttons permanently in their pocket.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-[#E8E2D8] text-xs font-medium text-gold-accent">
+                Result: A thoughtful closing gift that delivers everyday peace of mind for years.
+              </div>
+            </div>
+
+          </div>
+
+        </div>
       </section>
 
-      {/* Footer */}
-      <footer className="px-6 py-20 bg-black text-center border-t border-white/5">
-        <div className="max-w-xl mx-auto">
-          <Instagram className="w-10 h-10 mx-auto mb-10 text-slate-500 hover:text-amber-500 transition-colors cursor-pointer" />
-          <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-[10px] tracking-[0.3em] text-slate-600 font-bold uppercase space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-2">
-              <span>CALLISTA DIGITAL</span>
+      {}
+      <section id="features" className="py-20 md:py-28 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+            Designed Exclusively for Agents
+          </span>
+          <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+            Your Homeowner Concierge. Branded Around You.
+          </h2>
+          <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
+            Everything your client needs to settle into their home with total peace of mind, delivered with the understated elegance of a luxury residential service.
+          </p>
+        </div>
+
+        {/* 6 Key Benefits Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          
+          {/* Benefit 1 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <User className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                Realtor Photo &amp; Contact Branding
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Your portrait, brokerage name, phone number, and personalized greeting anchor the top of the hub. It looks, acts, and feels like your personal client concierge.
+              </p>
             </div>
-            <span>EST. 2014 • CLEAN PAGES. CLEAR NEXT STEPS.</span>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Always keeps you top-of-mind
+            </div>
           </div>
+
+          {/* Benefit 2 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                Curated Trusted Professionals
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Pre-populated with the verified Close &amp; Relax network of local home specialists—locksmiths, security, emergency plumbers, HVAC, and movers—or customized with your own roster.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Vetted quality standards
+            </div>
+          </div>
+
+          {/* Benefit 3 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                Personal Realtor Recommendations
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Every vendor card features your personal one-line endorsement (e.g., “Ask for Marco, used on 14+ client purchases”), cementing your authority as their trusted local expert.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Authentic word-of-mouth trust
+            </div>
+          </div>
+
+          {/* Benefit 4 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <Phone className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                One-Tap Call &amp; Website Actions
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Zero friction for the homeowner. One tap dials the emergency dispatcher directly or launches the provider's private scheduling page directly in their browser.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Effortless homeowner utility
+            </div>
+          </div>
+
+          {/* Benefit 5 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                Save-to-Phone PWA Experience
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Homeowners can tap "Add to Phone" to install your hub right to their iPhone or Android home screen without ever visiting the App Store or remembering passwords.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Zero login or download barrier
+            </div>
+          </div>
+
+          {/* Benefit 6 */}
+          <div className="bg-cream-card rounded-2xl p-8 border border-cream-border hover:border-gold-accent/60 transition-all shadow-luxury flex flex-col justify-between">
+            <div>
+              <div className="w-12 h-12 rounded-xl bg-cream-subtle border border-cream-border flex items-center justify-center text-gold-accent mb-6">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mb-3">
+                Direct Realtor Call/Text Access
+              </h3>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                Your personal Call and Text buttons remain comfortably accessible throughout their experience. When life changes or future moves arrive, you are their first call.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
+              Protects repeat transactions &amp; referrals
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section id="comparison" className="py-20 md:py-28 bg-cream-card border-t border-cream-border">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+              Honest &amp; Curated
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+              Not Another Vendor Directory.
+            </h2>
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed mb-6">
+              We built Close &amp; Relax to protect your relationship with your clients—not to monetize ad clicks or sell buyer leads to competing service providers.
+            </p>
+
+            {/* Prominently Featured Trust Statement */}
+            <div className="inline-block bg-cream-warm border border-gold-accent/70 rounded-2xl px-6 py-4 shadow-sm">
+              <p className="font-editorial text-lg sm:text-xl font-semibold text-charcoal-deep italic">
+                “Recommendations should be based on trust—not who paid to appear there.”
+              </p>
+            </div>
+          </div>
+
+          {/* Comparison Table */}
+          <div className="max-w-4xl mx-auto mt-12 overflow-x-auto rounded-2xl border border-cream-border bg-cream-warm">
+            <table className="w-full text-left border-collapse min-w-[620px]">
+              <thead>
+                <tr className="border-b border-cream-border bg-cream-subtle/80">
+                  <th className="py-4 px-6 text-xs uppercase tracking-wider font-semibold text-charcoal-muted w-1/3">
+                    Feature &amp; Philosophy
+                  </th>
+                  <th className="py-4 px-6 text-xs uppercase tracking-wider font-semibold text-charcoal-muted w-1/3">
+                    Typical Platforms &amp; Portals
+                  </th>
+                  <th className="py-4 px-6 text-xs uppercase tracking-wider font-bold text-gold-accent w-1/3 bg-[#FAF6EF] border-l border-[#E4D5BE]">
+                    Close &amp; Relax
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-cream-border text-sm">
+                {COMPARISON_ROWS.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="py-4 px-6 font-medium text-charcoal-deep align-top">
+                      {row.feature}
+                    </td>
+                    <td className="py-4 px-6 text-charcoal-muted align-top">
+                      {row.portal}
+                    </td>
+                    <td className="py-4 px-6 font-medium text-charcoal-deep bg-[#FAF6EF]/50 border-l border-[#E4D5BE] align-top">
+                      {row.closeAndRelax}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section id="philosophy" className="py-20 md:py-28 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="max-w-4xl mx-auto bg-cream-card rounded-3xl p-8 sm:p-14 border border-cream-border shadow-luxury relative">
+          
+          <div className="text-center mb-10">
+            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+              Our Core Promise
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-4">
+              Built to Be Kept.
+            </h2>
+            <p className="font-editorial text-xl sm:text-2xl text-gold-accent italic">
+              “Your closing gift shouldn’t expire.”
+            </p>
+          </div>
+
+          <div className="space-y-6 text-charcoal-muted text-base leading-relaxed font-normal">
+            <p>
+              Too many real estate tools operate like trap doors: you gift a client access to a portal, but the moment you adjust your marketing budget or change software providers, your client receives an error page or a broken link.
+            </p>
+            <p>
+              At <strong>Close &amp; Relax</strong>, we believe a closing gift given to a homeowner belongs to that homeowner. They never pay a fee, they never need an account, and they should never lose access to their basic resource hub.
+            </p>
+            
+            <div className="bg-cream-warm rounded-2xl p-6 border border-cream-border text-charcoal-deep mt-4">
+              <h4 className="font-editorial font-semibold text-lg text-charcoal-deep mb-2">
+                The Non-Expiring Assurance
+              </h4>
+              <p className="text-sm text-charcoal-muted leading-relaxed">
+                If an agent ever decides to step down from a paid Pro or Premier customization plan, their clients do not get locked out. The hub seamlessly downgrades to the standard Close &amp; Relax verified network experience—preserving your client’s access to vital home services without interruption.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section id="how-it-works" className="py-20 md:py-28 bg-cream-card border-y border-cream-border">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+              Simple &amp; Dignified
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+              How It Works
+            </h2>
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
+              No complex dashboards or onboarding sprints. We prepare your bespoke concierge hub so you can focus on closing deals and serving your clients.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 max-w-5xl mx-auto">
+            
+            {/* Step 1 */}
+            <div className="bg-cream-warm rounded-2xl p-8 border border-cream-border flex flex-col justify-between">
+              <div>
+                <div className="font-editorial text-4xl font-light text-gold-accent mb-4">01</div>
+                <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
+                  We Create Your Hub
+                </h3>
+                <p className="text-sm text-charcoal-muted leading-relaxed">
+                  We apply your headshot, contact phone number, brokerage branding, and personalized welcome greeting so the concierge is instantly recognizable to your clients.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
+                Takes less than 5 minutes to request
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-cream-warm rounded-2xl p-8 border border-cream-border flex flex-col justify-between">
+              <div>
+                <div className="font-editorial text-4xl font-light text-gold-accent mb-4">02</div>
+                <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
+                  Choose Your Trusted Pros
+                </h3>
+                <p className="text-sm text-charcoal-muted leading-relaxed">
+                  Begin immediately with the verified standard Close &amp; Relax network of home professionals, or customize your preferred vendors depending on your plan tier.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
+                Vetted quality standards
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-cream-warm rounded-2xl p-8 border border-cream-border flex flex-col justify-between">
+              <div>
+                <div className="font-editorial text-4xl font-light text-gold-accent mb-4">03</div>
+                <h3 className="font-editorial text-2xl font-semibold text-charcoal-deep mb-3">
+                  Give It to Every Buyer
+                </h3>
+                <p className="text-sm text-charcoal-muted leading-relaxed">
+                  Send the private link via text or congratulatory email, slip a custom luxury QR card into their key box, and help them save it directly to their phone.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-cream-border text-xs font-medium text-charcoal-muted">
+                A memorable closing gift
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section className="py-20 md:py-32 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          {/* Visual Side: Large Phone Demonstration */}
+          <div className="lg:col-span-6 flex justify-center order-2 lg:order-1">
+            <div className="relative w-full max-w-[360px]">
+              
+              {/* Home Screen App Icon Floating Badge */}
+              <div className="absolute -top-6 -left-6 z-20 bg-cream-card p-4 rounded-2xl border border-cream-border shadow-luxury flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#191816] text-[#FAF7F2] flex items-center justify-center font-editorial text-xl font-bold shadow">
+                  C&amp;R
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-charcoal-deep">Liz Marks-Strauss</p>
+                  <p className="text-[10px] text-charcoal-muted">Home Concierge App</p>
+                  <span className="inline-block mt-0.5 text-[9px] bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] px-1.5 py-0.5 rounded font-medium">
+                    On Home Screen
+                  </span>
+                </div>
+              </div>
+
+              {/* Phone Device */}
+              <div className="bg-[#191816] rounded-[44px] p-3 shadow-phone border border-neutral-700">
+                <div className="bg-cream-warm rounded-[36px] overflow-hidden border border-cream-border p-5 text-center flex flex-col justify-between min-h-[480px]">
+                  
+                  {/* Top Screen */}
+                  <div className="pt-3 pb-2">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent mx-auto mb-3 shadow-sm">
+                      <img
+                        src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
+                        alt="Realtor Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Liz Marks-Strauss</h4>
+                    <p className="text-xs text-charcoal-muted font-medium">Your Trusted Advisor</p>
+                    <div className="mt-3 flex justify-center gap-2">
+                      <button
+                        onClick={() => showToast("Calling Liz Marks-Strauss...")}
+                        className="text-xs bg-[#191816] text-[#FAF7F2] px-4 py-1.5 rounded-full font-medium"
+                      >
+                        Call Liz
+                      </button>
+                      <button
+                        onClick={() => showToast("Messaging Liz Marks-Strauss...")}
+                        className="text-xs bg-cream-card border border-cream-border text-charcoal-deep px-4 py-1.5 rounded-full font-medium"
+                      >
+                        Text Liz
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Simulated PWA Box */}
+                  <div className="bg-cream-card border border-[#B5966B]/60 rounded-2xl p-4 text-left shadow-sm my-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Smartphone className="w-4 h-4 text-gold-accent" />
+                      <span className="text-xs font-bold text-charcoal-deep">Add to Home Screen</span>
+                    </div>
+                    <p className="text-xs text-charcoal-muted leading-snug">
+                      Keep Liz’s concierge on your phone just like a native app. No App Store account or updates needed.
+                    </p>
+                    <button
+                      onClick={() => showToast("Added to Home Screen")}
+                      className="mt-3 w-full py-2 bg-[#191816] text-[#FAF7F2] text-xs font-semibold rounded-lg text-center block"
+                    >
+                      Install to Phone (1 Tap)
+                    </button>
+                  </div>
+
+                  {/* Vendor preview */}
+                  <div className="bg-cream-card rounded-xl p-3 border border-cream-border text-left">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-semibold text-gold-accent uppercase">Emergency Plumber</span>
+                      <span className="text-[9px] bg-cream-subtle px-2 py-0.5 rounded text-charcoal-deep">24/7 Response</span>
+                    </div>
+                    <p className="text-xs font-bold text-charcoal-deep mt-1">Highland Climate &amp; Drain</p>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Right Text Copy */}
+          <div className="lg:col-span-6 flex flex-col items-start text-left order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cream-subtle border border-cream-border text-xs font-medium text-charcoal-muted mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-gold-accent"></span>
+              <span>Zero-Friction Technology</span>
+            </div>
+
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+              Their Homeowner Guide. <span className="italic text-gold-accent">One Tap Away.</span>
+            </h2>
+
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed mb-6 font-normal">
+              There is no App Store or Google Play download required. Clients simply open your bespoke link in Safari or Chrome and choose <span className="font-semibold text-charcoal-deep">“Add to Phone”</span>.
+            </p>
+
+            <p className="text-base text-charcoal-muted leading-relaxed mb-8">
+              It creates an app-like PWA icon on their mobile home screen with your branding. Every time they unlock their device, your care and thoughtfulness are on display.
+            </p>
+
+            {/* Prominently Featured Longevity Quote */}
+            <div className="border-l-2 border-gold-accent pl-4 py-1 mb-8">
+              <p className="font-editorial text-xl font-semibold text-charcoal-deep italic leading-snug">
+                “When they need a plumber six months from now, your name is still there.”
+              </p>
+            </div>
+
+            <button
+              onClick={() => handleOpenLeadModal("Save To Phone Section")}
+              className="bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-3.5 rounded-full shadow-md transition-all"
+            >
+              Create Your Realtor Hub
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section id="pricing" className="py-20 md:py-28 bg-cream-card border-t border-cream-border">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+              Transparent Membership
+            </span>
+            <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+              Invest in Relationships, Not Ad Clicks.
+            </h2>
+            <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
+              Start completely free with our verified resource network, or elevate to bespoke branding and custom vendor curation.
+            </p>
+          </div>
+
+          {/* Pricing Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+            {PRICING_TIERS.map((tier, idx) => (
+              <div
+                key={idx}
+                className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${
+                  tier.popular
+                    ? 'bg-cream-warm border-2 border-gold-accent shadow-luxury'
+                    : 'bg-cream-warm/70 border border-cream-border hover:border-cream-border/80'
+                }`}
+              >
+                {tier.popular && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gold-accent text-[#FAF7F2] text-xs font-semibold px-4 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    Most Popular
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
+                      {tier.name}
+                    </span>
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-cream-subtle text-charcoal-deep rounded-full">
+                      {tier.badge}
+                    </span>
+                  </div>
+
+                  <div className="mb-6">
+                    <span className="font-editorial text-4xl font-bold text-charcoal-deep">
+                      {tier.price}
+                    </span>
+                    <span className="text-sm text-charcoal-muted font-medium ml-1">
+                      {tier.period}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-charcoal-muted mb-6 pb-6 border-b border-cream-border leading-relaxed">
+                    {tier.description}
+                  </p>
+
+                  <ul className="space-y-3.5 text-sm text-charcoal-body mb-8">
+                    {tier.features.map((feat, fIdx) => (
+                      <li key={fIdx} className="flex items-start gap-2.5">
+                        <Check className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => handleOpenLeadModal(`${tier.name} Plan`)}
+                    className={`w-full py-3.5 px-6 rounded-full text-sm font-semibold transition-all text-center ${
+                      tier.popular
+                        ? 'bg-gold-accent hover:bg-[#9B7E54] text-[#FAF7F2] shadow-sm'
+                        : 'bg-[#191816] hover:bg-[#262421] text-[#FAF7F2]'
+                    }`}
+                  >
+                    {tier.ctaText}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Consultation Note */}
+          <div className="mt-12 text-center max-w-2xl mx-auto bg-cream-subtle/60 rounded-2xl p-5 border border-cream-border">
+            <p className="text-xs text-charcoal-muted leading-relaxed">
+              <strong className="text-charcoal-deep">Why a conversation first?</strong> Pro and Premier plans are activated after a short consultation because your custom branding and vendor customization are currently handled manually by our team to ensure white-glove luxury quality.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {}
+      <section id="faq" className="py-20 md:py-28 max-w-5xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center mb-16">
+          <span className="text-xs uppercase tracking-[0.2em] font-semibold text-gold-accent block mb-3">
+            Clear &amp; Direct
+          </span>
+          <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-base text-charcoal-muted">
+            Everything you need to know about gifting Close &amp; Relax to your clients.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {FAQ_ITEMS.map((item, idx) => {
+            const isOpen = openFaqIndex === idx;
+            return (
+              <div
+                key={idx}
+                className="bg-cream-card rounded-2xl border border-cream-border overflow-hidden transition-colors"
+              >
+                <button
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full py-5 px-6 text-left flex items-center justify-between gap-4 font-editorial text-lg sm:text-xl font-semibold text-charcoal-deep hover:text-gold-accent transition-colors"
+                >
+                  <span>{item.question}</span>
+                  <span className="text-gold-accent transition-transform duration-300 font-sans font-normal text-xl">
+                    {isOpen ? '–' : '+'}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="px-6 pb-6 text-sm sm:text-base text-charcoal-muted leading-relaxed animate-fade-in">
+                    {item.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {}
+      <section className="py-20 md:py-28 bg-cream-card border-t border-cream-border">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 text-center">
+          
+          <div className="w-14 h-14 rounded-full border border-gold-accent/80 flex items-center justify-center bg-cream-warm text-gold-accent font-editorial font-bold text-2xl mx-auto mb-6">
+            C
+          </div>
+
+          <h2 className="font-editorial text-3xl sm:text-4xl md:text-5xl font-semibold text-charcoal-deep leading-tight mb-6">
+            You Worked Hard to Earn Their Trust.<br className="hidden sm:inline" /> Don’t Let Closing Day Be Where the Relationship Ends.
+          </h2>
+
+          <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed max-w-2xl mx-auto mb-10 font-normal">
+            Give every homeowner something useful they can keep. Set up your personalized concierge in just minutes.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => handleOpenLeadModal("Final CTA")}
+              className="w-full sm:w-auto bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-base font-medium px-8 py-4 rounded-full shadow-md transition-all"
+            >
+              Get Your Free Close &amp; Relax Hub
+            </button>
+            <button
+              onClick={() => setLiveDemoModalOpen(true)}
+              className="w-full sm:w-auto bg-cream-warm hover:bg-cream-subtle text-charcoal-deep border border-cream-border text-base font-medium px-8 py-4 rounded-full transition-all"
+            >
+              See a Live Example
+            </button>
+          </div>
+
+          <p className="text-xs text-charcoal-muted mt-6">
+            Zero client login • No App Store download • Free forever option
+          </p>
+
+        </div>
+      </section>
+
+      {}
+      <footer className="bg-cream-warm border-t border-cream-border py-12 px-6 sm:px-8 lg:px-12 text-sm text-charcoal-muted">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          
+          <div className="flex items-center gap-3">
+            <span className="font-editorial text-xl font-semibold text-charcoal-deep">Close &amp; Relax</span>
+            <span className="text-charcoal-muted">•</span>
+            <span className="text-xs text-charcoal-muted">The closing gift they’ll actually keep</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-xs text-charcoal-muted">
+            <a href="#how-it-works" className="hover:text-charcoal-deep transition-colors">How It Works</a>
+            <a href="#features" className="hover:text-charcoal-deep transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-charcoal-deep transition-colors">Pricing</a>
+            <a href="#faq" className="hover:text-charcoal-deep transition-colors">FAQ</a>
+            <button onClick={() => handleOpenLeadModal("Footer Inquire")} className="hover:text-charcoal-deep transition-colors">
+              Contact
+            </button>
+          </div>
+
+          <div className="text-xs text-charcoal-muted flex items-center gap-2">
+            <span>&copy; {new Date().getFullYear()} Close &amp; Relax.</span>
+            <span>•</span>
+            <span className="text-gold-accent font-editorial italic">Powered by Close &amp; Relax</span>
+          </div>
+
         </div>
       </footer>
-    </div>
-  );
 
-  const PageTwo = () => (
-    <div className="min-h-screen bg-slate-950 flex flex-col text-white selection:bg-amber-500/30 font-sans">
-      <Header />
-      <main className="flex-grow pt-32 pb-24 px-6 max-w-5xl mx-auto w-full">
-        
-        {/* Pricing Header */}
-        <ScrollReveal>
-          <div className="text-center mb-24">
-            <div className="inline-block p-4 rounded-3xl bg-slate-900 border border-white/10 shadow-2xl mb-8 animate-bounce">
-              <ShoppingBag className="w-10 h-10 text-amber-500" />
-            </div>
-            <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tighter leading-none uppercase">
-              PRICING <br/>
-              <span className="text-amber-500">STRUCTURE.</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-slate-400 font-light max-w-2xl mx-auto leading-relaxed italic">
-              Simple. Clear. Built for social-first businesses.
-            </p>
-          </div>
-        </ScrollReveal>
-
-        {/* Intro Text */}
-        <ScrollReveal>
-          <div className="max-w-3xl mx-auto text-center mb-32 space-y-6">
-            <p className="text-2xl font-bold leading-tight">
-              I build clean, professional personal brand pages designed to replace messy bio links and guide people to one clear next step.
-            </p>
-            <p className="text-slate-500 text-lg font-light uppercase tracking-widest">
-              No funnels. No forms. No overcomplication.
-            </p>
-          </div>
-        </ScrollReveal>
-
-        {/* One-Time Setup Section */}
-        <section className="mb-40">
-          <ScrollReveal>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {}
+      {liveDemoModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-2xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
               <div>
-                <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-6">One-Time Setup</h2>
-                <h3 className="text-4xl md:text-6xl font-black mb-8 leading-none">PERSONAL BRAND <br/> PAGE BUILD.</h3>
-                <p className="text-slate-400 text-lg font-light leading-relaxed mb-10">
-                  This build is standardized on purpose. It allows me to deliver quickly, consistently, and at an affordable price.
-                </p>
-                <div className="space-y-4 mb-10">
-                  {[
-                    "A custom 2-page personal brand website",
-                    "Page 1: Brand + credibility + clarity",
-                    "Page 2: Clear next step (DM, call, link, etc.)",
-                    "Mobile-first, premium design",
-                    "Built specifically for social media traffic",
-                    "Hosted setup and launch",
-                    "Works for travel reps, creators, and online businesses"
-                  ].map((item, idx) => (
-                    <div key={idx} className="flex items-start space-x-3">
-                      <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                      <span className="text-slate-300 text-base">{item}</span>
-                    </div>
-                  ))}
-                </div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Live Interactive Sample</span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Liz Marks-Strauss Homeowner Hub</h3>
               </div>
+              <button
+                onClick={() => setLiveDemoModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
 
-              <div className="relative group" id="pricing-card">
-                <div className="absolute inset-0 bg-amber-500/10 blur-[100px] opacity-20" />
-                <div className="relative bg-slate-900 p-10 md:p-12 border-2 border-amber-500/30 rounded-[48px] text-center shadow-3xl">
-                  <div className="inline-flex items-center space-x-2 px-4 py-1.5 mb-8 text-[10px] font-black tracking-[0.3em] uppercase bg-amber-500 text-slate-950 rounded-full shadow-lg">
-                    <Sparkles className="w-3 h-3" />
-                    <span>Founder's Pricing</span>
-                  </div>
-                  <div className="flex flex-col items-center mb-10">
-                    <span className="text-slate-500 text-xl font-bold line-through mb-2">$497 Normal</span>
-                    <div className="flex items-center">
-                      <span className="text-3xl font-black text-slate-500 mt-[-20px] mr-1">$</span>
-                      <span className="text-8xl font-black text-white tracking-tighter">297</span>
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 max-h-[75vh] overflow-y-auto space-y-6">
+              
+              {/* Realtor Banner */}
+              <div className="bg-cream-card p-5 rounded-2xl border border-cream-border flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gold-accent shrink-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
+                    alt="Liz Marks-Strauss"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-editorial text-2xl font-bold text-charcoal-deep">Liz Marks-Strauss</h4>
+                      <p className="text-xs text-charcoal-muted font-medium">Licensed Associate Broker • Sotheby's</p>
                     </div>
-                    <p className="mt-4 text-[10px] text-amber-500/60 font-black uppercase tracking-widest">Increases to $497 After Feb 1</p>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => showToast("Calling Liz Marks-Strauss...")}
+                        className="text-xs bg-[#191816] text-[#FAF7F2] px-3.5 py-1.5 rounded-full font-medium shadow-sm"
+                      >
+                        Call Liz
+                      </button>
+                      <button
+                        onClick={() => showToast("Messaging Liz Marks-Strauss...")}
+                        className="text-xs bg-cream-subtle text-charcoal-deep border border-cream-border px-3.5 py-1.5 rounded-full font-medium"
+                      >
+                        Text Liz
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="bg-slate-950/50 p-6 rounded-3xl border border-white/5 mb-10">
-                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center justify-center">
-                      <Clock className="w-3 h-3 mr-2" />
-                      Offer Ends In
-                    </p>
-                    <CountdownTimer targetDate="February 1, 2026 00:00:00" />
-                  </div>
-
-                  {/* Updated button to scroll to monthly plans */}
-                  <GlowingButton 
-                    variant="none" 
-                    className="w-full py-6 text-xl" 
-                    onClick={() => document.getElementById('monthly-plans-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    Secure Your Build
-                  </GlowingButton>
-                  <p className="mt-6 text-[10px] text-slate-600 font-bold uppercase tracking-widest text-center">
-                    <ShieldCheck className="w-4 h-4 inline mr-2 text-amber-500" />
-                    Select a support plan below
+                  <p className="text-xs text-charcoal-muted mt-3 italic bg-cream-warm p-2.5 rounded-lg border border-cream-border">
+                    “Welcome to the neighborhood! Whenever you need anything taken care of for your home, tap into these trusted partners I personally recommend.”
                   </p>
                 </div>
               </div>
-            </div>
-          </ScrollReveal>
-        </section>
 
-        {/* Monthly Plans Section */}
-        <section className="mb-40" id="monthly-plans-section">
-          <ScrollReveal>
-            <div className="text-center mb-20">
-              <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-6">Monthly Plans</h2>
-              <h3 className="text-4xl md:text-5xl font-black mb-6">ONGOING SUPPORT.</h3>
-              <p className="text-slate-400 text-lg font-light max-w-2xl mx-auto leading-relaxed">
-                Your monthly plan determines ongoing support, not the quality of the build. All sites are built to the same standard.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { 
-                  name: "Starter", 
-                  price: "$10", 
-                  color: "border-green-500/20", 
-                  icon: "🟢",
-                  desc: "Best if you never plan to make changes.",
-                  features: ["Secure hosting + uptime", "Page stays live", "Image hosting", "Your link remains active"],
-                  not: "❌ No edits or updates included",
-                  reason: "Choose this if your page is “set it and forget it.”",
-                  btnText: "Select Starter"
-                },
-                { 
-                  name: "Managed", 
-                  price: "$29", 
-                  color: "border-amber-500/50", 
-                  icon: "⭐",
-                  popular: true,
-                  desc: "Best for active reps and creators.",
-                  features: ["Everything in Starter", "1 small edit per month", "Text or image swaps", "Link or button updates", "Email or DM support"],
-                  reason: "Peace of mind without needing to think about your site.",
-                  btnText: "Choose Managed"
-                },
-                { 
-                  name: "Pro", 
-                  price: "$49", 
-                  color: "border-blue-500/20", 
-                  icon: "🔵",
-                  desc: "Best if you want it handled for you.",
-                  features: ["Everything in Managed", "Up to 3 small edits per month", "Priority turnaround", "Light guidance on updates"],
-                  reason: "Ideal if you want to stay focused on your business, not your website.",
-                  btnText: "Select Pro"
-                }
-              ].map((plan, i) => (
-                <div key={i} className={`relative p-8 rounded-[40px] bg-slate-900 border-2 ${plan.color} flex flex-col h-full overflow-hidden shadow-xl hover:scale-[1.02] transition-transform`}>
-                  {plan.popular && <div className="absolute top-5 right-5 bg-amber-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">Most Popular</div>}
-                  <div className="text-3xl mb-4">{plan.icon}</div>
-                  <h4 className="text-2xl font-black mb-1">{plan.name}</h4>
-                  <div className="flex items-baseline mb-6">
-                    <span className="text-3xl font-black">{plan.price}</span>
-                    <span className="text-slate-500 text-xs font-bold ml-1 tracking-widest uppercase">/ month</span>
+              {/* PWA Save to Phone Simulation Banner */}
+              <div className="bg-[#FAF6EF] border border-[#E4D5BE] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#191816] text-[#FAF7F2] flex items-center justify-center font-editorial font-bold text-sm">
+                    LMS
                   </div>
-                  <p className="text-slate-400 text-sm font-medium mb-8 leading-relaxed italic">{plan.desc}</p>
-                  
-                  <div className="space-y-4 mb-10 flex-grow">
-                    {plan.features.map((f, j) => (
-                      <div key={j} className="flex items-start space-x-3">
-                        <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 opacity-60" />
-                        <span className="text-slate-300 text-xs font-medium">{f}</span>
+                  <div>
+                    <p className="text-xs font-bold text-charcoal-deep">Add to Phone Home Screen</p>
+                    <p className="text-[11px] text-charcoal-muted">Access this concierge instantly without visiting the App Store.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => showToast("Demonstrating 1-tap mobile installation")}
+                  className="text-xs font-semibold bg-gold-accent hover:bg-[#9B7E54] text-[#FAF7F2] px-4 py-2 rounded-lg whitespace-nowrap shadow-sm transition-colors"
+                >
+                  Add to Phone
+                </button>
+              </div>
+
+              {/* Curated Vendor List */}
+              <div className="space-y-4">
+                <h5 className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
+                  Curated Local Partners (Live Sample)
+                </h5>
+
+                {LIZ_VENDORS.map((vendor, idx) => (
+                  <div key={idx} className="bg-cream-card p-4 rounded-xl border border-cream-border shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="text-[10px] font-semibold text-gold-accent uppercase">{vendor.category}</span>
+                        <h6 className="text-sm font-bold text-charcoal-deep">{vendor.name}</h6>
                       </div>
-                    ))}
-                    {plan.not && <div className="text-slate-600 text-[10px] font-bold uppercase tracking-widest pt-2">{plan.not}</div>}
-                  </div>
-
-                  <div className="mt-auto pt-6 border-t border-white/5 space-y-6">
-                    <GlowingButton variant="none" small className="w-full py-4 text-xs tracking-widest uppercase" onClick={() => window.open('https://instagram.com/travelprox', '_blank')}>
-                      {plan.btnText}
-                    </GlowingButton>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
-                      {plan.reason}
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => showToast(`Calling ${vendor.name}...`)}
+                          className="text-xs px-3 py-1 bg-cream-subtle rounded font-medium text-charcoal-deep hover:bg-cream-border"
+                        >
+                          Call
+                        </button>
+                        <button
+                          onClick={() => showToast(`Visiting ${vendor.name} website...`)}
+                          className="text-xs px-3 py-1 bg-cream-subtle rounded font-medium text-charcoal-deep hover:bg-cream-border"
+                        >
+                          Website
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-charcoal-muted bg-cream-warm p-2.5 rounded border border-cream-border italic">
+                      {vendor.note}
                     </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
-        </section>
+                ))}
 
-        {/* Small Edit Explanation */}
-        <ScrollReveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-slate-900/50 p-10 md:p-16 rounded-[48px] border border-white/5 mb-40">
-            <div>
-              <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-6">Policy</h2>
-              <h3 className="text-3xl md:text-4xl font-black mb-6 uppercase">WHAT COUNTS AS A <br/> “SMALL EDIT”?</h3>
-              <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-                These are available separately or as part of a custom build if your needs grow beyond a splash page.
-              </p>
-            </div>
-            <div className="space-y-10">
-              <div className="space-y-4">
-                <p className="text-[10px] font-black text-white uppercase tracking-widest flex items-center">
-                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" /> Includes:
-                </p>
-                <div className="grid grid-cols-1 gap-2 text-slate-400 text-sm">
-                  <span>• Updating existing text</span>
-                  <span>• Swapping an image</span>
-                  <span>• Changing a link or button</span>
-                </div>
               </div>
-              <div className="space-y-4 opacity-60">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center">
-                  <XCircle className="w-4 h-4 mr-2" /> Does not include:
-                </p>
-                <div className="grid grid-cols-1 gap-2 text-slate-500 text-sm">
-                  <span>• Full redesigns</span>
-                  <span>• New additional pages</span>
-                  <span>• Copy rewrites or branding</span>
-                  <span>• Strategy or marketing funnels</span>
-                </div>
-              </div>
+
             </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-cream-subtle/80 border-t border-cream-border flex items-center justify-between text-xs text-charcoal-muted">
+              <span>Powered by Close &amp; Relax</span>
+              <button
+                onClick={() => {
+                  setLiveDemoModalOpen(false);
+                  handleOpenLeadModal("From Live Demo Modal");
+                }}
+                className="bg-[#191816] text-[#FAF7F2] px-4 py-2 rounded-full font-medium hover:bg-[#262421]"
+              >
+                Get Your Own Hub
+              </button>
+            </div>
+
           </div>
-        </ScrollReveal>
+        </div>
+      )}
 
-        {/* Enterprise Section */}
-        <section className="mb-40">
-          <ScrollReveal>
-            <div className="bg-amber-500/5 border border-amber-500/20 p-10 md:p-20 rounded-[60px] text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-                <Globe className="w-64 h-64 text-amber-500" />
+      {}
+      {leadModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-lg w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
+                  {selectedPlanIntent}
+                </span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
+                  Request Your Realtor Hub
+                </h3>
               </div>
-              <h2 className="text-xs font-black uppercase tracking-[0.4em] text-amber-500 mb-8">Custom Solutions</h2>
-              <h3 className="text-4xl md:text-6xl font-black mb-10 tracking-tighter text-center uppercase">ENTERPRISE BUILDS.</h3>
-              <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed mb-12">
-                For businesses that need personal hosting, 5+ pages, or fully custom designs. These projects are offered selectively to ensure quality.
-              </p>
-              
-              <div className="flex flex-col items-center">
-                <a 
-                  href="mailto:contact@travelprox.com"
-                  className="group flex items-center text-xs font-black uppercase tracking-[0.4em] text-white bg-slate-900 border border-white/10 px-10 py-5 rounded-full hover:bg-black transition-all shadow-2xl mb-6"
-                >
-                  <Mail className="w-4 h-4 mr-3 text-amber-500" />
-                  Email to request information
-                </a>
-                <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest max-w-sm leading-relaxed">
-                  If it looks like a match, we’ll schedule a Zoom to discuss next steps.
-                </p>
-              </div>
+              <button
+                onClick={() => setLeadModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
             </div>
-          </ScrollReveal>
-        </section>
 
-        <footer className="pt-20 pb-10 flex flex-col md:flex-row justify-between items-center text-[9px] tracking-[0.3em] text-slate-700 font-black uppercase space-y-4 md:space-y-0 border-t border-white/5">
-           <span>Clean pages. Clear next steps. Built for social traffic.</span>
-           <span>CALLISTA DIGITAL © 2014 - 2026</span>
-        </footer>
-      </main>
+            <div className="p-6 sm:p-8">
+              {!leadSubmitted ? (
+                <>
+                  <p className="text-xs text-charcoal-muted mb-6">
+                    Tell us where to send your personalized hub preview link. No credit card required.
+                  </p>
+
+                  <form onSubmit={handleLeadSubmit} className="space-y-4 text-left">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="realtorName">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="realtorName"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="e.g. Liz Marks-Strauss"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="brokerage">
+                          Brokerage / Firm *
+                        </label>
+                        <input
+                          type="text"
+                          id="brokerage"
+                          required
+                          value={formData.brokerage}
+                          onChange={(e) => setFormData({ ...formData, brokerage: e.target.value })}
+                          placeholder="e.g. Sotheby's, Compass"
+                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="marketCity">
+                          Primary City / Market *
+                        </label>
+                        <input
+                          type="text"
+                          id="marketCity"
+                          required
+                          value={formData.marketCity}
+                          onChange={(e) => setFormData({ ...formData, marketCity: e.target.value })}
+                          placeholder="e.g. Scottsdale, AZ"
+                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="email">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="liz@luxuryhomes.com"
+                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="phone">
+                          Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          required
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="(555) 234-5678"
+                          className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="notes">
+                        Notes or Questions (Optional)
+                      </label>
+                      <textarea
+                        id="notes"
+                        rows={2}
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="Let us know if you already have a preferred vendor list..."
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      ></textarea>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md"
+                      >
+                        Create My Hub Preview
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-center text-charcoal-muted">
+                      We respect your privacy. No spam. You will receive an email preview within 24 hours.
+                    </p>
+                  </form>
+                </>
+              ) : (
+                /* Success State */
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] flex items-center justify-center mx-auto mb-4 font-editorial text-2xl font-bold">
+                    ✓
+                  </div>
+                  <h4 className="font-editorial text-2xl font-bold text-charcoal-deep mb-2">
+                    Thank You, {formData.name || "Agent"}!
+                  </h4>
+                  <p className="text-sm text-charcoal-muted leading-relaxed max-w-sm mx-auto mb-6">
+                    We’ve received your details. Our concierge design team will prepare your preview hub and send your personalized link shortly.
+                  </p>
+                  <button
+                    onClick={() => setLeadModalOpen(false)}
+                    className="px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-xs font-medium hover:bg-[#262421]"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
-
-  return (
-    <div className="font-sans antialiased bg-slate-950 w-full overflow-x-hidden selection:bg-amber-500 selection:text-slate-950">
-      {view === 'home' ? <PageOne /> : <PageTwo />}
-    </div>
-  );
-};
-
-export default App;
+}
