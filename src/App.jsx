@@ -292,6 +292,19 @@ const normalizeWebsiteUrl = (value = '') => {
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 };
 
+const normalizeRealtorSlug = (value = '') =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 63);
+
+const isValidRealtorSlug = (value = '') =>
+  /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value) &&
+  value !== 'www';
+
 function PublicRealtorHub({ profile }) {
   const [showSaveTip, setShowSaveTip] = useState(false);
 
@@ -531,6 +544,19 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState("partner");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Dashboard profile editor + publishing state
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileEditorError, setProfileEditorError] = useState(null);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: '',
+    brokerage: '',
+    city: '',
+    email: '',
+    slug: '',
+  });
 
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
@@ -852,6 +878,133 @@ export default function App() {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
+  const handleOpenProfileEditor = () => {
+    setProfileEditorError(null);
+    setProfileForm({
+      full_name: profile?.full_name || user?.user_metadata?.full_name || '',
+      brokerage: profile?.brokerage || user?.user_metadata?.brokerage || '',
+      city: profile?.city || user?.user_metadata?.market_city || '',
+      email: profile?.email || user?.email || '',
+      slug: profile?.slug || '',
+    });
+    setProfileEditorOpen(true);
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+
+    if (!user?.id) {
+      setProfileEditorError('Your account session is not available. Please log in again.');
+      return;
+    }
+
+    const fullName = profileForm.full_name.trim();
+    const brokerage = profileForm.brokerage.trim();
+    const city = profileForm.city.trim();
+    const email = profileForm.email.trim();
+    const slug = normalizeRealtorSlug(profileForm.slug);
+
+    if (!fullName) {
+      setProfileEditorError('Please enter your full name.');
+      return;
+    }
+
+    if (!slug || !isValidRealtorSlug(slug)) {
+      setProfileEditorError('Choose a valid subdomain using letters, numbers, and hyphens only. “www” cannot be used.');
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileEditorError(null);
+
+    try {
+      const { data: updatedProfile, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          brokerage,
+          city,
+          email,
+          slug,
+        })
+        .eq('id', user.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          setProfileEditorError('That realtor subdomain is already in use. Please choose another one.');
+        } else {
+          setProfileEditorError(error.message || 'Unable to save your profile changes.');
+        }
+        return;
+      }
+
+      setProfile(updatedProfile);
+      setProfileForm({
+        full_name: updatedProfile?.full_name || '',
+        brokerage: updatedProfile?.brokerage || '',
+        city: updatedProfile?.city || '',
+        email: updatedProfile?.email || '',
+        slug: updatedProfile?.slug || '',
+      });
+      setProfileEditorOpen(false);
+      showToast('Profile saved. Your hub information is up to date.');
+    } catch (err) {
+      console.error('Unexpected profile update error:', err);
+      setProfileEditorError(err.message || 'Unable to save your profile changes.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleTogglePublish = async () => {
+    if (!user?.id || !profile) {
+      showToast('Your profile is still loading. Please try again in a moment.');
+      return;
+    }
+
+    if (!profile.is_published) {
+      const currentSlug = normalizeRealtorSlug(profile.slug || '');
+
+      if (!profile.full_name || !currentSlug || !isValidRealtorSlug(currentSlug)) {
+        showToast('Finish your profile and choose a valid subdomain before publishing.');
+        handleOpenProfileEditor();
+        return;
+      }
+    }
+
+    const nextPublishedState = !profile.is_published;
+    setPublishLoading(true);
+
+    try {
+      const { data: updatedProfile, error } = await supabase
+        .from('profiles')
+        .update({ is_published: nextPublishedState })
+        .eq('id', user.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error updating hub publication status:', error);
+        showToast(error.message || 'Unable to update your hub status.');
+        return;
+      }
+
+      setProfile(updatedProfile);
+      showToast(
+        nextPublishedState
+          ? 'Your homeowner hub is now published.'
+          : 'Your homeowner hub is now unpublished.'
+      );
+    } catch (err) {
+      console.error('Unexpected publish status error:', err);
+      showToast(err.message || 'Unable to update your hub status.');
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
@@ -1170,6 +1323,19 @@ export default function App() {
                 <p className="text-xs text-charcoal-muted mt-0.5">
                   {profile?.is_published ? 'Your concierge is live and accessible' : 'Configure fields and publish your hub'}
                 </p>
+                <button
+                  type="button"
+                  onClick={handleTogglePublish}
+                  disabled={publishLoading || !profile}
+                  className={`mt-4 w-full py-2 text-[11px] font-semibold rounded-xl border transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 ${
+                    profile?.is_published
+                      ? 'bg-cream-card hover:bg-cream-subtle border-cream-border text-charcoal-deep'
+                      : 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
+                  }`}
+                >
+                  {publishLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{profile?.is_published ? 'Unpublish Hub' : 'Publish My Hub'}</span>
+                </button>
               </div>
 
               <div className="bg-cream-warm p-5 rounded-2xl border border-cream-border">
@@ -1209,27 +1375,31 @@ export default function App() {
                   </div>
 
                   <div className="space-y-3 text-xs text-charcoal-muted mb-6">
-                    <div className="flex justify-between py-1.5 border-b border-cream-border/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Full Name</span>
-                      <span>{displayName}</span>
+                      <span className="text-right">{displayName}</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-cream-border/60">
-                      <span className="font-medium text-charcoal-deep">Account Email</span>
-                      <span>{user.email}</span>
-                    </div>
-                    <div className="flex justify-between py-1.5 border-b border-cream-border/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Brokerage</span>
-                      <span>{displayBrokerage}</span>
+                      <span className="text-right">{displayBrokerage}</span>
                     </div>
-                    <div className="flex justify-between py-1.5 border-b border-cream-border/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Market City</span>
-                      <span>{profile?.city || user?.user_metadata?.market_city || 'Not specified'}</span>
+                      <span className="text-right">{profile?.city || user?.user_metadata?.market_city || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
+                      <span className="font-medium text-charcoal-deep">Public Email</span>
+                      <span className="text-right truncate">{profile?.email || user.email}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
+                      <span className="font-medium text-charcoal-deep">Realtor Subdomain</span>
+                      <span className="text-right truncate">{profile?.slug ? `${profile.slug}.closeandrelax.com` : 'Not assigned'}</span>
                     </div>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => showToast('Profile editor opens in next release')}
+                  onClick={handleOpenProfileEditor}
                   className="w-full py-2.5 text-xs font-semibold rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-charcoal-deep transition-colors"
                 >
                   Edit Profile Information
@@ -2571,6 +2741,168 @@ export default function App() {
                   </form>
                 </>
               )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {}
+      {profileEditorOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
+                  Realtor Profile
+                </span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
+                  Edit Hub Information
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!profileSaving) {
+                    setProfileEditorOpen(false);
+                    setProfileEditorError(null);
+                  }
+                }}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+                aria-label="Close profile editor"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              {profileEditorError && (
+                <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <span>{profileEditorError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileFullName">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="profileFullName"
+                    required
+                    value={profileForm.full_name}
+                    onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    placeholder="Your full name"
+                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileBrokerage">
+                      Brokerage / Firm
+                    </label>
+                    <input
+                      type="text"
+                      id="profileBrokerage"
+                      value={profileForm.brokerage}
+                      onChange={(e) => setProfileForm({ ...profileForm, brokerage: e.target.value })}
+                      placeholder="e.g. Talk to Tucker"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileCity">
+                      Primary Market / City
+                    </label>
+                    <input
+                      type="text"
+                      id="profileCity"
+                      value={profileForm.city}
+                      onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                      placeholder="e.g. Indianapolis, IN"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileEmail">
+                    Public Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    id="profileEmail"
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    placeholder="you@brokerage.com"
+                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                  <p className="text-[10px] text-charcoal-muted mt-1.5">
+                    This is the email homeowners see on your public hub. Your login email remains {user?.email || 'unchanged'}.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileSlug">
+                    Realtor Subdomain *
+                  </label>
+                  <div className="flex items-center rounded-xl bg-cream-card border border-cream-border focus-within:border-gold-accent overflow-hidden">
+                    <input
+                      type="text"
+                      id="profileSlug"
+                      required
+                      value={profileForm.slug}
+                      onChange={(e) => setProfileForm({ ...profileForm, slug: normalizeRealtorSlug(e.target.value) })}
+                      placeholder="yourname"
+                      className="min-w-0 flex-1 text-sm px-4 py-2.5 bg-transparent focus:outline-none text-charcoal-deep"
+                    />
+                    <span className="text-[11px] text-charcoal-muted pr-4 whitespace-nowrap">.closeandrelax.com</span>
+                  </div>
+                  <p className="text-[10px] text-charcoal-muted mt-1.5">
+                    Letters, numbers, and hyphens only. If your hub is already published, changing this moves the live hub to the new address.
+                  </p>
+                </div>
+
+                <div className="bg-cream-card border border-cream-border rounded-xl p-3">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Public Hub Preview</span>
+                  <p className="text-xs font-medium text-charcoal-deep mt-1 break-all">
+                    https://{profileForm.slug || 'yourname'}.closeandrelax.com
+                  </p>
+                </div>
+
+                <div className="pt-3 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={profileSaving}
+                    onClick={() => {
+                      setProfileEditorOpen(false);
+                      setProfileEditorError(null);
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-cream-card hover:bg-cream-subtle border border-cream-border text-charcoal-deep text-xs font-semibold transition-colors disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="px-6 py-2.5 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {profileSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save Profile Changes</span>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
 
           </div>
