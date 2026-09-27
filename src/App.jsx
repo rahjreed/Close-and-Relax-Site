@@ -305,6 +305,33 @@ const isValidRealtorSlug = (value = '') =>
   /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value) &&
   value !== 'www';
 
+const isValidOptionalUrl = (value = '') => {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+
+  try {
+    const parsed = new URL(normalizeWebsiteUrl(trimmed));
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const getProfileImageStoragePath = (url = '') => {
+  const marker = '/storage/v1/object/public/profile-images/';
+  const markerIndex = url.indexOf(marker);
+
+  if (markerIndex === -1) return '';
+
+  const path = url.slice(markerIndex + marker.length).split('?')[0];
+
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+};
+
 function PublicRealtorHub({ profile }) {
   const [showSaveTip, setShowSaveTip] = useState(false);
 
@@ -324,7 +351,13 @@ function PublicRealtorHub({ profile }) {
     profile?.welcome_message ||
     profile?.welcome ||
     `Welcome home! I created this concierge to give you a simple place to find helpful home resources and stay connected with me whenever you need anything.`;
+  const bio = profile?.bio || '';
   const websiteUrl = normalizeWebsiteUrl(profile?.website_url || profile?.website || '');
+  const socialLinks = [
+    { label: 'Instagram', url: normalizeWebsiteUrl(profile?.instagram_url || '') },
+    { label: 'Facebook', url: normalizeWebsiteUrl(profile?.facebook_url || '') },
+    { label: 'LinkedIn', url: normalizeWebsiteUrl(profile?.linkedin_url || '') },
+  ].filter((item) => item.url);
 
   const storedVendors = Array.isArray(profile?.vendors)
     ? profile.vendors
@@ -414,6 +447,30 @@ function PublicRealtorHub({ profile }) {
               <p className="font-editorial text-xl sm:text-2xl font-semibold text-charcoal-deep mt-1">A resource built to stay useful after closing day.</p>
               <p className="text-sm text-charcoal-muted leading-relaxed mt-3">{welcomeMessage}</p>
             </section>
+
+            {(bio || socialLinks.length > 0) && (
+              <section className="bg-cream-card border border-cream-border rounded-2xl p-5 sm:p-6">
+                <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Your Realtor</span>
+                <h2 className="font-editorial text-xl sm:text-2xl font-semibold text-charcoal-deep mt-1">Stay connected with {firstName}.</h2>
+                {bio && <p className="text-sm text-charcoal-muted leading-relaxed mt-3">{bio}</p>}
+                {socialLinks.length > 0 && (
+                  <div className="flex flex-wrap gap-2.5 mt-4">
+                    {socialLinks.map((item) => (
+                      <a
+                        key={item.label}
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 bg-cream-subtle hover:bg-cream-border border border-cream-border text-charcoal-deep text-xs font-semibold px-3.5 py-2 rounded-full transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-gold-accent" />
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             <section className="bg-[#FAF6EF] border border-[#E4D5BE] rounded-2xl p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -555,8 +612,18 @@ export default function App() {
     brokerage: '',
     city: '',
     email: '',
+    phone: '',
     slug: '',
+    welcome_message: '',
+    bio: '',
+    website_url: '',
+    instagram_url: '',
+    facebook_url: '',
+    linkedin_url: '',
   });
+  const [headshotFile, setHeadshotFile] = useState(null);
+  const [headshotPreview, setHeadshotPreview] = useState('');
+  const [removeHeadshot, setRemoveHeadshot] = useState(false);
 
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
@@ -758,6 +825,14 @@ export default function App() {
     };
   }, [isRealtorSubdomain, subdomainSlug]);
 
+  useEffect(() => {
+    return () => {
+      if (headshotPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(headshotPreview);
+      }
+    };
+  }, [headshotPreview]);
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -885,9 +960,77 @@ export default function App() {
       brokerage: profile?.brokerage || user?.user_metadata?.brokerage || '',
       city: profile?.city || user?.user_metadata?.market_city || '',
       email: profile?.email || user?.email || '',
+      phone: profile?.phone || '',
       slug: profile?.slug || '',
+      welcome_message: profile?.welcome_message || '',
+      bio: profile?.bio || '',
+      website_url: profile?.website_url || '',
+      instagram_url: profile?.instagram_url || '',
+      facebook_url: profile?.facebook_url || '',
+      linkedin_url: profile?.linkedin_url || '',
     });
+    setHeadshotFile(null);
+    setHeadshotPreview(profile?.headshot_url || '');
+    setRemoveHeadshot(false);
     setProfileEditorOpen(true);
+  };
+
+  const handleHeadshotFileChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setProfileEditorError('Please choose a JPG, PNG, or WebP headshot.');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileEditorError('Your headshot must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    setProfileEditorError(null);
+    setHeadshotFile(file);
+    setRemoveHeadshot(false);
+    setHeadshotPreview(URL.createObjectURL(file));
+  };
+
+  const uploadHeadshot = async (file) => {
+    if (!user?.id || !file) return '';
+
+    const extensionFromName = file.name.split('.').pop()?.toLowerCase();
+    const extension = ['jpg', 'jpeg', 'png', 'webp'].includes(extensionFromName)
+      ? extensionFromName
+      : file.type === 'image/png'
+        ? 'png'
+        : file.type === 'image/webp'
+          ? 'webp'
+          : 'jpg';
+    const objectPath = `${user.id}/headshot-${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('profile-images')
+      .upload(objectPath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('profile-images')
+      .getPublicUrl(objectPath);
+
+    if (!data?.publicUrl) {
+      throw new Error('The headshot uploaded, but its public URL could not be created.');
+    }
+
+    return data.publicUrl;
   };
 
   const handleSaveProfile = async (e) => {
@@ -902,7 +1045,14 @@ export default function App() {
     const brokerage = profileForm.brokerage.trim();
     const city = profileForm.city.trim();
     const email = profileForm.email.trim();
+    const phone = profileForm.phone.trim();
     const slug = normalizeRealtorSlug(profileForm.slug);
+    const welcomeMessage = profileForm.welcome_message.trim();
+    const bio = profileForm.bio.trim();
+    const websiteUrl = profileForm.website_url.trim();
+    const instagramUrl = profileForm.instagram_url.trim();
+    const facebookUrl = profileForm.facebook_url.trim();
+    const linkedinUrl = profileForm.linkedin_url.trim();
 
     if (!fullName) {
       setProfileEditorError('Please enter your full name.');
@@ -914,10 +1064,32 @@ export default function App() {
       return;
     }
 
+    const urlsToValidate = [
+      ['website', websiteUrl],
+      ['Instagram', instagramUrl],
+      ['Facebook', facebookUrl],
+      ['LinkedIn', linkedinUrl],
+    ];
+
+    const invalidUrl = urlsToValidate.find(([, value]) => !isValidOptionalUrl(value));
+    if (invalidUrl) {
+      setProfileEditorError(`Please enter a valid ${invalidUrl[0]} URL or leave that field blank.`);
+      return;
+    }
+
     setProfileSaving(true);
     setProfileEditorError(null);
 
+    const previousHeadshotUrl = profile?.headshot_url || '';
+    let nextHeadshotUrl = removeHeadshot ? '' : previousHeadshotUrl;
+    let uploadedHeadshotUrl = '';
+
     try {
+      if (headshotFile) {
+        uploadedHeadshotUrl = await uploadHeadshot(headshotFile);
+        nextHeadshotUrl = uploadedHeadshotUrl;
+      }
+
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update({
@@ -925,13 +1097,28 @@ export default function App() {
           brokerage,
           city,
           email,
+          phone,
           slug,
+          headshot_url: nextHeadshotUrl,
+          welcome_message: welcomeMessage,
+          bio,
+          website_url: websiteUrl ? normalizeWebsiteUrl(websiteUrl) : '',
+          instagram_url: instagramUrl ? normalizeWebsiteUrl(instagramUrl) : '',
+          facebook_url: facebookUrl ? normalizeWebsiteUrl(facebookUrl) : '',
+          linkedin_url: linkedinUrl ? normalizeWebsiteUrl(linkedinUrl) : '',
         })
         .eq('id', user.id)
         .select('*')
         .single();
 
       if (error) {
+        if (uploadedHeadshotUrl) {
+          const uploadedPath = getProfileImageStoragePath(uploadedHeadshotUrl);
+          if (uploadedPath) {
+            await supabase.storage.from('profile-images').remove([uploadedPath]);
+          }
+        }
+
         if (error.code === '23505') {
           setProfileEditorError('That realtor subdomain is already in use. Please choose another one.');
         } else {
@@ -940,18 +1127,46 @@ export default function App() {
         return;
       }
 
+      if (previousHeadshotUrl && previousHeadshotUrl !== nextHeadshotUrl) {
+        const oldPath = getProfileImageStoragePath(previousHeadshotUrl);
+        if (oldPath) {
+          const { error: removeError } = await supabase.storage.from('profile-images').remove([oldPath]);
+          if (removeError) {
+            console.warn('Old profile image could not be removed:', removeError);
+          }
+        }
+      }
+
       setProfile(updatedProfile);
       setProfileForm({
         full_name: updatedProfile?.full_name || '',
         brokerage: updatedProfile?.brokerage || '',
         city: updatedProfile?.city || '',
         email: updatedProfile?.email || '',
+        phone: updatedProfile?.phone || '',
         slug: updatedProfile?.slug || '',
+        welcome_message: updatedProfile?.welcome_message || '',
+        bio: updatedProfile?.bio || '',
+        website_url: updatedProfile?.website_url || '',
+        instagram_url: updatedProfile?.instagram_url || '',
+        facebook_url: updatedProfile?.facebook_url || '',
+        linkedin_url: updatedProfile?.linkedin_url || '',
       });
+      setHeadshotFile(null);
+      setHeadshotPreview(updatedProfile?.headshot_url || '');
+      setRemoveHeadshot(false);
       setProfileEditorOpen(false);
-      showToast('Profile saved. Your hub information is up to date.');
+      showToast('Profile saved. Your public hub has been updated.');
     } catch (err) {
       console.error('Unexpected profile update error:', err);
+
+      if (uploadedHeadshotUrl) {
+        const uploadedPath = getProfileImageStoragePath(uploadedHeadshotUrl);
+        if (uploadedPath) {
+          await supabase.storage.from('profile-images').remove([uploadedPath]);
+        }
+      }
+
       setProfileEditorError(err.message || 'Unable to save your profile changes.');
     } finally {
       setProfileSaving(false);
@@ -1374,6 +1589,21 @@ export default function App() {
                     </span>
                   </div>
 
+                  <div className="flex items-center gap-4 mb-5 bg-cream-card border border-cream-border rounded-2xl p-4">
+                    <div className="w-16 h-16 rounded-full border border-[#B5966B]/70 bg-cream-subtle overflow-hidden shrink-0 flex items-center justify-center">
+                      {profile?.headshot_url ? (
+                        <img src={profile.headshot_url} alt={displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-editorial text-xl font-semibold text-charcoal-deep">{getInitials(displayName)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-editorial text-lg font-semibold text-charcoal-deep truncate">{displayName}</p>
+                      <p className="text-[11px] text-charcoal-muted truncate">{profile?.phone || 'Add a public phone number'}</p>
+                      <p className="text-[10px] text-gold-accent mt-1">{profile?.welcome_message ? 'Custom welcome message active' : 'Using standard welcome message'}</p>
+                    </div>
+                  </div>
+
                   <div className="space-y-3 text-xs text-charcoal-muted mb-6">
                     <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Full Name</span>
@@ -1390,6 +1620,14 @@ export default function App() {
                     <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Public Email</span>
                       <span className="text-right truncate">{profile?.email || user.email}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
+                      <span className="font-medium text-charcoal-deep">Public Phone</span>
+                      <span className="text-right truncate">{profile?.phone || 'Not added'}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
+                      <span className="font-medium text-charcoal-deep">Website</span>
+                      <span className="text-right truncate max-w-[55%]">{profile?.website_url || 'Not added'}</span>
                     </div>
                     <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Realtor Subdomain</span>
@@ -2750,7 +2988,7 @@ export default function App() {
       {}
       {profileEditorOpen && (
         <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-cream-warm rounded-3xl max-w-xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+          <div className="bg-cream-warm rounded-3xl max-w-2xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
 
             <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
               <div>
@@ -2784,70 +3022,233 @@ export default function App() {
                 </div>
               )}
 
-              <form onSubmit={handleSaveProfile} className="space-y-4 text-left">
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileFullName">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="profileFullName"
-                    required
-                    value={profileForm.full_name}
-                    onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
-                    placeholder="Your full name"
-                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                  />
-                </div>
+              <form onSubmit={handleSaveProfile} className="space-y-6 text-left">
+                <section>
+                  <div className="mb-3">
+                    <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Photo &amp; Identity</span>
+                    <p className="text-[11px] text-charcoal-muted mt-1">These details anchor the top of your homeowner hub.</p>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col sm:flex-row gap-5 bg-cream-card border border-cream-border rounded-2xl p-4 mb-4">
+                    <div className="w-24 h-24 rounded-full border-2 border-gold-accent bg-cream-subtle overflow-hidden shrink-0 flex items-center justify-center">
+                      {headshotPreview ? (
+                        <img src={headshotPreview} alt="Headshot preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="font-editorial text-2xl font-semibold text-charcoal-deep">{getInitials(profileForm.full_name || displayName)}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileHeadshot">
+                        Realtor Headshot
+                      </label>
+                      <input
+                        type="file"
+                        id="profileHeadshot"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleHeadshotFileChange}
+                        className="block w-full text-xs text-charcoal-muted file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cream-subtle file:text-charcoal-deep hover:file:bg-cream-border"
+                      />
+                      <p className="text-[10px] text-charcoal-muted mt-2">JPG, PNG, or WebP. Maximum 5 MB.</p>
+                      {(headshotPreview || profile?.headshot_url) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHeadshotFile(null);
+                            setHeadshotPreview('');
+                            setRemoveHeadshot(true);
+                          }}
+                          className="mt-2 text-[10px] font-semibold text-charcoal-muted hover:text-charcoal-deep underline"
+                        >
+                          Remove headshot
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileBrokerage">
-                      Brokerage / Firm
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileFullName">
+                      Full Name *
                     </label>
                     <input
                       type="text"
-                      id="profileBrokerage"
-                      value={profileForm.brokerage}
-                      onChange={(e) => setProfileForm({ ...profileForm, brokerage: e.target.value })}
-                      placeholder="e.g. Talk to Tucker"
+                      id="profileFullName"
+                      required
+                      value={profileForm.full_name}
+                      onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                      placeholder="Your full name"
                       className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileCity">
-                      Primary Market / City
-                    </label>
-                    <input
-                      type="text"
-                      id="profileCity"
-                      value={profileForm.city}
-                      onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                      placeholder="e.g. Indianapolis, IN"
-                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                    />
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileBrokerage">
+                        Brokerage / Firm
+                      </label>
+                      <input
+                        type="text"
+                        id="profileBrokerage"
+                        value={profileForm.brokerage}
+                        onChange={(e) => setProfileForm({ ...profileForm, brokerage: e.target.value })}
+                        placeholder="e.g. Talk to Tucker"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileEmail">
-                    Public Contact Email
-                  </label>
-                  <input
-                    type="email"
-                    id="profileEmail"
-                    value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                    placeholder="you@brokerage.com"
-                    className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                  />
-                  <p className="text-[10px] text-charcoal-muted mt-1.5">
-                    This is the email homeowners see on your public hub. Your login email remains {user?.email || 'unchanged'}.
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileCity">
+                        Primary Market / City
+                      </label>
+                      <input
+                        type="text"
+                        id="profileCity"
+                        value={profileForm.city}
+                        onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
+                        placeholder="e.g. Indianapolis, IN"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="pt-5 border-t border-cream-border">
+                  <div className="mb-3">
+                    <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Public Contact</span>
+                    <p className="text-[11px] text-charcoal-muted mt-1">These become the homeowner's one-tap ways to reach you.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileEmail">
+                        Public Contact Email
+                      </label>
+                      <input
+                        type="email"
+                        id="profileEmail"
+                        value={profileForm.email}
+                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                        placeholder="you@brokerage.com"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profilePhone">
+                        Public Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        id="profilePhone"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        placeholder="(317) 555-0123"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-charcoal-muted mt-2">
+                    Your public email can differ from your login email. Your login remains {user?.email || 'unchanged'}.
                   </p>
-                </div>
+                </section>
 
-                <div>
+                <section className="pt-5 border-t border-cream-border">
+                  <div className="mb-3">
+                    <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Homeowner Message</span>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Add your own voice to the hub instead of relying only on the standard copy.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileWelcomeMessage">
+                      Welcome Message
+                    </label>
+                    <textarea
+                      id="profileWelcomeMessage"
+                      rows={4}
+                      maxLength={500}
+                      value={profileForm.welcome_message}
+                      onChange={(e) => setProfileForm({ ...profileForm, welcome_message: e.target.value })}
+                      placeholder="Welcome home! I created this hub so you always have a quick place to find trusted home resources..."
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{profileForm.welcome_message.length}/500</p>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileBio">
+                      Short Bio
+                    </label>
+                    <textarea
+                      id="profileBio"
+                      rows={3}
+                      maxLength={400}
+                      value={profileForm.bio}
+                      onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                      placeholder="A short introduction about you, your market, and how you help clients."
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{profileForm.bio.length}/400</p>
+                  </div>
+                </section>
+
+                <section className="pt-5 border-t border-cream-border">
+                  <div className="mb-3">
+                    <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Website &amp; Social</span>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Leave any field blank that you do not want shown publicly.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileWebsite">
+                      Professional Website
+                    </label>
+                    <input
+                      type="text"
+                      id="profileWebsite"
+                      value={profileForm.website_url}
+                      onChange={(e) => setProfileForm({ ...profileForm, website_url: e.target.value })}
+                      placeholder="yourwebsite.com"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileInstagram">Instagram</label>
+                      <input
+                        type="text"
+                        id="profileInstagram"
+                        value={profileForm.instagram_url}
+                        onChange={(e) => setProfileForm({ ...profileForm, instagram_url: e.target.value })}
+                        placeholder="instagram.com/you"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileFacebook">Facebook</label>
+                      <input
+                        type="text"
+                        id="profileFacebook"
+                        value={profileForm.facebook_url}
+                        onChange={(e) => setProfileForm({ ...profileForm, facebook_url: e.target.value })}
+                        placeholder="facebook.com/you"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileLinkedIn">LinkedIn</label>
+                      <input
+                        type="text"
+                        id="profileLinkedIn"
+                        value={profileForm.linkedin_url}
+                        onChange={(e) => setProfileForm({ ...profileForm, linkedin_url: e.target.value })}
+                        placeholder="linkedin.com/in/you"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="pt-5 border-t border-cream-border">
                   <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileSlug">
                     Realtor Subdomain *
                   </label>
@@ -2866,16 +3267,16 @@ export default function App() {
                   <p className="text-[10px] text-charcoal-muted mt-1.5">
                     Letters, numbers, and hyphens only. If your hub is already published, changing this moves the live hub to the new address.
                   </p>
-                </div>
 
-                <div className="bg-cream-card border border-cream-border rounded-xl p-3">
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Public Hub Preview</span>
-                  <p className="text-xs font-medium text-charcoal-deep mt-1 break-all">
-                    https://{profileForm.slug || 'yourname'}.closeandrelax.com
-                  </p>
-                </div>
+                  <div className="bg-cream-card border border-cream-border rounded-xl p-3 mt-3">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Public Hub Preview</span>
+                    <p className="text-xs font-medium text-charcoal-deep mt-1 break-all">
+                      https://{profileForm.slug || 'yourname'}.closeandrelax.com
+                    </p>
+                  </div>
+                </section>
 
-                <div className="pt-3 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <div className="pt-3 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end border-t border-cream-border">
                   <button
                     type="button"
                     disabled={profileSaving}
