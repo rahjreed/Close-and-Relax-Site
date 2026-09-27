@@ -252,7 +252,277 @@ const customStyles = `
   }
 `;
 
+const STANDARD_HOME_RESOURCES = [
+  {
+    category: 'Home Security & Smart Home',
+    name: 'Security & Smart-Home Support',
+    description: 'Professional security, smart-home setup, and post-closing support.',
+    icon: ShieldCheck,
+  },
+  {
+    category: 'HVAC & Climate',
+    name: 'Heating & Cooling Support',
+    description: 'A quick starting point for heating, cooling, seasonal maintenance, and comfort needs.',
+    icon: Wrench,
+  },
+  {
+    category: 'Moving & Home Setup',
+    name: 'Move-In & Home Services',
+    description: 'Helpful resources for moving, settling in, and taking care of the home after closing.',
+    icon: Truck,
+  },
+];
+
+const getInitials = (name = '') => {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+
+  return initials || 'CR';
+};
+
+const getFirstName = (name = '') => name.trim().split(/\s+/)[0] || 'your realtor';
+
+const normalizeWebsiteUrl = (value = '') => {
+  if (!value) return '';
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+};
+
+function PublicRealtorHub({ profile }) {
+  const [showSaveTip, setShowSaveTip] = useState(false);
+
+  const realtorName = profile?.full_name || 'Your Realtor';
+  const firstName = getFirstName(realtorName);
+  const brokerage = profile?.brokerage || 'Independent Real Estate';
+  const city = profile?.city || profile?.market_city || '';
+  const email = profile?.email || '';
+  const phone = profile?.phone || profile?.phone_number || profile?.mobile || '';
+  const headshotUrl =
+    profile?.headshot_url ||
+    profile?.profile_image_url ||
+    profile?.photo_url ||
+    profile?.image_url ||
+    '';
+  const welcomeMessage =
+    profile?.welcome_message ||
+    profile?.welcome ||
+    `Welcome home! I created this concierge to give you a simple place to find helpful home resources and stay connected with me whenever you need anything.`;
+  const websiteUrl = normalizeWebsiteUrl(profile?.website_url || profile?.website || '');
+
+  const storedVendors = Array.isArray(profile?.vendors)
+    ? profile.vendors
+    : Array.isArray(profile?.preferred_vendors)
+      ? profile.preferred_vendors
+      : [];
+
+  const hasStoredVendors = storedVendors.length > 0;
+
+  return (
+    <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
+      <style>{customStyles}</style>
+
+      <header className="bg-cream-card/95 backdrop-blur border-b border-cream-border">
+        <div className="max-w-4xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full border border-[#B5966B]/70 flex items-center justify-center bg-cream-warm text-charcoal-deep font-editorial font-semibold text-lg shrink-0">
+              C
+            </div>
+            <div className="min-w-0">
+              <p className="font-editorial text-xl font-semibold text-charcoal-deep leading-none">Close &amp; Relax</p>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-charcoal-muted mt-0.5">Homeowner Concierge</p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-flex text-[10px] uppercase tracking-[0.16em] text-gold-accent font-semibold border border-[#E4D5BE] bg-[#FAF6EF] px-3 py-1.5 rounded-full">
+            Presented by {firstName}
+          </span>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-5 sm:px-8 py-8 sm:py-12">
+        <section className="bg-cream-card border border-cream-border rounded-3xl shadow-luxury overflow-hidden">
+          <div className="p-6 sm:p-9 border-b border-cream-border">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+              <div className="w-24 h-24 rounded-full border-2 border-gold-accent bg-cream-subtle overflow-hidden shrink-0 flex items-center justify-center shadow-sm">
+                {headshotUrl ? (
+                  <img src={headshotUrl} alt={realtorName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-editorial text-3xl font-semibold text-charcoal-deep">{getInitials(realtorName)}</span>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Your Real Estate Resource</span>
+                <h1 className="font-editorial text-3xl sm:text-4xl font-semibold text-charcoal-deep mt-1 leading-tight">
+                  {realtorName}
+                </h1>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-charcoal-muted mt-1.5">
+                  <span>{brokerage}</span>
+                  {city && (
+                    <>
+                      <span className="text-[#B5966B]">•</span>
+                      <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{city}</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2.5 mt-5">
+                  {phone && (
+                    <>
+                      <a href={`tel:${phone}`} className="inline-flex items-center gap-2 bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold px-4 py-2.5 rounded-full transition-colors">
+                        <Phone className="w-3.5 h-3.5 text-[#B5966B]" /> Call {firstName}
+                      </a>
+                      <a href={`sms:${phone}`} className="inline-flex items-center gap-2 bg-cream-subtle hover:bg-cream-border border border-cream-border text-charcoal-deep text-xs font-semibold px-4 py-2.5 rounded-full transition-colors">
+                        <MessageSquare className="w-3.5 h-3.5 text-gold-accent" /> Text {firstName}
+                      </a>
+                    </>
+                  )}
+                  {email && (
+                    <a href={`mailto:${email}`} className="inline-flex items-center gap-2 bg-cream-subtle hover:bg-cream-border border border-cream-border text-charcoal-deep text-xs font-semibold px-4 py-2.5 rounded-full transition-colors">
+                      <Mail className="w-3.5 h-3.5 text-gold-accent" /> Email
+                    </a>
+                  )}
+                  {websiteUrl && (
+                    <a href={websiteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-cream-subtle hover:bg-cream-border border border-cream-border text-charcoal-deep text-xs font-semibold px-4 py-2.5 rounded-full transition-colors">
+                      <ExternalLink className="w-3.5 h-3.5 text-gold-accent" /> Website
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-9 space-y-7">
+            <section className="bg-cream-warm border border-cream-border rounded-2xl p-5 sm:p-6">
+              <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Welcome Home</span>
+              <p className="font-editorial text-xl sm:text-2xl font-semibold text-charcoal-deep mt-1">A resource built to stay useful after closing day.</p>
+              <p className="text-sm text-charcoal-muted leading-relaxed mt-3">{welcomeMessage}</p>
+            </section>
+
+            <section className="bg-[#FAF6EF] border border-[#E4D5BE] rounded-2xl p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-[#191816] text-[#FAF7F2] flex items-center justify-center font-editorial text-sm font-bold shrink-0">
+                    {getInitials(realtorName)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-charcoal-deep">Keep {firstName}'s concierge on your phone</p>
+                    <p className="text-xs text-charcoal-muted mt-0.5">Save this page to your home screen for quick access later.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSaveTip((current) => !current)}
+                  className="text-xs font-semibold bg-gold-accent hover:bg-[#9B7E54] text-[#FAF7F2] px-4 py-2.5 rounded-xl whitespace-nowrap transition-colors"
+                >
+                  <Smartphone className="w-3.5 h-3.5 inline mr-1.5" /> Save to Phone
+                </button>
+              </div>
+              {showSaveTip && (
+                <div className="mt-4 pt-4 border-t border-[#E4D5BE] text-xs text-charcoal-muted leading-relaxed">
+                  On iPhone, use Safari's Share button and choose <strong className="text-charcoal-deep">Add to Home Screen</strong>. On Android, open your browser menu and choose <strong className="text-charcoal-deep">Add to Home screen</strong> or <strong className="text-charcoal-deep">Install app</strong> when available.
+                </div>
+              )}
+            </section>
+
+            <section>
+              <div className="flex items-end justify-between gap-4 mb-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Homeowner Resources</span>
+                  <h2 className="font-editorial text-2xl sm:text-3xl font-semibold text-charcoal-deep mt-1">Trusted help when you need it.</h2>
+                </div>
+              </div>
+
+              {hasStoredVendors ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {storedVendors.map((vendor, index) => (
+                    <div key={vendor?.id || `${vendor?.name || 'vendor'}-${index}`} className="bg-cream-warm border border-cream-border rounded-2xl p-5">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">{vendor?.category || 'Trusted Professional'}</span>
+                      <h3 className="font-editorial text-xl font-semibold text-charcoal-deep mt-1">{vendor?.name || 'Preferred Professional'}</h3>
+                      {vendor?.note && <p className="text-xs text-charcoal-muted italic leading-relaxed mt-2">{vendor.note}</p>}
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {vendor?.phone && (
+                          <a href={`tel:${vendor.phone}`} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#191816] text-[#FAF7F2]">Call</a>
+                        )}
+                        {vendor?.website && (
+                          <a href={normalizeWebsiteUrl(vendor.website)} target="_blank" rel="noreferrer" className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-cream-card border border-cream-border text-charcoal-deep">Website</a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {STANDARD_HOME_RESOURCES.map((resource) => {
+                    const ResourceIcon = resource.icon;
+                    return (
+                      <div key={resource.category} className="bg-cream-warm border border-cream-border rounded-2xl p-5">
+                        <div className="w-10 h-10 rounded-xl bg-cream-card border border-cream-border flex items-center justify-center text-gold-accent mb-4">
+                          <ResourceIcon className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">{resource.category}</span>
+                        <h3 className="font-editorial text-lg font-semibold text-charcoal-deep mt-1">{resource.name}</h3>
+                        <p className="text-xs text-charcoal-muted leading-relaxed mt-2">{resource.description}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        </section>
+
+        <footer className="py-7 text-center text-[10px] uppercase tracking-[0.16em] text-charcoal-muted">
+          Powered by <span className="font-semibold text-gold-accent">Close &amp; Relax</span>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function PublicHubStatusPage({ loading = false }) {
+  return (
+    <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased flex items-center justify-center px-6">
+      <style>{customStyles}</style>
+      <div className="max-w-md w-full bg-cream-card border border-cream-border rounded-3xl shadow-luxury p-8 sm:p-10 text-center">
+        <div className="w-12 h-12 rounded-full border border-[#B5966B]/70 flex items-center justify-center mx-auto mb-5 bg-cream-warm font-editorial text-2xl font-semibold text-charcoal-deep">
+          {loading ? <Loader2 className="w-5 h-5 animate-spin text-gold-accent" /> : 'C'}
+        </div>
+        {loading ? (
+          <>
+            <h1 className="font-editorial text-2xl font-semibold text-charcoal-deep">Opening your homeowner concierge…</h1>
+            <p className="text-sm text-charcoal-muted mt-2">Just a moment while we load this Close &amp; Relax hub.</p>
+          </>
+        ) : (
+          <>
+            <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Close &amp; Relax</span>
+            <h1 className="font-editorial text-3xl font-semibold text-charcoal-deep mt-2">This page is not available.</h1>
+            <p className="text-sm text-charcoal-muted leading-relaxed mt-3">The realtor hub may be unpublished, the link may be incorrect, or the page may no longer be active.</p>
+            <a href="https://closeandrelax.com" className="inline-flex items-center justify-center mt-6 bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold px-5 py-2.5 rounded-full transition-colors">
+              Visit Close &amp; Relax
+            </a>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
+  const rootDomainSuffix = '.closeandrelax.com';
+  const subdomainCandidate = hostname.endsWith(rootDomainSuffix)
+    ? hostname.slice(0, -rootDomainSuffix.length)
+    : '';
+  const isRealtorSubdomain = Boolean(
+    subdomainCandidate &&
+    subdomainCandidate !== 'www' &&
+    !subdomainCandidate.includes('.')
+  );
+  const subdomainSlug = isRealtorSubdomain ? subdomainCandidate : null;
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveDemoModalOpen, setLiveDemoModalOpen] = useState(false);
   const [signupModalOpen, setSignupModalOpen] = useState(false);
@@ -261,6 +531,11 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState("partner");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Public wildcard subdomain state
+  const [publicProfile, setPublicProfile] = useState(null);
+  const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
+  const [publicProfileError, setPublicProfileError] = useState(null);
 
   // Authentication State
   const [session, setSession] = useState(null);
@@ -407,6 +682,56 @@ export default function App() {
     fetchOrCreateProfile(user);
   }, [user?.id]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!isRealtorSubdomain || !subdomainSlug) {
+      setPublicProfile(null);
+      setPublicProfileLoading(false);
+      setPublicProfileError(null);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const loadPublicProfile = async () => {
+      setPublicProfileLoading(true);
+      setPublicProfileError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('slug', subdomainSlug)
+          .eq('is_published', true)
+          .maybeSingle();
+
+        if (!isMounted) return;
+
+        if (error) {
+          console.error('Error loading public realtor profile:', error);
+          setPublicProfile(null);
+          setPublicProfileError(error.message || 'Unable to load this realtor hub.');
+        } else {
+          setPublicProfile(data || null);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Unexpected public profile error:', err);
+        setPublicProfile(null);
+        setPublicProfileError(err.message || 'Unable to load this realtor hub.');
+      } finally {
+        if (isMounted) setPublicProfileLoading(false);
+      }
+    };
+
+    loadPublicProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isRealtorSubdomain, subdomainSlug]);
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -531,6 +856,33 @@ export default function App() {
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
   const displayPlan = storedPlan === 'free' ? 'partner' : storedPlan;
+  const publicHubUrl = profile?.slug ? `https://${profile.slug}.closeandrelax.com` : null;
+
+  const handlePreviewMyHub = () => {
+    if (!profile?.slug) {
+      showToast('Your realtor subdomain has not been assigned yet.');
+      return;
+    }
+
+    if (!profile?.is_published) {
+      showToast('Publish your hub before opening the live public link.');
+      return;
+    }
+
+    window.open(publicHubUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  if (isRealtorSubdomain) {
+    if (publicProfileLoading) {
+      return <PublicHubStatusPage loading />;
+    }
+
+    if (publicProfileError || !publicProfile) {
+      return <PublicHubStatusPage />;
+    }
+
+    return <PublicRealtorHub profile={publicProfile} />;
+  }
 
   return (
     <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
@@ -779,7 +1131,7 @@ export default function App() {
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={() => setLiveDemoModalOpen(true)}
+                  onClick={handlePreviewMyHub}
                   className="px-5 py-2.5 text-xs font-semibold rounded-full bg-cream-subtle hover:bg-cream-border text-charcoal-deep border border-cream-border flex items-center gap-2 transition-all"
                 >
                   <Eye className="w-3.5 h-3.5 text-gold-accent" />
@@ -822,10 +1174,21 @@ export default function App() {
 
               <div className="bg-cream-warm p-5 rounded-2xl border border-cream-border">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Shareable Link</span>
-                <p className="font-editorial text-xl font-bold text-charcoal-deep mt-1 truncate">
-                  closeandrelax.com/{profile?.id ? profile.id.slice(0, 8) : 'my-hub'}
+                {publicHubUrl ? (
+                  <a
+                    href={profile?.is_published ? publicHubUrl : undefined}
+                    target={profile?.is_published ? '_blank' : undefined}
+                    rel={profile?.is_published ? 'noreferrer' : undefined}
+                    className={`font-editorial text-lg sm:text-xl font-bold mt-1 truncate block ${profile?.is_published ? 'text-charcoal-deep hover:text-gold-accent' : 'text-charcoal-muted cursor-default'}`}
+                  >
+                    {profile.slug}.closeandrelax.com
+                  </a>
+                ) : (
+                  <p className="font-editorial text-lg sm:text-xl font-bold text-charcoal-muted mt-1 truncate">Subdomain pending setup</p>
+                )}
+                <p className="text-xs text-charcoal-muted mt-0.5">
+                  {profile?.is_published ? 'Live and ready to share with clients' : 'Your link becomes public when the hub is published'}
                 </p>
-                <p className="text-xs text-charcoal-muted mt-0.5">Ready for your closing materials</p>
               </div>
             </div>
 
