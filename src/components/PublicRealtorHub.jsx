@@ -172,6 +172,31 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     };
   }, [realtorName, firstName, headshotUrl]);
 
+  useEffect(() => {
+    const revealItems = Array.from(document.querySelectorAll('.hub-reveal'));
+
+    if (!('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.classList.add('hub-revealed'));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('hub-revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -35px 0px' }
+    );
+
+    revealItems.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, [resources.length, bio, headshotUrl]);
+
   const triggerToast = (text) => {
     setToastMessage(text);
     window.setTimeout(() => setToastMessage(''), 3200);
@@ -284,6 +309,70 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         .hub-font-sans { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
         .hub-editorial-shadow { box-shadow: 0 10px 30px -10px rgba(78, 62, 45, 0.08), 0 2px 8px -2px rgba(78, 62, 45, 0.04); }
         .hub-editorial-shadow-lg { box-shadow: 0 20px 40px -15px rgba(60, 48, 35, 0.12); }
+
+        .hub-reveal {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 650ms cubic-bezier(.22,.61,.36,1), transform 650ms cubic-bezier(.22,.61,.36,1);
+        }
+        .hub-reveal.hub-revealed {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .hub-card-lift {
+          transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .hub-card-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 38px -18px rgba(60, 48, 35, 0.22), 0 8px 16px -12px rgba(60, 48, 35, 0.12);
+          }
+          .hub-icon-nudge:hover svg {
+            transform: translateX(2px);
+          }
+        }
+        .hub-icon-nudge svg {
+          transition: transform 180ms ease;
+        }
+        .hub-install-attention {
+          position: relative;
+          overflow: hidden;
+          animation: hubSoftPulse 900ms ease 900ms 1 both;
+        }
+        .hub-install-attention::after {
+          content: '';
+          position: absolute;
+          inset: -60% -35%;
+          background: linear-gradient(110deg, transparent 38%, rgba(255,255,255,.22) 49%, rgba(255,255,255,.38) 52%, transparent 63%);
+          transform: translateX(-70%) rotate(2deg);
+          animation: hubChampagneShimmer 1100ms ease 1350ms 1 both;
+          pointer-events: none;
+        }
+        @keyframes hubSoftPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+          45% { transform: scale(1.018); box-shadow: 0 10px 24px -12px rgba(156,120,68,.55); }
+        }
+        @keyframes hubChampagneShimmer {
+          from { transform: translateX(-70%) rotate(2deg); opacity: 0; }
+          20% { opacity: 1; }
+          to { transform: translateX(70%) rotate(2deg); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hub-reveal,
+          .hub-card-lift,
+          .hub-icon-nudge svg,
+          .hub-install-attention {
+            transition: none !important;
+            animation: none !important;
+          }
+          .hub-reveal {
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .hub-install-attention::after {
+            display: none !important;
+          }
+        }
       `}</style>
 
       {toastMessage && (
@@ -312,7 +401,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       <main className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 pt-8 lg:pt-12 pb-12 hub-font-sans">
         <div className="lg:grid lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:items-start">
           <aside className="lg:sticky lg:top-24 lg:self-start">
-        <section className="text-center mb-10 lg:bg-white lg:rounded-3xl lg:border lg:border-[#ede4d6] lg:p-8 lg:hub-editorial-shadow">
+        <section className="hub-reveal text-center mb-10 lg:bg-white lg:rounded-3xl lg:border lg:border-[#ede4d6] lg:p-8 lg:hub-editorial-shadow">
           <div className="relative inline-block mb-5">
             <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full p-1 bg-gradient-to-tr from-[#d4af37] via-[#e8d8be] to-[#b38e56] shadow-md mx-auto">
               {headshotUrl ? (
@@ -403,7 +492,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           )}
         </section>
 
-        <section className="mb-10">
+        <section className="hub-reveal mb-10">
           <div className="bg-gradient-to-r from-[#f5ede2] via-[#faf4ea] to-[#f5ede2] border border-[#ebdcc7] rounded-2xl p-4 sm:p-5 hub-editorial-shadow flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 text-center sm:text-left lg:text-center xl:text-left">
               <div className="w-10 h-10 rounded-xl bg-white border border-[#e2d3be] flex items-center justify-center text-[#9c7844] shrink-0 shadow-sm">
@@ -418,7 +507,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             </div>
             <button
               onClick={handleInstallClick}
-              className="w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
+              className="hub-install-attention w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
             >
               <Download className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>{isInstalled ? 'Added to Phone' : 'Add to Phone'}</span>
@@ -427,7 +516,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </section>
 
         {bio && (
-          <section className="bg-white rounded-2xl p-5 border border-[#ebdcc7] hub-editorial-shadow mb-10">
+          <section className="hub-reveal bg-white rounded-2xl p-5 border border-[#ebdcc7] hub-editorial-shadow mb-10">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#f7f2ea] flex items-center justify-center border border-[#ebdcc7] shrink-0">
                 <MapPin className="w-4 h-4 text-[#9c7844]" />
@@ -444,7 +533,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
           <div className="min-w-0">
         <section className="mb-12">
-          <div className="text-center lg:text-left mb-6">
+          <div className="hub-reveal text-center lg:text-left mb-6">
             <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#9c7844] block mb-1">
               Curated Recommendations
             </span>
@@ -463,7 +552,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                 return (
                   <article
                     key={pro.id}
-                    className="bg-white rounded-2xl p-5 border border-[#ede4d6] hub-editorial-shadow transition-all duration-300 hover:border-[#dbcbb4] relative overflow-hidden flex flex-col h-full"
+                    className="hub-reveal hub-card-lift bg-white rounded-2xl p-5 border border-[#ede4d6] hub-editorial-shadow hover:border-[#dbcbb4] relative overflow-hidden flex flex-col h-full"
                   >
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -533,26 +622,26 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl p-6 border border-[#ebdcc7] text-center hub-editorial-shadow mb-10">
+        <section className="hub-reveal bg-white rounded-2xl p-6 border border-[#ebdcc7] text-center hub-editorial-shadow mb-10">
           <Heart className="w-5 h-5 text-[#9c7844] mx-auto mb-2.5" />
           <h3 className="hub-font-serif text-xl text-[#1c1917] font-normal mb-1.5">Always in Your Corner</h3>
           <p className="text-xs text-[#57534e] leading-relaxed max-w-xs mx-auto mb-4">
             Need a contractor recommendation that isn’t listed here, or have a question about your new neighborhood? I’m always just a call or text away.
           </p>
           {phone ? (
-            <a href={`sms:${rawPhone}`} className="inline-flex items-center gap-2 text-xs font-semibold text-[#8a6b3d] hover:text-[#674f2b] transition-colors">
+            <a href={`sms:${rawPhone}`} className="hub-icon-nudge inline-flex items-center gap-2 text-xs font-semibold text-[#8a6b3d] hover:text-[#674f2b] transition-colors">
               <span>Message {firstName} Anytime</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </a>
           ) : email ? (
-            <a href={`mailto:${email}`} className="inline-flex items-center gap-2 text-xs font-semibold text-[#8a6b3d] hover:text-[#674f2b] transition-colors">
+            <a href={`mailto:${email}`} className="hub-icon-nudge inline-flex items-center gap-2 text-xs font-semibold text-[#8a6b3d] hover:text-[#674f2b] transition-colors">
               <span>Email {firstName} Anytime</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </a>
           ) : null}
         </section>
 
-        <footer className="text-center lg:text-left pt-2 pb-6">
+        <footer className="hub-reveal text-center lg:text-left pt-2 pb-6">
           <p className="text-[11px] hub-font-serif text-[#78716c] mb-1">{realtorName} • Realtor®</p>
           <p className="text-[10px] tracking-wider uppercase text-[#a8a29e]">Powered by Close &amp; Relax</p>
         </footer>
