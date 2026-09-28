@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
+import PublicRealtorHubDesign from './components/PublicRealtorHub';
 
 const LIZ_VENDORS = [
   {
@@ -595,8 +596,8 @@ export default function App() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [liveDemoModalOpen, setLiveDemoModalOpen] = useState(false);
-  const [signupModalOpen, setSignupModalOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [signupModalOpen, _setSignupModalOpen] = useState(false);
+  const [loginModalOpen, _setLoginModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("partner");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -639,8 +640,98 @@ export default function App() {
   const [authError, setAuthError] = useState(null);
   const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
 
-  // View state: 'marketing' or 'dashboard'
-  const [currentView, setCurrentView] = useState('marketing');
+  // Route-aware view state. The app still uses the existing marketing/dashboard UI,
+  // but the browser URL is now the source of truth for refreshable routes.
+  const getCurrentAppPath = () => {
+    if (typeof window === 'undefined') return '/';
+    const rawPath = window.location.pathname || '/';
+    if (rawPath === '/') return '/';
+    return rawPath.replace(/\/+$/, '') || '/';
+  };
+
+  const [currentView, _setCurrentView] = useState(() =>
+    getCurrentAppPath() === '/dashboard' ? 'dashboard' : 'marketing'
+  );
+
+  const updateBrowserPath = (path, { replace = false } = {}) => {
+    if (typeof window === 'undefined' || isRealtorSubdomain) return;
+    const currentPath = getCurrentAppPath();
+    if (currentPath === path) return;
+
+    if (replace) {
+      window.history.replaceState({}, '', path);
+    } else {
+      window.history.pushState({}, '', path);
+    }
+  };
+
+  // Keep the existing setCurrentView calls throughout the app, but make them
+  // update the URL too so /dashboard survives a refresh.
+  const setCurrentView = (view, options = {}) => {
+    _setCurrentView(view);
+    updateBrowserPath(view === 'dashboard' ? '/dashboard' : '/', options);
+  };
+
+  // Route-aware modal setters let all existing Log In / Sign Up buttons keep
+  // working while giving those screens real URLs.
+  const setLoginModalOpen = (open, options = {}) => {
+    _setLoginModalOpen(open);
+    if (open) {
+      _setSignupModalOpen(false);
+      _setCurrentView('marketing');
+      updateBrowserPath('/login', options);
+    } else if (getCurrentAppPath() === '/login') {
+      updateBrowserPath('/', options);
+    }
+  };
+
+  const setSignupModalOpen = (open, options = {}) => {
+    _setSignupModalOpen(open);
+    if (open) {
+      _setLoginModalOpen(false);
+      _setCurrentView('marketing');
+      updateBrowserPath('/signup', options);
+    } else if (getCurrentAppPath() === '/signup') {
+      updateBrowserPath('/', options);
+    }
+  };
+
+  useEffect(() => {
+    if (isRealtorSubdomain) return undefined;
+
+    const applyRouteFromBrowser = () => {
+      const path = getCurrentAppPath();
+
+      if (path === '/dashboard') {
+        _setCurrentView('dashboard');
+        _setLoginModalOpen(false);
+        _setSignupModalOpen(false);
+        return;
+      }
+
+      if (path === '/login') {
+        _setCurrentView('marketing');
+        _setSignupModalOpen(false);
+        _setLoginModalOpen(true);
+        return;
+      }
+
+      if (path === '/signup') {
+        _setCurrentView('marketing');
+        _setLoginModalOpen(false);
+        _setSignupModalOpen(true);
+        return;
+      }
+
+      _setCurrentView('marketing');
+      _setLoginModalOpen(false);
+      _setSignupModalOpen(false);
+    };
+
+    applyRouteFromBrowser();
+    window.addEventListener('popstate', applyRouteFromBrowser);
+    return () => window.removeEventListener('popstate', applyRouteFromBrowser);
+  }, [isRealtorSubdomain]);
 
   // Form states
   const [signupData, setSignupData] = useState({
@@ -756,7 +847,7 @@ export default function App() {
 
       if (!currentUser) {
         setProfile(null);
-        setCurrentView('marketing');
+        _setCurrentView('marketing');
       }
     });
 
@@ -774,6 +865,31 @@ export default function App() {
 
     fetchOrCreateProfile(user);
   }, [user?.id]);
+
+
+  // Protect /dashboard and keep logged-in users out of the auth screens.
+  // Wait until Supabase finishes restoring the session so a refresh does not
+  // accidentally kick an authenticated realtor back to the marketing page.
+  useEffect(() => {
+    if (isRealtorSubdomain || authLoading) return;
+
+    const path = getCurrentAppPath();
+
+    if (path === '/dashboard' && !user) {
+      _setCurrentView('marketing');
+      _setSignupModalOpen(false);
+      _setLoginModalOpen(true);
+      updateBrowserPath('/login', { replace: true });
+      return;
+    }
+
+    if ((path === '/login' || path === '/signup') && user) {
+      _setLoginModalOpen(false);
+      _setSignupModalOpen(false);
+      _setCurrentView('dashboard');
+      updateBrowserPath('/dashboard', { replace: true });
+    }
+  }, [authLoading, user?.id, isRealtorSubdomain]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1249,7 +1365,7 @@ export default function App() {
       return <PublicHubStatusPage />;
     }
 
-    return <PublicRealtorHub profile={publicProfile} />;
+    return <PublicRealtorHubDesign profile={publicProfile} fallbackResources={STANDARD_HOME_RESOURCES} />;
   }
 
   return (
