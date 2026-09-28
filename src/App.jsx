@@ -626,6 +626,21 @@ export default function App() {
   const [headshotPreview, setHeadshotPreview] = useState('');
   const [removeHeadshot, setRemoveHeadshot] = useState(false);
 
+  // Vendor management state
+  const [vendors, setVendors] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorManagerOpen, setVendorManagerOpen] = useState(false);
+  const [vendorSaving, setVendorSaving] = useState(false);
+  const [vendorError, setVendorError] = useState(null);
+  const [editingVendorId, setEditingVendorId] = useState(null);
+  const [vendorForm, setVendorForm] = useState({
+    name: '',
+    category: '',
+    phone: '',
+    website: '',
+    recommendation: '',
+  });
+
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
@@ -815,6 +830,39 @@ export default function App() {
     }
   };
 
+  const fetchUserVendors = async (profileId = user?.id) => {
+    if (!profileId) {
+      setVendors([]);
+      return [];
+    }
+
+    setVendorsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .eq('profile_id', profileId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading vendors:', error);
+        setVendorError(error.message || 'Unable to load your vendors.');
+        return [];
+      }
+
+      const rows = data || [];
+      setVendors(rows);
+      return rows;
+    } catch (err) {
+      console.error('Unexpected vendor loading error:', err);
+      setVendorError(err.message || 'Unable to load your vendors.');
+      return [];
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -865,6 +913,15 @@ export default function App() {
 
     fetchOrCreateProfile(user);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !profile?.id) {
+      setVendors([]);
+      return;
+    }
+
+    fetchUserVendors(profile.id);
+  }, [user?.id, profile?.id]);
 
 
   // Protect /dashboard and keep logged-in users out of the auth screens.
@@ -921,8 +978,26 @@ export default function App() {
           console.error('Error loading public realtor profile:', error);
           setPublicProfile(null);
           setPublicProfileError(error.message || 'Unable to load this realtor hub.');
+        } else if (!data) {
+          setPublicProfile(null);
         } else {
-          setPublicProfile(data || null);
+          const { data: publicVendors, error: vendorLoadError } = await supabase
+            .from('vendors')
+            .select('*')
+            .eq('profile_id', data.id)
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true })
+            .order('created_at', { ascending: true });
+
+          if (!isMounted) return;
+
+          if (vendorLoadError) {
+            console.error('Error loading public vendors:', vendorLoadError);
+            setPublicProfileError(vendorLoadError.message || 'Unable to load this realtor hub.');
+            setPublicProfile(null);
+          } else {
+            setPublicProfile({ ...data, vendors: publicVendors || [] });
+          }
         }
       } catch (err) {
         if (!isMounted) return;
@@ -1336,10 +1411,172 @@ export default function App() {
     }
   };
 
+  const resetVendorForm = () => {
+    setEditingVendorId(null);
+    setVendorForm({ name: '', category: '', phone: '', website: '', recommendation: '' });
+    setVendorError(null);
+  };
+
+  const handleOpenVendorManager = async () => {
+    resetVendorForm();
+    setVendorManagerOpen(true);
+    if (profile?.id) await fetchUserVendors(profile.id);
+  };
+
+  const handleEditVendor = (vendor) => {
+    setEditingVendorId(vendor.id);
+    setVendorForm({
+      name: vendor.name || '',
+      category: vendor.category || '',
+      phone: vendor.phone || '',
+      website: vendor.website || '',
+      recommendation: vendor.recommendation || '',
+    });
+    setVendorError(null);
+  };
+
+  const handleSaveVendor = async (event) => {
+    event.preventDefault();
+    if (!user?.id || !profile?.id) return;
+
+    const name = vendorForm.name.trim();
+    const category = vendorForm.category.trim();
+    const phone = vendorForm.phone.trim();
+    const website = vendorForm.website.trim();
+    const recommendation = vendorForm.recommendation.trim();
+
+    if (!name || !category) {
+      setVendorError('Vendor name and category are required.');
+      return;
+    }
+
+    if (!phone && !website) {
+      setVendorError('Add at least a phone number or website for this vendor.');
+      return;
+    }
+
+    if (website && !isValidOptionalUrl(website)) {
+      setVendorError('Please enter a valid vendor website URL.');
+      return;
+    }
+
+    const normalizedPlan = (profile?.plan || 'partner') === 'free' ? 'partner' : (profile?.plan || 'partner');
+    const vendorLimit = normalizedPlan === 'premier' ? 8 : normalizedPlan === 'pro' ? 5 : 3;
+    const allowsRecommendation = normalizedPlan === 'pro' || normalizedPlan === 'premier';
+    const allowsDefaultControl = normalizedPlan === 'premier';
+    const existingVendor = editingVendorId ? vendors.find((vendor) => vendor.id === editingVendorId) : null;
+    const customVendorCount = vendors.filter((vendor) => !vendor.is_default).length;
+
+    if (!editingVendorId && customVendorCount >= vendorLimit) {
+      setVendorError(`Your ${normalizedPlan} plan allows up to ${vendorLimit} custom vendors.`);
+      return;
+    }
+
+    if (existingVendor?.is_default && !allowsDefaultControl) {
+      setVendorError('The standard Close & Relax vendor can only be edited on the Premier plan.');
+      return;
+    }
+
+    setVendorSaving(true);
+    setVendorError(null);
+
+    try {
+      const payload = {
+        name,
+        category,
+        phone: phone || null,
+        website: website ? normalizeWebsiteUrl(website) : null,
+        recommendation: allowsRecommendation ? (recommendation || null) : null,
+      };
+
+      let result;
+      if (editingVendorId) {
+        result = await supabase
+          .from('vendors')
+          .update(payload)
+          .eq('id', editingVendorId)
+          .eq('profile_id', user.id)
+          .select('*')
+          .single();
+      } else {
+        const maxSort = vendors.reduce((max, vendor) => Math.max(max, Number(vendor.sort_order) || 0), 0);
+        result = await supabase
+          .from('vendors')
+          .insert([{
+            ...payload,
+            profile_id: user.id,
+            sort_order: maxSort + 1,
+            is_active: true,
+            is_default: false,
+          }])
+          .select('*')
+          .single();
+      }
+
+      if (result.error) {
+        console.error('Vendor save error:', result.error);
+        setVendorError(result.error.message || 'Unable to save this vendor.');
+        return;
+      }
+
+      await fetchUserVendors(profile.id);
+      resetVendorForm();
+      showToast(editingVendorId ? 'Vendor updated on your hub.' : 'Vendor added to your hub.');
+    } catch (err) {
+      console.error('Unexpected vendor save error:', err);
+      setVendorError(err.message || 'Unable to save this vendor.');
+    } finally {
+      setVendorSaving(false);
+    }
+  };
+
+  const handleDeleteVendor = async (vendor) => {
+    if (!user?.id || !profile?.id || !vendor?.id) return;
+
+    const normalizedPlan = (profile?.plan || 'partner') === 'free' ? 'partner' : (profile?.plan || 'partner');
+    if (vendor.is_default && normalizedPlan !== 'premier') {
+      setVendorError('The standard Close & Relax vendor can only be removed on the Premier plan.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Remove ${vendor.name} from your homeowner hub?`);
+    if (!confirmed) return;
+
+    setVendorSaving(true);
+    setVendorError(null);
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .eq('id', vendor.id)
+        .eq('profile_id', user.id);
+
+      if (error) {
+        console.error('Vendor delete error:', error);
+        setVendorError(error.message || 'Unable to remove this vendor.');
+        return;
+      }
+
+      await fetchUserVendors(profile.id);
+      if (editingVendorId === vendor.id) resetVendorForm();
+      showToast('Vendor removed from your hub.');
+    } catch (err) {
+      console.error('Unexpected vendor delete error:', err);
+      setVendorError(err.message || 'Unable to remove this vendor.');
+    } finally {
+      setVendorSaving(false);
+    }
+  };
+
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
   const displayPlan = storedPlan === 'free' ? 'partner' : storedPlan;
+  const vendorLimit = displayPlan === 'premier' ? 8 : displayPlan === 'pro' ? 5 : 3;
+  const allowsVendorRecommendations = displayPlan === 'pro' || displayPlan === 'premier';
+  const allowsDefaultVendorControl = displayPlan === 'premier';
+  const customVendors = vendors.filter((vendor) => !vendor.is_default);
+  const standardVendors = vendors.filter((vendor) => vendor.is_default);
   const publicHubUrl = profile?.slug ? `https://${profile.slug}.closeandrelax.com` : null;
 
   const handlePreviewMyHub = () => {
@@ -1760,7 +1997,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* My Vendors Placeholder Card */}
+              {/* My Vendors Card */}
               <div className="bg-cream-warm p-6 rounded-2xl border border-cream-border flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -1769,28 +2006,29 @@ export default function App() {
                       <h3 className="font-editorial text-xl font-bold text-charcoal-deep">My Preferred Vendors</h3>
                     </div>
                     <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-cream-card rounded border border-cream-border text-charcoal-muted">
-                      Vendor Curation
+                      {customVendors.length}/{vendorLimit} Custom
                     </span>
                   </div>
 
                   <p className="text-xs text-charcoal-muted leading-relaxed mb-4">
-                    Your hub is currently linked to the standard Close &amp; Relax verified contractor network. Under your <span className="font-semibold text-charcoal-deep capitalize">{displayPlan}</span> plan, you can add up to {displayPlan === 'premier' ? '8' : displayPlan === 'pro' ? '5' : '3'} of your own preferred local specialists.
+                    Your hub includes the standard Close &amp; Relax smart-home resource, and your <span className="font-semibold text-charcoal-deep capitalize">{displayPlan}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals.
                   </p>
 
-                  <div className="bg-cream-card p-3 rounded-xl border border-cream-border text-[11px] text-charcoal-muted space-y-1">
-                    <p className="font-semibold text-charcoal-deep">Active Standards Included:</p>
-                    <p>• Locksmith &amp; Security Services</p>
-                    <p>• Emergency HVAC &amp; Climate Support</p>
-                    <p>• White-Glove Movers &amp; Relocation</p>
+                  <div className="bg-cream-card p-3 rounded-xl border border-cream-border text-[11px] text-charcoal-muted space-y-2">
+                    <p className="font-semibold text-charcoal-deep">Current vendor setup</p>
+                    <p>• {standardVendors.length || 1} standard Close &amp; Relax resource</p>
+                    <p>• {customVendors.length} of {vendorLimit} custom vendor slots used</p>
+                    <p>• Recommendation notes: {allowsVendorRecommendations ? 'Enabled' : 'Available on Pro & Premier'}</p>
+                    {displayPlan === 'premier' && <p>• Standard vendor replacement/removal: Enabled</p>}
                   </div>
                 </div>
 
                 <div className="pt-6">
                   <button
-                    onClick={() => showToast('Vendor curation manager opens in next release')}
+                    onClick={handleOpenVendorManager}
                     className="w-full py-2.5 text-xs font-semibold rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-charcoal-deep transition-colors"
                   >
-                    Manage Custom Vendors ({displayPlan === 'premier' ? '8' : displayPlan === 'pro' ? '5' : '3'} Max)
+                    Manage Vendors
                   </button>
                 </div>
               </div>
@@ -3422,6 +3660,155 @@ export default function App() {
               </form>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {}
+      {vendorManagerOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-4xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Trusted Professionals</span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Manage Your Vendors</h3>
+                <p className="text-[11px] text-charcoal-muted mt-1">{customVendors.length} of {vendorLimit} custom vendor slots used.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { if (!vendorSaving) { setVendorManagerOpen(false); resetVendorForm(); } }}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+                aria-label="Close vendor manager"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Live Vendor List</h4>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Changes publish to your hub immediately.</p>
+                  </div>
+                  {vendorsLoading && <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />}
+                </div>
+
+                <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+                  {vendors.length === 0 && !vendorsLoading ? (
+                    <div className="bg-cream-card border border-cream-border rounded-2xl p-5 text-xs text-charcoal-muted">No vendors are configured yet.</div>
+                  ) : vendors.map((vendor) => (
+                    <div key={vendor.id} className="bg-cream-card border border-cream-border rounded-2xl p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">{vendor.category}</span>
+                            {vendor.is_default && (
+                              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#F4EBDD] border border-[#E4D5BE] text-[#8C6B38]">Standard</span>
+                            )}
+                          </div>
+                          <h5 className="font-editorial text-lg font-semibold text-charcoal-deep">{vendor.name}</h5>
+                          {vendor.recommendation && <p className="text-[11px] italic text-charcoal-muted leading-relaxed mt-2">“{vendor.recommendation}”</p>}
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-charcoal-muted">
+                            {vendor.phone && <span>{vendor.phone}</span>}
+                            {vendor.website && <span className="truncate max-w-[220px]">{vendor.website}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-cream-border">
+                        <button
+                          type="button"
+                          disabled={vendor.is_default && !allowsDefaultVendorControl}
+                          onClick={() => handleEditVendor(vendor)}
+                          className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-deep hover:bg-cream-subtle disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={vendor.is_default && !allowsDefaultVendorControl}
+                          onClick={() => handleDeleteVendor(vendor)}
+                          className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-muted hover:text-charcoal-deep disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="lg:border-l lg:border-cream-border lg:pl-8">
+                <div className="mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">{editingVendorId ? 'Edit Vendor' : 'Add Vendor'}</span>
+                  <h4 className="font-editorial text-xl font-bold text-charcoal-deep mt-1">{editingVendorId ? 'Update this recommendation' : 'Add a trusted professional'}</h4>
+                </div>
+
+                {vendorError && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <span>{vendorError}</span>
+                  </div>
+                )}
+
+                {!editingVendorId && customVendors.length >= vendorLimit ? (
+                  <div className="bg-cream-card border border-cream-border rounded-2xl p-5">
+                    <p className="text-sm font-semibold text-charcoal-deep">You’ve filled all {vendorLimit} custom vendor slots.</p>
+                    <p className="text-xs text-charcoal-muted leading-relaxed mt-2">Edit or remove an existing custom vendor to add another one.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveVendor} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="vendorName">Vendor / Company Name *</label>
+                      <input id="vendorName" required value={vendorForm.name} onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })} placeholder="e.g. Smith Plumbing" className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="vendorCategory">Category *</label>
+                      <input id="vendorCategory" required value={vendorForm.category} onChange={(e) => setVendorForm({ ...vendorForm, category: e.target.value })} placeholder="e.g. Plumbing & Water Care" className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="vendorPhone">Phone</label>
+                        <input id="vendorPhone" type="tel" value={vendorForm.phone} onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })} placeholder="(317) 555-0123" className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="vendorWebsite">Website</label>
+                        <input id="vendorWebsite" value={vendorForm.website} onChange={(e) => setVendorForm({ ...vendorForm, website: e.target.value })} placeholder="vendorwebsite.com" className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="vendorRecommendation">Why I Recommend Them</label>
+                      <textarea
+                        id="vendorRecommendation"
+                        rows={3}
+                        maxLength={220}
+                        disabled={!allowsVendorRecommendations}
+                        value={vendorForm.recommendation}
+                        onChange={(e) => setVendorForm({ ...vendorForm, recommendation: e.target.value })}
+                        placeholder={allowsVendorRecommendations ? 'A quick personal sentence explaining why you trust this vendor.' : 'Recommendation notes unlock on Pro and Premier.'}
+                        className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <div className="flex justify-between mt-1 text-[10px] text-charcoal-muted">
+                        <span>{allowsVendorRecommendations ? 'This appears beneath the vendor on your public hub.' : 'Upgrade to Pro or Premier to add personal recommendation notes.'}</span>
+                        {allowsVendorRecommendations && <span>{vendorForm.recommendation.length}/220</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                      {editingVendorId && (
+                        <button type="button" disabled={vendorSaving} onClick={resetVendorForm} className="flex-1 py-2.5 rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-xs font-semibold text-charcoal-deep disabled:opacity-60">Cancel Edit</button>
+                      )}
+                      <button type="submit" disabled={vendorSaving} className="flex-1 py-2.5 rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+                        {vendorSaving ? <><Loader2 className="w-4 h-4 animate-spin text-gold-accent" /><span>Saving...</span></> : <span>{editingVendorId ? 'Save Vendor Changes' : 'Add Vendor'}</span>}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </section>
+            </div>
           </div>
         </div>
       )}
