@@ -103,7 +103,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         id: vendor?.id || `${vendor?.name || 'vendor'}-${index}`,
         category: vendor?.category || 'Trusted Professional',
         name: vendor?.name || 'Preferred Professional',
-        quote: vendor?.note || vendor?.quote || vendor?.description || '',
+        quote: vendor?.recommendation || vendor?.note || vendor?.quote || vendor?.description || '',
         phone: vendor?.phone || '',
         website: normalizeUrl(vendor?.website || vendor?.website_url || ''),
       }));
