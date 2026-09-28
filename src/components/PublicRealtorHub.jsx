@@ -294,7 +294,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       )}
 
       <header className="border-b border-[#ebdcc7]/60 bg-[#faf8f5]/80 backdrop-blur-md sticky top-0 z-30 px-6 py-3.5">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <span className="text-[10px] tracking-[0.25em] font-semibold text-[#8c6b38] uppercase">
             Close &amp; Relax Concierge
           </span>
@@ -309,10 +309,12 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-5 pt-8 pb-12 hub-font-sans">
-        <section className="text-center mb-10">
+      <main className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 pt-8 lg:pt-12 pb-12 hub-font-sans">
+        <div className="lg:grid lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10 xl:gap-14 lg:items-start">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+        <section className="text-center mb-10 lg:bg-white lg:rounded-3xl lg:border lg:border-[#ede4d6] lg:p-8 lg:hub-editorial-shadow">
           <div className="relative inline-block mb-5">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full p-1 bg-gradient-to-tr from-[#d4af37] via-[#e8d8be] to-[#b38e56] shadow-md mx-auto">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full p-1 bg-gradient-to-tr from-[#d4af37] via-[#e8d8be] to-[#b38e56] shadow-md mx-auto">
               {headshotUrl ? (
                 <img
                   src={headshotUrl}
@@ -402,8 +404,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </section>
 
         <section className="mb-10">
-          <div className="bg-gradient-to-r from-[#f5ede2] via-[#faf4ea] to-[#f5ede2] border border-[#ebdcc7] rounded-2xl p-4 sm:p-5 hub-editorial-shadow flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 text-center sm:text-left">
+          <div className="bg-gradient-to-r from-[#f5ede2] via-[#faf4ea] to-[#f5ede2] border border-[#ebdcc7] rounded-2xl p-4 sm:p-5 hub-editorial-shadow flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 text-center sm:text-left lg:text-center xl:text-left">
               <div className="w-10 h-10 rounded-xl bg-white border border-[#e2d3be] flex items-center justify-center text-[#9c7844] shrink-0 shadow-sm">
                 <Smartphone className="w-5 h-5" />
               </div>
@@ -416,7 +418,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             </div>
             <button
               onClick={handleInstallClick}
-              className="w-full sm:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
+              className="w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
             >
               <Download className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>{isInstalled ? 'Added to Phone' : 'Add to Phone'}</span>
@@ -438,18 +440,21 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </section>
         )}
 
+          </aside>
+
+          <div className="min-w-0">
         <section className="mb-12">
-          <div className="text-center mb-6">
+          <div className="text-center lg:text-left mb-6">
             <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#9c7844] block mb-1">
               Curated Recommendations
             </span>
             <h2 className="hub-font-serif text-2xl sm:text-3xl text-[#1c1917] font-medium tracking-tight">
               {firstName}’s Trusted Home Pros
             </h2>
-            <div className="w-10 h-[1.5px] bg-[#d9cdba] mx-auto mt-2.5"></div>
+            <div className="w-10 h-[1.5px] bg-[#d9cdba] mx-auto lg:mx-0 mt-2.5"></div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {resources.length > 0 ? (
               resources.map((pro) => {
                 const IconComponent = getVendorIcon(pro.category);
@@ -458,7 +463,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                 return (
                   <article
                     key={pro.id}
-                    className="bg-white rounded-2xl p-5 border border-[#ede4d6] hub-editorial-shadow transition-all duration-300 hover:border-[#dbcbb4] relative overflow-hidden"
+                    className="bg-white rounded-2xl p-5 border border-[#ede4d6] hub-editorial-shadow transition-all duration-300 hover:border-[#dbcbb4] relative overflow-hidden flex flex-col h-full"
                   >
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -491,7 +496,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                     )}
 
                     {(pro.phone || pro.website) && (
-                      <div className={`grid ${pro.phone && pro.website ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5 pt-1`}>
+                      <div className={`grid ${pro.phone && pro.website ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5 pt-1 mt-auto`}>
                         {pro.phone && (
                           <a
                             href={`tel:${vendorPhoneHref}`}
@@ -547,10 +552,12 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           ) : null}
         </section>
 
-        <footer className="text-center pt-2 pb-6">
+        <footer className="text-center lg:text-left pt-2 pb-6">
           <p className="text-[11px] hub-font-serif text-[#78716c] mb-1">{realtorName} • Realtor®</p>
           <p className="text-[10px] tracking-wider uppercase text-[#a8a29e]">Powered by Close &amp; Relax</p>
         </footer>
+          </div>
+        </div>
       </main>
 
       {showIOSModal && (
