@@ -22,6 +22,7 @@ import {
   Bookmark,
   Mail,
   MapPin,
+  Video,
 } from 'lucide-react';
 
 const normalizeUrl = (value = '') => {
@@ -45,6 +46,46 @@ const getInitials = (name = '') => {
 };
 
 const phoneForHref = (value = '') => String(value || '').replace(/[^\d+]/g, '');
+
+const normalizeInternalPlan = (value) => {
+  const plan = String(value || 'partner').toLowerCase();
+  if (plan === 'free' || plan === 'partner') return 'partner';
+  if (plan === 'core' || plan === 'pro') return 'pro';
+  if (plan === 'premier') return 'premier';
+  return 'partner';
+};
+
+const getYouTubeVideoId = (value = '') => {
+  const input = String(value || '').trim();
+  if (!input) return '';
+
+  try {
+    const normalized = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+    const url = new URL(normalized);
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    let videoId = '';
+
+    if (host === 'youtu.be') {
+      videoId = url.pathname.split('/').filter(Boolean)[0] || '';
+    } else if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'music.youtube.com' ||
+      host === 'youtube-nocookie.com'
+    ) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (url.pathname === '/watch') {
+        videoId = url.searchParams.get('v') || '';
+      } else if (['shorts', 'embed', 'live'].includes(parts[0])) {
+        videoId = parts[1] || '';
+      }
+    }
+
+    return /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : '';
+  } catch {
+    return '';
+  }
+};
 
 const getVendorIcon = (category = '') => {
   const normalized = String(category || '').toLowerCase();
@@ -84,6 +125,13 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     'Congratulations on your new home! To make settling in simple and stress-free, I created this guide with resources I want you to have long after closing day.';
   const bio = profile?.bio || '';
   const websiteUrl = normalizeUrl(profile?.website_url || profile?.website || '');
+  const internalPlan = normalizeInternalPlan(profile?.plan);
+  const welcomeVideoId = internalPlan === 'premier'
+    ? getYouTubeVideoId(profile?.welcome_video_url || '')
+    : '';
+  const welcomeVideoEmbedUrl = welcomeVideoId
+    ? `https://www.youtube-nocookie.com/embed/${welcomeVideoId}?rel=0`
+    : '';
 
   const socialLinks = [
     { label: 'Instagram', url: normalizeUrl(profile?.instagram_url || '') },
@@ -195,7 +243,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [resources.length, bio, headshotUrl]);
+  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl]);
 
   const triggerToast = (text) => {
     setToastMessage(text);
@@ -532,6 +580,39 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </aside>
 
           <div className="min-w-0">
+
+        {welcomeVideoEmbedUrl && (
+          <section className="hub-reveal bg-white rounded-2xl p-5 sm:p-6 border border-[#ebdcc7] hub-editorial-shadow mb-10">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-[#f7f2ea] flex items-center justify-center border border-[#ebdcc7] shrink-0">
+                <Video className="w-4 h-4 text-[#9c7844]" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-[#9c7844]">
+                  A quick hello from {firstName}
+                </span>
+                <h2 className="hub-font-serif text-xl sm:text-2xl text-[#1c1917] font-medium tracking-tight mt-1">
+                  Your Welcome Home Message
+                </h2>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[#e7dccb] bg-[#1c1917] shadow-sm">
+              <div className="relative w-full aspect-video">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={welcomeVideoEmbedUrl}
+                  title={`${realtorName} welcome video`}
+                  loading="lazy"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="mb-12">
           <div className="hub-reveal text-center lg:text-left mb-6">
             <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#9c7844] block mb-1">
