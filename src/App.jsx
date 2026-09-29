@@ -217,7 +217,7 @@ const PRICING_TIERS = [
       "Greater vendor control, including default resource replacement/removal",
       "Premium branding control",
       "Custom home-screen app icon",
-      "Personal video greeting up to ~30 seconds",
+      "Personal welcome video via YouTube link (30–60 seconds recommended)",
       "Advanced homeowner checklists",
       "Custom sections & tailored service categories",
       "Expanded image/media and homeowner resource controls",
@@ -236,7 +236,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "What is the difference between Core and Pro?",
-    answer: "Core is $39/month and supports up to 8 preferred vendors, a Realtor headshot, personal recommendation notes, richer profile branding, and more self-service editing. Pro is $59/month and supports up to 15 preferred vendors plus greater vendor control, premium branding, video, a custom app icon, advanced checklists, and custom sections.",
+    answer: "Core is $39/month and supports up to 8 preferred vendors, a Realtor headshot, personal recommendation notes, richer profile branding, and more self-service editing. Pro is $59/month and supports up to 15 preferred vendors plus greater vendor control, premium branding, a YouTube welcome video, a custom app icon, advanced checklists, and custom sections.",
   },
   {
     question: "How does Founding Member pricing work?",
