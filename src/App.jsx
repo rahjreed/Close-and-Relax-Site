@@ -125,6 +125,7 @@ const getPlanConfig = (value) => {
       allowsPremiumProfile: true,
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: true,
+      allowsWelcomeVideo: true,
       regularPrice: 59,
       foundingPrice: 29,
     };
@@ -138,6 +139,7 @@ const getPlanConfig = (value) => {
       allowsPremiumProfile: true,
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: false,
+      allowsWelcomeVideo: false,
       regularPrice: 39,
       foundingPrice: 19,
     };
@@ -150,12 +152,47 @@ const getPlanConfig = (value) => {
     allowsPremiumProfile: false,
     allowsVendorRecommendations: false,
     allowsDefaultVendorControl: false,
+    allowsWelcomeVideo: false,
     regularPrice: 0,
     foundingPrice: 0,
   };
 };
 
 const isFoundingPricingActive = () => Date.now() <= FOUNDING_PRICING_END.getTime();
+
+const getYouTubeVideoId = (value = '') => {
+  const input = String(value || '').trim();
+  if (!input) return '';
+
+  try {
+    const normalized = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+    const url = new URL(normalized);
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    let videoId = '';
+
+    if (host === 'youtu.be') {
+      videoId = url.pathname.split('/').filter(Boolean)[0] || '';
+    } else if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'music.youtube.com' ||
+      host === 'youtube-nocookie.com'
+    ) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (url.pathname === '/watch') {
+        videoId = url.searchParams.get('v') || '';
+      } else if (['shorts', 'embed', 'live'].includes(parts[0])) {
+        videoId = parts[1] || '';
+      }
+    }
+
+    return /^[A-Za-z0-9_-]{11}$/.test(videoId) ? videoId : '';
+  } catch {
+    return '';
+  }
+};
+
+const isValidYouTubeUrl = (value = '') => !String(value || '').trim() || Boolean(getYouTubeVideoId(value));
 
 const PRICING_TIERS = [
   {
@@ -677,6 +714,7 @@ export default function App() {
     slug: '',
     welcome_message: '',
     bio: '',
+    welcome_video_url: '',
     website_url: '',
     instagram_url: '',
     facebook_url: '',
@@ -1061,7 +1099,7 @@ export default function App() {
               ...vendor,
               recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
             }));
-            const publicData = publicPlan.allowsPremiumProfile
+            const premiumProfileData = publicPlan.allowsPremiumProfile
               ? data
               : {
                   ...data,
@@ -1073,6 +1111,10 @@ export default function App() {
                   facebook_url: '',
                   linkedin_url: '',
                 };
+            const publicData = {
+              ...premiumProfileData,
+              welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
+            };
             setPublicProfile({ ...publicData, vendors: visibleVendors });
           }
         }
@@ -1232,6 +1274,7 @@ export default function App() {
       slug: profile?.slug || '',
       welcome_message: profile?.welcome_message || '',
       bio: profile?.bio || '',
+      welcome_video_url: profile?.welcome_video_url || '',
       website_url: profile?.website_url || '',
       instagram_url: profile?.instagram_url || '',
       facebook_url: profile?.facebook_url || '',
@@ -1317,6 +1360,7 @@ export default function App() {
     const slug = normalizeRealtorSlug(profileForm.slug);
     const welcomeMessage = profileForm.welcome_message.trim();
     const bio = profileForm.bio.trim();
+    const welcomeVideoUrl = profileForm.welcome_video_url.trim();
     const websiteUrl = profileForm.website_url.trim();
     const instagramUrl = profileForm.instagram_url.trim();
     const facebookUrl = profileForm.facebook_url.trim();
@@ -1345,11 +1389,17 @@ export default function App() {
       return;
     }
 
+    const currentPlanConfig = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (currentPlanConfig.allowsWelcomeVideo && welcomeVideoUrl && !isValidYouTubeUrl(welcomeVideoUrl)) {
+      setProfileEditorError('Please paste a valid YouTube video, YouTube Shorts, or youtu.be link.');
+      return;
+    }
+
     setProfileSaving(true);
     setProfileEditorError(null);
 
-    const currentPlanConfig = getPlanConfig(profile?.plan);
     const allowsPremiumProfileSave = currentPlanConfig.allowsPremiumProfile;
+    const allowsWelcomeVideoSave = currentPlanConfig.allowsWelcomeVideo;
     const previousHeadshotUrl = profile?.headshot_url || '';
     let nextHeadshotUrl = allowsPremiumProfileSave ? (removeHeadshot ? '' : previousHeadshotUrl) : previousHeadshotUrl;
     let uploadedHeadshotUrl = '';
@@ -1372,6 +1422,7 @@ export default function App() {
           headshot_url: nextHeadshotUrl,
           welcome_message: allowsPremiumProfileSave ? welcomeMessage : (profile?.welcome_message || ''),
           bio: allowsPremiumProfileSave ? bio : (profile?.bio || ''),
+          welcome_video_url: allowsWelcomeVideoSave ? welcomeVideoUrl : (profile?.welcome_video_url || ''),
           website_url: allowsPremiumProfileSave ? (websiteUrl ? normalizeWebsiteUrl(websiteUrl) : '') : (profile?.website_url || ''),
           instagram_url: allowsPremiumProfileSave ? (instagramUrl ? normalizeWebsiteUrl(instagramUrl) : '') : (profile?.instagram_url || ''),
           facebook_url: allowsPremiumProfileSave ? (facebookUrl ? normalizeWebsiteUrl(facebookUrl) : '') : (profile?.facebook_url || ''),
@@ -1417,6 +1468,7 @@ export default function App() {
         slug: updatedProfile?.slug || '',
         welcome_message: updatedProfile?.welcome_message || '',
         bio: updatedProfile?.bio || '',
+        welcome_video_url: updatedProfile?.welcome_video_url || '',
         website_url: updatedProfile?.website_url || '',
         instagram_url: updatedProfile?.instagram_url || '',
         facebook_url: updatedProfile?.facebook_url || '',
@@ -1658,6 +1710,7 @@ export default function App() {
   const allowsPremiumProfile = planConfig.allowsPremiumProfile;
   const allowsVendorRecommendations = planConfig.allowsVendorRecommendations;
   const allowsDefaultVendorControl = planConfig.allowsDefaultVendorControl;
+  const allowsWelcomeVideo = planConfig.allowsWelcomeVideo;
   const foundingPricingActive = isFoundingPricingActive();
   const customVendors = vendors.filter((vendor) => !vendor.is_default);
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
@@ -3650,6 +3703,41 @@ export default function App() {
                       className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <p className="text-[10px] text-charcoal-muted mt-1 text-right">{profileForm.bio.length}/400</p>
+                  </div>
+                </section>
+
+
+                <section className="pt-5 border-t border-cream-border">
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="w-4 h-4 text-gold-accent" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Pro Welcome Video</span>
+                    </div>
+                    <p className="text-[11px] text-charcoal-muted mt-1">
+                      {allowsWelcomeVideo
+                        ? 'Paste a YouTube or YouTube Shorts link. A short 30–60 second personal welcome works best.'
+                        : 'A YouTube welcome video is available on the Pro plan.'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="profileWelcomeVideo">
+                      YouTube Video Link
+                    </label>
+                    <input
+                      type="text"
+                      id="profileWelcomeVideo"
+                      disabled={!allowsWelcomeVideo}
+                      value={profileForm.welcome_video_url}
+                      onChange={(e) => setProfileForm({ ...profileForm, welcome_video_url: e.target.value })}
+                      placeholder={allowsWelcomeVideo ? 'https://www.youtube.com/watch?v=...' : 'Upgrade to Pro to add a welcome video'}
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-2">
+                      {allowsWelcomeVideo
+                        ? 'Normal YouTube links, Shorts links, and youtu.be links are supported. The video will not autoplay.'
+                        : 'Core and Free hubs remain video-free.'}
+                    </p>
                   </div>
                 </section>
 
