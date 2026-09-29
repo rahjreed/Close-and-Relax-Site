@@ -99,112 +99,172 @@ const COMPARISON_ROWS = [
   },
 ];
 
+const FOUNDING_PRICING_END = new Date('2027-01-18T23:59:59-05:00');
+const FOUNDING_PRICING_END_LABEL = 'January 18, 2027';
+
+// Keep the existing database values for compatibility:
+// partner/free -> customer-facing Free
+// pro          -> customer-facing Core
+// premier      -> customer-facing Pro
+const normalizeInternalPlan = (value) => {
+  const plan = String(value || 'partner').toLowerCase();
+  if (plan === 'free' || plan === 'partner') return 'partner';
+  if (plan === 'core' || plan === 'pro') return 'pro';
+  if (plan === 'premier') return 'premier';
+  return 'partner';
+};
+
+const getPlanConfig = (value) => {
+  const internalPlan = normalizeInternalPlan(value);
+
+  if (internalPlan === 'premier') {
+    return {
+      internalPlan,
+      name: 'Pro',
+      vendorLimit: 15,
+      allowsPremiumProfile: true,
+      allowsVendorRecommendations: true,
+      allowsDefaultVendorControl: true,
+      regularPrice: 59,
+      foundingPrice: 29,
+    };
+  }
+
+  if (internalPlan === 'pro') {
+    return {
+      internalPlan,
+      name: 'Core',
+      vendorLimit: 8,
+      allowsPremiumProfile: true,
+      allowsVendorRecommendations: true,
+      allowsDefaultVendorControl: false,
+      regularPrice: 39,
+      foundingPrice: 19,
+    };
+  }
+
+  return {
+    internalPlan: 'partner',
+    name: 'Free',
+    vendorLimit: 3,
+    allowsPremiumProfile: false,
+    allowsVendorRecommendations: false,
+    allowsDefaultVendorControl: false,
+    regularPrice: 0,
+    foundingPrice: 0,
+  };
+};
+
+const isFoundingPricingActive = () => Date.now() <= FOUNDING_PRICING_END.getTime();
+
 const PRICING_TIERS = [
   {
     id: "partner",
-    name: "Partner",
-    badge: "Entry Level",
-    price: "Free",
+    name: "Free",
+    badge: "Always Free",
+    regularPrice: 0,
+    foundingPrice: 0,
     period: "/ forever",
-    description: "A genuinely useful closing concierge. Includes your profile image, essential contact identity, and up to 3 of your own preferred vendors.",
+    description: "A genuinely useful homeowner concierge that keeps you visible after closing without turning the hub into a sales page.",
     popular: false,
     ctaText: "Create Free Account",
     features: [
       "Instant self-service dashboard access",
-      "Essential identity fields: profile image, name, brokerage, phone, email & location",
+      "Essential identity: name, brokerage, phone, email & market",
       "Direct Call & Text contact actions for buyers",
-      "Standard Close & Relax verified resource network",
-      "Add up to 3 of your own preferred vendors alongside standard network",
-      "Dedicated shareable link & subdomain",
-      "Fully responsive mobile & save-to-phone PWA experience",
-      "Subtle Close & Relax branding mark",
+      "Standard Close & Relax resource content",
+      "Add up to 3 of your own preferred vendors",
+      "Dedicated shareable subdomain",
+      "Responsive mobile hub & save-to-phone PWA experience",
+      "Close & Relax branding remains visible",
     ],
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Core",
     badge: "Most Popular",
-    price: "$29",
+    regularPrice: 39,
+    foundingPrice: 19,
     period: "/ month",
-    description: "The ideal plan for active producers wanting richer self-service branding, personalized welcome messaging, and expanded vendor additions.",
+    description: "For active Realtors who want their hub to feel unmistakably personal, polished, and useful long after closing day.",
     popular: true,
-    ctaText: "Choose Pro",
+    ctaText: "Choose Core",
     features: [
-      "Everything in Free, plus broader dashboard customization:",
-      "Add up to 5 of your own preferred vendors alongside standard network",
-      "Full profile bio and personalized welcome message editing",
-      "Social media and professional website profile links",
-      "Personal one-line recommendation notes under each vendor",
-      "Enhanced branded installable homeowner app experience",
-      "Personalized 'Add-to-Phone' prompt for your buyers",
-      "Edit and publish updates instantly anytime",
-      "Standard email customer support",
+      "Everything in Free, plus stronger personalization",
+      "Professional Realtor headshot",
+      "Add up to 8 preferred vendors",
+      "Personal one-line recommendation notes under vendors",
+      "Personalized welcome message & short bio",
+      "Professional website and social profile links",
+      "More editable homeowner resources and page content",
+      "More images/media and self-service editing",
+      "Close & Relax branding remains visible",
     ],
   },
   {
     id: "premier",
-    name: "Premier",
-    badge: "Ultimate Control",
-    price: "$79",
+    name: "Pro",
+    badge: "Maximum Control",
+    regularPrice: 59,
+    foundingPrice: 29,
     period: "/ month",
-    description: "Substantial control and a near-white-label experience for luxury specialists who demand bespoke curation and full vendor control.",
+    description: "For Realtors who want the most control, richer media, deeper homeowner resources, and a near-white-label experience.",
     popular: false,
-    ctaText: "Choose Premier",
+    ctaText: "Choose Pro",
     features: [
-      "Everything in Pro, plus advanced hub controls:",
-      "Add up to 8 of your own preferred vendors",
-      "Full vendor control: replace or remove standard default vendors",
-      "Realtor-first near-white-label presentation",
-      "Custom home-screen app icon using your 2 chosen initials",
-      "Short personal video greeting welcome (up to ~30 seconds)",
-      "Interactive homeowner checklist built directly into the hub",
-      "Custom sections & tailored home service categories",
-      "Expanded image and homeowner resource controls",
-      "Stronger priority customer & technical support",
+      "Everything in Core, plus advanced hub controls",
+      "Add up to 15 preferred vendors",
+      "Greater vendor control, including default resource replacement/removal",
+      "Premium branding control",
+      "Custom home-screen app icon",
+      "Personal video greeting up to ~30 seconds",
+      "Advanced homeowner checklists",
+      "Custom sections & tailored service categories",
+      "Expanded image/media and homeowner resource controls",
     ],
   },
 ];
 
 const FAQ_ITEMS = [
   {
-    question: "What profile information can I customize on the Free plan?",
-    answer: "The Free Partner tier includes all your essential identity fields: your uploaded profile headshot, full name, brokerage or team affiliation, direct phone number, email address, and primary market location. Richer profile content—such as a personalized written welcome message, detailed bio narrative, professional website, and social media links—is unlocked on Pro and Premier.",
+    question: "What can I customize on the Free plan?",
+    answer: "Free is designed to be genuinely useful: your name, brokerage, direct phone, public email, market, dedicated subdomain, standard Close & Relax homeowner resources, and up to 3 preferred vendors. Core adds your professional headshot and richer personalization such as custom welcome content, bio, social links, vendor recommendation notes, and additional editing controls.",
   },
   {
-    question: "Can I add my own vendors on the Free plan?",
-    answer: "Yes! The Free Partner tier is designed to be genuinely useful right out of the box. You can upload your profile photo, display your essential contact identity, and add up to 3 of your own preferred vendors in addition to the standard Close & Relax network.",
+    question: "Can I add my own vendors on Free?",
+    answer: "Yes. Free includes up to 3 of your own preferred vendors in addition to the standard Close & Relax resource. Core expands that to 8, and Pro expands it to 15.",
   },
   {
-    question: "What is the difference in vendor control between Pro and Premier?",
-    answer: "On Pro ($29/month), you can add up to 5 of your own preferred vendors alongside the standard Close & Relax network, complete with your personal recommendation notes. On Premier ($79/month), you can add up to 8 preferred vendors AND you gain full vendor control—meaning you can replace or remove standard default vendors where allowed for a tailored, near-white-label experience.",
+    question: "What is the difference between Core and Pro?",
+    answer: "Core is $39/month and supports up to 8 preferred vendors, a Realtor headshot, personal recommendation notes, richer profile branding, and more self-service editing. Pro is $59/month and supports up to 15 preferred vendors plus greater vendor control, premium branding, video, a custom app icon, advanced checklists, and custom sections.",
+  },
+  {
+    question: "How does Founding Member pricing work?",
+    answer: "Realtors who start a paid plan by January 18, 2027 can lock in Founding Core at $19/month or Founding Pro at $29/month. The founding rate stays in place while that subscription remains continuously active. If it is canceled and restarted later, the current standard price applies.",
   },
   {
     question: "How do I create and manage my hub?",
-    answer: "You simply create an account on Close & Relax to access your personal Realtor dashboard. From there, fill in your profile details, upload your image, select or add your trusted vendors according to your plan, and click publish. Your hub is generated instantly and ready to share.",
-  },
-  {
-    question: "Can I edit my hub after publishing?",
-    answer: "Yes, at any time. Log in to your Close & Relax dashboard to update your phone number, revise a vendor's contact details, or add new recommendation notes. All changes publish immediately to your live homeowner hub without requiring your clients to update anything.",
+    answer: "Create an account to access your Realtor dashboard, fill in the profile fields available on your plan, add your trusted vendors, and publish. Changes to supported fields appear on your live homeowner hub without your clients needing a new link.",
   },
   {
     question: "I already have a real estate website. Why do I need this?",
-    answer: "Your public website exists to attract and win prospective clients. Close & Relax serves them after the keys are handed over, providing a clean, distraction-free homeowner concierge saved right on their mobile phone for ongoing home ownership needs.",
+    answer: "Your public website is built to attract prospects. Close & Relax is built to keep you useful after closing—giving past clients a homeowner resource they can keep on their phone, which helps you remain memorable when they need an agent again or have someone to refer.",
   },
   {
     question: "I already have a vendor PDF list. How is this different?",
-    answer: "PDFs get buried in email archives or left in moving boxes within days. Close & Relax transforms your static list into an interactive mobile experience that clients install to their home screen with one-tap dialing and your contact buttons always visible.",
+    answer: "PDFs get buried. Close & Relax turns your recommendations into an interactive mobile homeowner hub with one-tap calling, live vendor updates, your contact information, and a save-to-phone experience that keeps the resource—and your name—easy to find.",
   },
   {
     question: "Do my home buyers need to create an account or download an app?",
-    answer: "Never. Homeowners do not create an account, enter a password, or download anything from the App Store or Google Play. The hub opens directly in their browser and can be saved to their home screen as a Progressive Web App (PWA) with a single tap.",
+    answer: "No. Homeowners do not create an account or enter a password. The hub opens directly in the browser and can be saved to the phone home screen as a Progressive Web App.",
   },
   {
     question: "Do vendors pay Close & Relax to appear?",
-    answer: "No. Close & Relax never charges vendors for recommendation placement, lead referrals, or sponsored ad slots. Recommendations are grounded strictly in authenticity, local reputation, and your personal guidance.",
+    answer: "No. Close & Relax does not charge vendors for recommendation placement or sponsored visibility. The point is to preserve the Realtor's trusted recommendations rather than turn the hub into an ad directory.",
   },
   {
-    question: "What happens if I ever downgrade from Pro or Premier?",
-    answer: "Your clients are never stranded or shown a broken link. If you change or cancel your paid plan, your hub gracefully transitions to the standard Close & Relax Partner experience, preserving their basic utility without interruption.",
+    question: "What happens if I downgrade or cancel a paid plan?",
+    answer: "The homeowner link does not disappear. Paid-only customization is hidden and the hub gracefully falls back to the Free experience so clients still retain a useful resource.",
   },
 ];
 
@@ -996,7 +1056,24 @@ export default function App() {
             setPublicProfileError(vendorLoadError.message || 'Unable to load this realtor hub.');
             setPublicProfile(null);
           } else {
-            setPublicProfile({ ...data, vendors: publicVendors || [] });
+            const publicPlan = getPlanConfig(data.plan);
+            const visibleVendors = (publicVendors || []).map((vendor) => ({
+              ...vendor,
+              recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
+            }));
+            const publicData = publicPlan.allowsPremiumProfile
+              ? data
+              : {
+                  ...data,
+                  headshot_url: '',
+                  welcome_message: '',
+                  bio: '',
+                  website_url: '',
+                  instagram_url: '',
+                  facebook_url: '',
+                  linkedin_url: '',
+                };
+            setPublicProfile({ ...publicData, vendors: visibleVendors });
           }
         }
       } catch (err) {
@@ -1271,12 +1348,14 @@ export default function App() {
     setProfileSaving(true);
     setProfileEditorError(null);
 
+    const currentPlanConfig = getPlanConfig(profile?.plan);
+    const allowsPremiumProfileSave = currentPlanConfig.allowsPremiumProfile;
     const previousHeadshotUrl = profile?.headshot_url || '';
-    let nextHeadshotUrl = removeHeadshot ? '' : previousHeadshotUrl;
+    let nextHeadshotUrl = allowsPremiumProfileSave ? (removeHeadshot ? '' : previousHeadshotUrl) : previousHeadshotUrl;
     let uploadedHeadshotUrl = '';
 
     try {
-      if (headshotFile) {
+      if (headshotFile && allowsPremiumProfileSave) {
         uploadedHeadshotUrl = await uploadHeadshot(headshotFile);
         nextHeadshotUrl = uploadedHeadshotUrl;
       }
@@ -1291,12 +1370,12 @@ export default function App() {
           phone,
           slug,
           headshot_url: nextHeadshotUrl,
-          welcome_message: welcomeMessage,
-          bio,
-          website_url: websiteUrl ? normalizeWebsiteUrl(websiteUrl) : '',
-          instagram_url: instagramUrl ? normalizeWebsiteUrl(instagramUrl) : '',
-          facebook_url: facebookUrl ? normalizeWebsiteUrl(facebookUrl) : '',
-          linkedin_url: linkedinUrl ? normalizeWebsiteUrl(linkedinUrl) : '',
+          welcome_message: allowsPremiumProfileSave ? welcomeMessage : (profile?.welcome_message || ''),
+          bio: allowsPremiumProfileSave ? bio : (profile?.bio || ''),
+          website_url: allowsPremiumProfileSave ? (websiteUrl ? normalizeWebsiteUrl(websiteUrl) : '') : (profile?.website_url || ''),
+          instagram_url: allowsPremiumProfileSave ? (instagramUrl ? normalizeWebsiteUrl(instagramUrl) : '') : (profile?.instagram_url || ''),
+          facebook_url: allowsPremiumProfileSave ? (facebookUrl ? normalizeWebsiteUrl(facebookUrl) : '') : (profile?.facebook_url || ''),
+          linkedin_url: allowsPremiumProfileSave ? (linkedinUrl ? normalizeWebsiteUrl(linkedinUrl) : '') : (profile?.linkedin_url || ''),
         })
         .eq('id', user.id)
         .select('*')
@@ -1460,20 +1539,21 @@ export default function App() {
       return;
     }
 
-    const normalizedPlan = (profile?.plan || 'partner') === 'free' ? 'partner' : (profile?.plan || 'partner');
-    const vendorLimit = normalizedPlan === 'premier' ? 8 : normalizedPlan === 'pro' ? 5 : 3;
-    const allowsRecommendation = normalizedPlan === 'pro' || normalizedPlan === 'premier';
-    const allowsDefaultControl = normalizedPlan === 'premier';
+    const planConfig = getPlanConfig(profile?.plan);
+    const normalizedPlan = planConfig.internalPlan;
+    const vendorLimit = planConfig.vendorLimit;
+    const allowsRecommendation = planConfig.allowsVendorRecommendations;
+    const allowsDefaultControl = planConfig.allowsDefaultVendorControl;
     const existingVendor = editingVendorId ? vendors.find((vendor) => vendor.id === editingVendorId) : null;
     const customVendorCount = vendors.filter((vendor) => !vendor.is_default).length;
 
     if (!editingVendorId && customVendorCount >= vendorLimit) {
-      setVendorError(`Your ${normalizedPlan} plan allows up to ${vendorLimit} custom vendors.`);
+      setVendorError(`Your ${planConfig.name} plan allows up to ${vendorLimit} custom vendors.`);
       return;
     }
 
     if (existingVendor?.is_default && !allowsDefaultControl) {
-      setVendorError('The standard Close & Relax vendor can only be edited on the Premier plan.');
+      setVendorError('The standard Close & Relax vendor can only be edited on the Pro plan.');
       return;
     }
 
@@ -1533,9 +1613,9 @@ export default function App() {
   const handleDeleteVendor = async (vendor) => {
     if (!user?.id || !profile?.id || !vendor?.id) return;
 
-    const normalizedPlan = (profile?.plan || 'partner') === 'free' ? 'partner' : (profile?.plan || 'partner');
-    if (vendor.is_default && normalizedPlan !== 'premier') {
-      setVendorError('The standard Close & Relax vendor can only be removed on the Premier plan.');
+    const planConfig = getPlanConfig(profile?.plan);
+    if (vendor.is_default && !planConfig.allowsDefaultVendorControl) {
+      setVendorError('The standard Close & Relax vendor can only be removed on the Pro plan.');
       return;
     }
 
@@ -1571,10 +1651,14 @@ export default function App() {
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
-  const displayPlan = storedPlan === 'free' ? 'partner' : storedPlan;
-  const vendorLimit = displayPlan === 'premier' ? 8 : displayPlan === 'pro' ? 5 : 3;
-  const allowsVendorRecommendations = displayPlan === 'pro' || displayPlan === 'premier';
-  const allowsDefaultVendorControl = displayPlan === 'premier';
+  const planConfig = getPlanConfig(storedPlan);
+  const displayPlan = planConfig.internalPlan;
+  const publicPlanName = planConfig.name;
+  const vendorLimit = planConfig.vendorLimit;
+  const allowsPremiumProfile = planConfig.allowsPremiumProfile;
+  const allowsVendorRecommendations = planConfig.allowsVendorRecommendations;
+  const allowsDefaultVendorControl = planConfig.allowsDefaultVendorControl;
+  const foundingPricingActive = isFoundingPricingActive();
   const customVendors = vendors.filter((vendor) => !vendor.is_default);
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
   const publicHubUrl = profile?.slug ? `https://${profile.slug}.closeandrelax.com` : null;
@@ -1873,10 +1957,10 @@ export default function App() {
               <div className="bg-cream-warm p-5 rounded-2xl border border-cream-border">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Active Plan</span>
                 <p className="font-editorial text-2xl font-bold text-charcoal-deep mt-1 capitalize">
-                  {displayPlan} Tier
+                  {publicPlanName} Tier
                 </p>
                 <p className="text-xs text-charcoal-muted mt-0.5">
-                  {displayPlan === 'premier' ? 'Up to 8 vendors + replace standard' : displayPlan === 'pro' ? 'Up to 5 vendors + personal notes' : 'Standard network + up to 3 vendors'}
+                  {displayPlan === 'premier' ? 'Up to 15 vendors + greater resource control' : displayPlan === 'pro' ? 'Up to 8 vendors + personal recommendations' : 'Standard resources + up to 3 vendors'}
                 </p>
               </div>
 
@@ -1944,7 +2028,7 @@ export default function App() {
 
                   <div className="flex items-center gap-4 mb-5 bg-cream-card border border-cream-border rounded-2xl p-4">
                     <div className="w-16 h-16 rounded-full border border-[#B5966B]/70 bg-cream-subtle overflow-hidden shrink-0 flex items-center justify-center">
-                      {profile?.headshot_url ? (
+                      {allowsPremiumProfile && profile?.headshot_url ? (
                         <img src={profile.headshot_url} alt={displayName} className="w-full h-full object-cover" />
                       ) : (
                         <span className="font-editorial text-xl font-semibold text-charcoal-deep">{getInitials(displayName)}</span>
@@ -1953,7 +2037,7 @@ export default function App() {
                     <div className="min-w-0">
                       <p className="font-editorial text-lg font-semibold text-charcoal-deep truncate">{displayName}</p>
                       <p className="text-[11px] text-charcoal-muted truncate">{profile?.phone || 'Add a public phone number'}</p>
-                      <p className="text-[10px] text-gold-accent mt-1">{profile?.welcome_message ? 'Custom welcome message active' : 'Using standard welcome message'}</p>
+                      <p className="text-[10px] text-gold-accent mt-1">{allowsPremiumProfile ? (profile?.welcome_message ? 'Custom welcome message active' : 'Using standard welcome message') : 'Core unlocks headshot & custom profile content'}</p>
                     </div>
                   </div>
 
@@ -1980,7 +2064,7 @@ export default function App() {
                     </div>
                     <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Website</span>
-                      <span className="text-right truncate max-w-[55%]">{profile?.website_url || 'Not added'}</span>
+                      <span className="text-right truncate max-w-[55%]">{allowsPremiumProfile ? (profile?.website_url || 'Not added') : 'Core feature'}</span>
                     </div>
                     <div className="flex justify-between gap-4 py-1.5 border-b border-cream-border/60">
                       <span className="font-medium text-charcoal-deep">Realtor Subdomain</span>
@@ -2011,15 +2095,15 @@ export default function App() {
                   </div>
 
                   <p className="text-xs text-charcoal-muted leading-relaxed mb-4">
-                    Your hub includes the standard Close &amp; Relax smart-home resource, and your <span className="font-semibold text-charcoal-deep capitalize">{displayPlan}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals.
+                    Your hub includes the standard Close &amp; Relax smart-home resource, and your <span className="font-semibold text-charcoal-deep">{publicPlanName}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals.
                   </p>
 
                   <div className="bg-cream-card p-3 rounded-xl border border-cream-border text-[11px] text-charcoal-muted space-y-2">
                     <p className="font-semibold text-charcoal-deep">Current vendor setup</p>
                     <p>• {standardVendors.length || 1} standard Close &amp; Relax resource</p>
                     <p>• {customVendors.length} of {vendorLimit} custom vendor slots used</p>
-                    <p>• Recommendation notes: {allowsVendorRecommendations ? 'Enabled' : 'Available on Pro & Premier'}</p>
-                    {displayPlan === 'premier' && <p>• Standard vendor replacement/removal: Enabled</p>}
+                    <p>• Recommendation notes: {allowsVendorRecommendations ? 'Enabled' : 'Available on Core & Pro'}</p>
+                    {allowsDefaultVendorControl && <p>• Standard resource replacement/removal: Enabled</p>}
                   </div>
                 </div>
 
@@ -2308,7 +2392,7 @@ export default function App() {
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                        <span><strong>Personal guidance from you:</strong> your own handpicked vendors (3 on Free, 5 on Pro, up to 8 on Premier).</span>
+                        <span><strong>Personal guidance from you:</strong> your own handpicked vendors (3 on Free, 8 on Core, up to 15 on Pro).</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
@@ -2354,7 +2438,7 @@ export default function App() {
                     Realtor Profile Image &amp; Identity
                   </h3>
                   <p className="text-sm text-charcoal-muted leading-relaxed">
-                    Upload your professional headshot, brokerage details, direct line, and location to anchor the top of your concierge. Free plans include essential identity branding from day one.
+                    Your essential identity starts on Free. Core and Pro unlock your professional headshot and richer personalization so the hub feels unmistakably yours.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -2372,7 +2456,7 @@ export default function App() {
                     Curated Trusted Professionals
                   </h3>
                   <p className="text-sm text-charcoal-muted leading-relaxed">
-                    Pre-populated with the verified Close &amp; Relax network, plus add your own preferred vendors: up to 3 on Free, up to 5 on Pro, or up to 8 with full vendor replacement on Premier.
+                    Built around trusted homeowner resources, plus your own preferred vendors: up to 3 on Free, 8 on Core, or 15 on Pro with greater vendor/resource control.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -2390,7 +2474,7 @@ export default function App() {
                     Personal Realtor Recommendations
                   </h3>
                   <p className="text-sm text-charcoal-muted leading-relaxed">
-                    Pro and Premier users can add a personal one-line endorsement or recommendation note beneath their preferred vendors (e.g., “Ask for Marco, used on 14+ client purchases”), reinforcing your trusted authority. Free users can add preferred vendors without custom recommendation notes.
+                    Core and Pro users can add a personal one-line endorsement beneath each preferred vendor (for example, “Ask for Marco—he has taken great care of my clients”), reinforcing your trusted authority. Free users can still add preferred vendors without custom recommendation notes.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -2544,7 +2628,7 @@ export default function App() {
                     The Non-Expiring Assurance
                   </h4>
                   <p className="text-sm text-charcoal-muted leading-relaxed">
-                    If an agent ever decides to step down from a paid Pro or Premier customization plan, their clients do not get locked out. The hub seamlessly downgrades to the standard Close &amp; Relax verified network experience—preserving your client’s access to vital home services without interruption.
+                    If an agent ever steps down from Core or Pro, clients are not stranded. Paid-only personalization is hidden and the hub gracefully returns to the Free experience, preserving the same homeowner link and essential utility.
                   </p>
                 </div>
               </div>
@@ -2767,9 +2851,16 @@ export default function App() {
                   Invest in Relationships, Not Ad Clicks.
                 </h2>
                 <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-                  Start completely free with your profile image and up to 3 preferred vendors, or unlock full self-service customization whenever you are ready.
+                  Start free with your essential contact identity and up to 3 preferred vendors, then unlock your headshot, richer personalization, and more vendor capacity when you are ready.
                 </p>
               </div>
+
+              {foundingPricingActive && (
+                <div className="max-w-3xl mx-auto -mt-8 mb-10 bg-[#F4EBDD] border border-[#E4D5BE] rounded-2xl px-5 py-4 text-center">
+                  <p className="text-sm font-semibold text-charcoal-deep">Founding Member pricing is open through {FOUNDING_PRICING_END_LABEL}.</p>
+                  <p className="text-xs text-charcoal-muted mt-1">Lock in Core at $19/month or Pro at $29/month while your subscription stays continuously active. Cancel and return later, and current pricing applies.</p>
+                </div>
+              )}
 
               {/* Pricing Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -2799,12 +2890,26 @@ export default function App() {
                       </div>
 
                       <div className="mb-6">
-                        <span className="font-editorial text-4xl font-bold text-charcoal-deep">
-                          {tier.price}
-                        </span>
-                        <span className="text-sm text-charcoal-muted font-medium ml-1">
-                          {tier.period}
-                        </span>
+                        {tier.id === 'partner' ? (
+                          <>
+                            <span className="font-editorial text-4xl font-bold text-charcoal-deep">Free</span>
+                            <span className="text-sm text-charcoal-muted font-medium ml-1">{tier.period}</span>
+                          </>
+                        ) : foundingPricingActive ? (
+                          <>
+                            <div className="flex items-end gap-2 flex-wrap">
+                              <span className="font-editorial text-4xl font-bold text-charcoal-deep">${tier.foundingPrice}</span>
+                              <span className="text-sm text-charcoal-muted font-medium mb-1">/ month</span>
+                              <span className="text-sm text-charcoal-muted line-through mb-1">${tier.regularPrice}</span>
+                            </div>
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent mt-1">Founding rate • through {FOUNDING_PRICING_END_LABEL}</p>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-editorial text-4xl font-bold text-charcoal-deep">${tier.regularPrice}</span>
+                            <span className="text-sm text-charcoal-muted font-medium ml-1">/ month</span>
+                          </>
+                        )}
                       </div>
 
                       <p className="text-sm text-charcoal-muted mb-6 pb-6 border-b border-cream-border leading-relaxed">
@@ -2825,7 +2930,7 @@ export default function App() {
                       <button
                         onClick={() => {
                           if (user) {
-                            showToast(`You are on the ${displayPlan.toUpperCase()} tier. Manage your hub in your dashboard.`);
+                            showToast(`You are on the ${publicPlanName} tier. Manage your hub in your dashboard.`);
                             setCurrentView('dashboard');
                           } else {
                             handleOpenSignup(tier.id);
@@ -3191,7 +3296,7 @@ export default function App() {
                             : "text-charcoal-muted hover:text-charcoal-deep"
                         }`}
                       >
-                        Partner (Free)
+                        Free
                       </button>
                       <button
                         type="button"
@@ -3202,7 +3307,7 @@ export default function App() {
                             : "text-charcoal-muted hover:text-charcoal-deep"
                         }`}
                       >
-                        Pro ($29/mo)
+                        Core ({foundingPricingActive ? '$19 founding' : '$39/mo'})
                       </button>
                       <button
                         type="button"
@@ -3213,7 +3318,7 @@ export default function App() {
                             : "text-charcoal-muted hover:text-charcoal-deep"
                         }`}
                       >
-                        Premier ($79/mo)
+                        Pro ({foundingPricingActive ? '$29 founding' : '$59/mo'})
                       </button>
                     </div>
                   </div>
@@ -3385,7 +3490,7 @@ export default function App() {
 
                   <div className="flex flex-col sm:flex-row gap-5 bg-cream-card border border-cream-border rounded-2xl p-4 mb-4">
                     <div className="w-24 h-24 rounded-full border-2 border-gold-accent bg-cream-subtle overflow-hidden shrink-0 flex items-center justify-center">
-                      {headshotPreview ? (
+                      {allowsPremiumProfile && headshotPreview ? (
                         <img src={headshotPreview} alt="Headshot preview" className="w-full h-full object-cover" />
                       ) : (
                         <span className="font-editorial text-2xl font-semibold text-charcoal-deep">{getInitials(profileForm.full_name || displayName)}</span>
@@ -3400,10 +3505,11 @@ export default function App() {
                         id="profileHeadshot"
                         accept="image/jpeg,image/png,image/webp"
                         onChange={handleHeadshotFileChange}
-                        className="block w-full text-xs text-charcoal-muted file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cream-subtle file:text-charcoal-deep hover:file:bg-cream-border"
+                        disabled={!allowsPremiumProfile}
+                        className="block w-full text-xs text-charcoal-muted file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cream-subtle file:text-charcoal-deep hover:file:bg-cream-border disabled:opacity-50 disabled:cursor-not-allowed"
                       />
-                      <p className="text-[10px] text-charcoal-muted mt-2">JPG, PNG, or WebP. Maximum 5 MB.</p>
-                      {(headshotPreview || profile?.headshot_url) && (
+                      <p className="text-[10px] text-charcoal-muted mt-2">{allowsPremiumProfile ? 'JPG, PNG, or WebP. Maximum 5 MB.' : 'Realtor headshots unlock on Core and Pro.'}</p>
+                      {allowsPremiumProfile && (headshotPreview || profile?.headshot_url) && (
                         <button
                           type="button"
                           onClick={() => {
@@ -3509,7 +3615,7 @@ export default function App() {
                 <section className="pt-5 border-t border-cream-border">
                   <div className="mb-3">
                     <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Homeowner Message</span>
-                    <p className="text-[11px] text-charcoal-muted mt-1">Add your own voice to the hub instead of relying only on the standard copy.</p>
+                    <p className="text-[11px] text-charcoal-muted mt-1">{allowsPremiumProfile ? 'Add your own voice to the hub instead of relying only on the standard copy.' : 'Custom welcome content and bio unlock on Core and Pro.'}</p>
                   </div>
 
                   <div>
@@ -3518,12 +3624,13 @@ export default function App() {
                     </label>
                     <textarea
                       id="profileWelcomeMessage"
+                      disabled={!allowsPremiumProfile}
                       rows={4}
                       maxLength={500}
                       value={profileForm.welcome_message}
                       onChange={(e) => setProfileForm({ ...profileForm, welcome_message: e.target.value })}
                       placeholder="Welcome home! I created this hub so you always have a quick place to find trusted home resources..."
-                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <p className="text-[10px] text-charcoal-muted mt-1 text-right">{profileForm.welcome_message.length}/500</p>
                   </div>
@@ -3534,12 +3641,13 @@ export default function App() {
                     </label>
                     <textarea
                       id="profileBio"
+                      disabled={!allowsPremiumProfile}
                       rows={3}
                       maxLength={400}
                       value={profileForm.bio}
                       onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
                       placeholder="A short introduction about you, your market, and how you help clients."
-                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <p className="text-[10px] text-charcoal-muted mt-1 text-right">{profileForm.bio.length}/400</p>
                   </div>
@@ -3548,7 +3656,7 @@ export default function App() {
                 <section className="pt-5 border-t border-cream-border">
                   <div className="mb-3">
                     <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Website &amp; Social</span>
-                    <p className="text-[11px] text-charcoal-muted mt-1">Leave any field blank that you do not want shown publicly.</p>
+                    <p className="text-[11px] text-charcoal-muted mt-1">{allowsPremiumProfile ? 'Leave any field blank that you do not want shown publicly.' : 'Website and social profile links unlock on Core and Pro.'}</p>
                   </div>
 
                   <div>
@@ -3558,10 +3666,11 @@ export default function App() {
                     <input
                       type="text"
                       id="profileWebsite"
+                      disabled={!allowsPremiumProfile}
                       value={profileForm.website_url}
                       onChange={(e) => setProfileForm({ ...profileForm, website_url: e.target.value })}
                       placeholder="yourwebsite.com"
-                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
@@ -3571,10 +3680,11 @@ export default function App() {
                       <input
                         type="text"
                         id="profileInstagram"
+                      disabled={!allowsPremiumProfile}
                         value={profileForm.instagram_url}
                         onChange={(e) => setProfileForm({ ...profileForm, instagram_url: e.target.value })}
                         placeholder="instagram.com/you"
-                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -3582,10 +3692,11 @@ export default function App() {
                       <input
                         type="text"
                         id="profileFacebook"
+                      disabled={!allowsPremiumProfile}
                         value={profileForm.facebook_url}
                         onChange={(e) => setProfileForm({ ...profileForm, facebook_url: e.target.value })}
                         placeholder="facebook.com/you"
-                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -3593,10 +3704,11 @@ export default function App() {
                       <input
                         type="text"
                         id="profileLinkedIn"
+                      disabled={!allowsPremiumProfile}
                         value={profileForm.linkedin_url}
                         onChange={(e) => setProfileForm({ ...profileForm, linkedin_url: e.target.value })}
                         placeholder="linkedin.com/in/you"
-                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                        className="w-full text-sm px-3 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -3788,11 +3900,11 @@ export default function App() {
                         disabled={!allowsVendorRecommendations}
                         value={vendorForm.recommendation}
                         onChange={(e) => setVendorForm({ ...vendorForm, recommendation: e.target.value })}
-                        placeholder={allowsVendorRecommendations ? 'A quick personal sentence explaining why you trust this vendor.' : 'Recommendation notes unlock on Pro and Premier.'}
+                        placeholder={allowsVendorRecommendations ? 'A quick personal sentence explaining why you trust this vendor.' : 'Recommendation notes unlock on Core and Pro.'}
                         className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <div className="flex justify-between mt-1 text-[10px] text-charcoal-muted">
-                        <span>{allowsVendorRecommendations ? 'This appears beneath the vendor on your public hub.' : 'Upgrade to Pro or Premier to add personal recommendation notes.'}</span>
+                        <span>{allowsVendorRecommendations ? 'This appears beneath the vendor on your public hub.' : 'Upgrade to Core or Pro to add personal recommendation notes.'}</span>
                         {allowsVendorRecommendations && <span>{vendorForm.recommendation.length}/220</span>}
                       </div>
                     </div>
