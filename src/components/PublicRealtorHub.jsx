@@ -87,6 +87,46 @@ const getYouTubeVideoId = (value = '') => {
   }
 };
 
+
+const normalizeRecurrenceMonths = (value) => {
+  const months = Number.parseInt(value, 10);
+  return Number.isFinite(months) && months > 0 ? months : null;
+};
+
+const getRecurrenceLabel = (months) => {
+  if (!months) return '';
+  if (months === 1) return 'Every month';
+  if (months === 12) return 'Every year';
+  return `Every ${months} months`;
+};
+
+const addMonthsClamped = (dateValue, months) => {
+  const source = new Date(dateValue);
+  if (!months || Number.isNaN(source.getTime())) return null;
+
+  const result = new Date(source);
+  const originalDay = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDayOfTargetMonth = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0
+  ).getDate();
+  result.setDate(Math.min(originalDay, lastDayOfTargetMonth));
+  return result;
+};
+
+const formatChecklistDate = (dateValue) => {
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+};
+
 const getVendorIcon = (category = '') => {
   const normalized = String(category || '').toLowerCase();
   if (normalized.includes('security') || normalized.includes('smart')) return ShieldCheck;
@@ -105,7 +145,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
-  const [completedChecklistIds, setCompletedChecklistIds] = useState([]);
+  const [checklistCompletionDates, setChecklistCompletionDates] = useState({});
 
   const realtorName = profile?.full_name || 'Your Realtor';
   const firstName = getFirstName(realtorName);
@@ -178,38 +218,104 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         title: item.title || 'Homeowner task',
         details: item.details || '',
         timeframe: item.timeframe || '',
+        recurrenceMonths: normalizeRecurrenceMonths(item.recurrence_months),
       }));
   }, [internalPlan, profile?.checklist_items]);
 
   const checklistStorageKey = `closeandrelax-checklist-${profile?.id || profile?.slug || 'homeowner'}`;
-  const completedChecklistCount = checklistItems.filter((item) => completedChecklistIds.includes(String(item.id))).length;
+  const completedChecklistCount = checklistItems.filter(
+    (item) => Boolean(checklistCompletionDates[String(item.id)])
+  ).length;
   const checklistProgress = checklistItems.length > 0
     ? Math.round((completedChecklistCount / checklistItems.length) * 100)
     : 0;
 
-  useEffect(() => {
+  const normalizeStoredChecklistProgress = (savedValue) => {
+    const validItemsById = new Map(
+      checklistItems.map((item) => [String(item.id), item])
+    );
+    const now = new Date();
+    const normalized = {};
+
+    // Step 52C stored only an array of checked IDs. Preserve those checkmarks
+    // during the upgrade and start their recurrence clock at migration time.
+    if (Array.isArray(savedValue)) {
+      savedValue.map(String).forEach((itemId) => {
+        if (validItemsById.has(itemId)) {
+          normalized[itemId] = now.toISOString();
+        }
+      });
+      return normalized;
+    }
+
+    if (!savedValue || typeof savedValue !== 'object') return normalized;
+
+    Object.entries(savedValue).forEach(([itemId, completedAt]) => {
+      const item = validItemsById.get(String(itemId));
+      if (!item || typeof completedAt !== 'string') return;
+
+      const completedDate = new Date(completedAt);
+      if (Number.isNaN(completedDate.getTime())) return;
+
+      if (item.recurrenceMonths) {
+        const dueAgainAt = addMonthsClamped(completedDate, item.recurrenceMonths);
+        if (dueAgainAt && dueAgainAt <= now) return;
+      }
+
+      normalized[String(itemId)] = completedDate.toISOString();
+    });
+
+    return normalized;
+  };
+
+  const refreshChecklistProgress = () => {
     if (checklistItems.length === 0) {
-      setCompletedChecklistIds([]);
+      setChecklistCompletionDates({});
       return;
     }
 
     try {
-      const saved = JSON.parse(window.localStorage.getItem(checklistStorageKey) || '[]');
-      const validIds = new Set(checklistItems.map((item) => String(item.id)));
-      setCompletedChecklistIds(
-        Array.isArray(saved) ? saved.map(String).filter((id) => validIds.has(id)) : []
-      );
+      const rawValue = window.localStorage.getItem(checklistStorageKey);
+      const saved = rawValue ? JSON.parse(rawValue) : {};
+      const normalized = normalizeStoredChecklistProgress(saved);
+      setChecklistCompletionDates(normalized);
+
+      // Also writes migrations and automatically removes recurring items
+      // that have reached their next due date.
+      window.localStorage.setItem(checklistStorageKey, JSON.stringify(normalized));
     } catch {
-      setCompletedChecklistIds([]);
+      setChecklistCompletionDates({});
     }
+  };
+
+  useEffect(() => {
+    refreshChecklistProgress();
+
+    // If the hub is left open for a long time, recurring tasks still become due
+    // without requiring the homeowner to manually clear anything.
+    const intervalId = window.setInterval(refreshChecklistProgress, 60 * 60 * 1000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshChecklistProgress();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [checklistStorageKey, checklistItems]);
 
   const toggleChecklistItem = (itemId) => {
     const normalizedId = String(itemId);
-    setCompletedChecklistIds((current) => {
-      const next = current.includes(normalizedId)
-        ? current.filter((id) => id !== normalizedId)
-        : [...current, normalizedId];
+
+    setChecklistCompletionDates((current) => {
+      const next = { ...current };
+
+      if (next[normalizedId]) {
+        delete next[normalizedId];
+      } else {
+        next[normalizedId] = new Date().toISOString();
+      }
 
       try {
         window.localStorage.setItem(checklistStorageKey, JSON.stringify(next));
@@ -678,7 +784,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                   A Few Things to Keep on Your Radar
                 </h2>
                 <p className="text-xs text-[#78716c] leading-relaxed mt-1.5 max-w-xl">
-                  Check items off as you handle them. Your progress stays saved on this device.
+                  Check items off as you handle them. Your progress stays saved on this device, and recurring tasks automatically become due again when their reset period arrives.
                 </p>
               </div>
 
@@ -700,7 +806,13 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             <div className="space-y-3">
               {checklistItems.map((item) => {
                 const itemId = String(item.id);
-                const isComplete = completedChecklistIds.includes(itemId);
+                const completedAt = checklistCompletionDates[itemId] || '';
+                const isComplete = Boolean(completedAt);
+                const dueAgainAt =
+                  isComplete && item.recurrenceMonths
+                    ? addMonthsClamped(completedAt, item.recurrenceMonths)
+                    : null;
+                const recurrenceLabel = getRecurrenceLabel(item.recurrenceMonths);
 
                 return (
                   <button
@@ -736,10 +848,20 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                               {item.timeframe}
                             </span>
                           )}
+                          {recurrenceLabel && (
+                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#eef4ec] border border-[#d8e4d4] text-[#55704f]">
+                              Auto-reset: {recurrenceLabel}
+                            </span>
+                          )}
                         </span>
                         {item.details && (
                           <span className={`block text-[11px] leading-relaxed mt-1.5 ${isComplete ? 'text-[#a8a29e]' : 'text-[#57534e]'}`}>
                             {item.details}
+                          </span>
+                        )}
+                        {isComplete && dueAgainAt && (
+                          <span className="block text-[10px] font-semibold text-[#7a8f70] mt-2">
+                            Completed • due again {formatChecklistDate(dueAgainAt)}
                           </span>
                         )}
                       </span>
