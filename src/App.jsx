@@ -1147,6 +1147,26 @@ export default function App() {
             setPublicProfile(null);
           } else {
             const publicPlan = getPlanConfig(data.plan);
+            let publicChecklistItems = [];
+
+            if (publicPlan.allowsChecklist) {
+              const { data: checklistData, error: checklistLoadError } = await supabase
+                .from('homeowner_checklist_items')
+                .select('*')
+                .eq('profile_id', data.id)
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+
+              if (!isMounted) return;
+
+              if (checklistLoadError) {
+                console.error('Error loading public homeowner checklist:', checklistLoadError);
+              } else {
+                publicChecklistItems = checklistData || [];
+              }
+            }
+
             const visibleVendors = (publicVendors || []).map((vendor) => ({
               ...vendor,
               recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
@@ -1167,7 +1187,11 @@ export default function App() {
               ...premiumProfileData,
               welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
             };
-            setPublicProfile({ ...publicData, vendors: visibleVendors });
+            setPublicProfile({
+              ...publicData,
+              vendors: visibleVendors,
+              checklist_items: publicPlan.allowsChecklist ? publicChecklistItems : [],
+            });
           }
         }
       } catch (err) {
