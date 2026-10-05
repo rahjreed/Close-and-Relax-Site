@@ -105,6 +105,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+  const [completedChecklistIds, setCompletedChecklistIds] = useState([]);
 
   const realtorName = profile?.full_name || 'Your Realtor';
   const firstName = getFirstName(realtorName);
@@ -166,6 +167,59 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       website: normalizeUrl(resource?.website || resource?.website_url || ''),
     }));
   }, [storedVendors, fallbackResources]);
+
+  const checklistItems = useMemo(() => {
+    if (internalPlan !== 'premier' || !Array.isArray(profile?.checklist_items)) return [];
+
+    return profile.checklist_items
+      .filter((item) => item && item.is_active !== false)
+      .map((item, index) => ({
+        id: item.id || `checklist-${index}`,
+        title: item.title || 'Homeowner task',
+        details: item.details || '',
+        timeframe: item.timeframe || '',
+      }));
+  }, [internalPlan, profile?.checklist_items]);
+
+  const checklistStorageKey = `closeandrelax-checklist-${profile?.id || profile?.slug || 'homeowner'}`;
+  const completedChecklistCount = checklistItems.filter((item) => completedChecklistIds.includes(String(item.id))).length;
+  const checklistProgress = checklistItems.length > 0
+    ? Math.round((completedChecklistCount / checklistItems.length) * 100)
+    : 0;
+
+  useEffect(() => {
+    if (checklistItems.length === 0) {
+      setCompletedChecklistIds([]);
+      return;
+    }
+
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(checklistStorageKey) || '[]');
+      const validIds = new Set(checklistItems.map((item) => String(item.id)));
+      setCompletedChecklistIds(
+        Array.isArray(saved) ? saved.map(String).filter((id) => validIds.has(id)) : []
+      );
+    } catch {
+      setCompletedChecklistIds([]);
+    }
+  }, [checklistStorageKey, checklistItems]);
+
+  const toggleChecklistItem = (itemId) => {
+    const normalizedId = String(itemId);
+    setCompletedChecklistIds((current) => {
+      const next = current.includes(normalizedId)
+        ? current.filter((id) => id !== normalizedId)
+        : [...current, normalizedId];
+
+      try {
+        window.localStorage.setItem(checklistStorageKey, JSON.stringify(next));
+      } catch {
+        // The checklist still works for this visit if local storage is unavailable.
+      }
+
+      return next;
+    });
+  };
 
   useEffect(() => {
     const isStandalone =
@@ -243,7 +297,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl]);
+  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl, checklistItems.length]);
 
   const triggerToast = (text) => {
     setToastMessage(text);
@@ -609,6 +663,90 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                   allowFullScreen
                 />
               </div>
+            </div>
+          </section>
+        )}
+
+        {checklistItems.length > 0 && (
+          <section className="hub-reveal bg-white rounded-2xl p-5 sm:p-6 border border-[#ebdcc7] hub-editorial-shadow mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-[#9c7844]">
+                  Homeowner Checklist
+                </span>
+                <h2 className="hub-font-serif text-xl sm:text-2xl text-[#1c1917] font-medium tracking-tight mt-1">
+                  A Few Things to Keep on Your Radar
+                </h2>
+                <p className="text-xs text-[#78716c] leading-relaxed mt-1.5 max-w-xl">
+                  Check items off as you handle them. Your progress stays saved on this device.
+                </p>
+              </div>
+
+              <div className="sm:text-right shrink-0">
+                <p className="text-[11px] font-semibold text-[#57534e]">
+                  {completedChecklistCount} of {checklistItems.length} complete
+                </p>
+                <p className="text-[10px] text-[#9c7844] mt-0.5">{checklistProgress}%</p>
+              </div>
+            </div>
+
+            <div className="h-1.5 bg-[#f0e9df] rounded-full overflow-hidden mb-5" aria-hidden="true">
+              <div
+                className="h-full bg-[#b99460] rounded-full transition-all duration-300"
+                style={{ width: `${checklistProgress}%` }}
+              />
+            </div>
+
+            <div className="space-y-3">
+              {checklistItems.map((item) => {
+                const itemId = String(item.id);
+                const isComplete = completedChecklistIds.includes(itemId);
+
+                return (
+                  <button
+                    key={itemId}
+                    type="button"
+                    onClick={() => toggleChecklistItem(itemId)}
+                    aria-pressed={isComplete}
+                    className={`w-full text-left rounded-2xl border p-4 transition-all ${
+                      isComplete
+                        ? 'bg-[#f7f3ec] border-[#d8c6aa]'
+                        : 'bg-[#fffdfa] border-[#ede4d6] hover:border-[#dbcbb4] hover:bg-[#fdfaf6]'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <span
+                        className={`mt-0.5 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                          isComplete
+                            ? 'bg-[#9c7844] border-[#9c7844] text-white'
+                            : 'bg-white border-[#cfc3b1] text-transparent'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className={`hub-font-serif text-base sm:text-lg font-semibold leading-tight ${isComplete ? 'text-[#78716c] line-through' : 'text-[#1c1917]'}`}>
+                            {item.title}
+                          </span>
+                          {item.timeframe && (
+                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#f7f2ea] border border-[#e7dccb] text-[#8a6b3d]">
+                              {item.timeframe}
+                            </span>
+                          )}
+                        </span>
+                        {item.details && (
+                          <span className={`block text-[11px] leading-relaxed mt-1.5 ${isComplete ? 'text-[#a8a29e]' : 'text-[#57534e]'}`}>
+                            {item.details}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </section>
         )}
