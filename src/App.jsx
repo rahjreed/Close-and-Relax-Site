@@ -28,7 +28,8 @@ import {
   AlertCircle,
   Loader2,
   MapPin,
-  Clock
+  Clock,
+  Gift
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
@@ -757,6 +758,11 @@ export default function App() {
     is_active: true,
   });
 
+  // Close & Relax member benefits for Realtors
+  const [realtorBenefits, setRealtorBenefits] = useState([]);
+  const [realtorBenefitsLoading, setRealtorBenefitsLoading] = useState(false);
+  const [realtorBenefitsError, setRealtorBenefitsError] = useState(null);
+
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
@@ -1012,6 +1018,41 @@ export default function App() {
     }
   };
 
+  const fetchRealtorBenefits = async () => {
+    if (!user?.id) {
+      setRealtorBenefits([]);
+      return [];
+    }
+
+    setRealtorBenefitsLoading(true);
+    setRealtorBenefitsError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('realtor_benefits')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading Realtor benefits:', error);
+        setRealtorBenefitsError(error.message || 'Unable to load your member benefits.');
+        return [];
+      }
+
+      const rows = data || [];
+      setRealtorBenefits(rows);
+      return rows;
+    } catch (err) {
+      console.error('Unexpected Realtor benefits loading error:', err);
+      setRealtorBenefitsError(err.message || 'Unable to load your member benefits.');
+      return [];
+    } finally {
+      setRealtorBenefitsLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -1067,12 +1108,14 @@ export default function App() {
     if (!user?.id || !profile?.id) {
       setVendors([]);
       setChecklistItems([]);
+      setRealtorBenefits([]);
       return;
     }
 
     fetchUserVendors(profile.id);
     fetchChecklistItems(profile.id);
-  }, [user?.id, profile?.id]);
+    fetchRealtorBenefits();
+  }, [user?.id, profile?.id, profile?.plan]);
 
 
   // Protect /dashboard and keep logged-in users out of the auth screens.
@@ -2389,6 +2432,111 @@ export default function App() {
                   >
                     Manage Vendors
                   </button>
+                </div>
+              </div>
+
+              {/* Realtor Member Benefits Card */}
+              <div className="bg-cream-warm p-6 rounded-2xl border border-cream-border flex flex-col justify-between md:col-span-2">
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cream-card border border-cream-border flex items-center justify-center shrink-0">
+                        <Gift className="w-5 h-5 text-gold-accent" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Realtor Benefits</h3>
+                          <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#F4EBDD] rounded-full border border-[#E4D5BE] text-[#8C6B38]">
+                            Member Perks
+                          </span>
+                        </div>
+                        <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+                          Your Close &amp; Relax membership includes benefits for you as the Realtor—not just resources for your homeowners. New partner perks can be added here over time.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-left sm:text-right shrink-0">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Your Plan</p>
+                      <p className="font-editorial text-lg font-bold text-charcoal-deep">{publicPlanName}</p>
+                    </div>
+                  </div>
+
+                  {realtorBenefitsLoading ? (
+                    <div className="bg-cream-card border border-cream-border rounded-2xl p-5 flex items-center gap-3 text-xs text-charcoal-muted">
+                      <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                      Loading your member benefits…
+                    </div>
+                  ) : realtorBenefitsError ? (
+                    <div className="bg-cream-card border border-cream-border rounded-2xl p-5 text-xs text-charcoal-muted">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
+                        <span>{realtorBenefitsError}</span>
+                      </div>
+                    </div>
+                  ) : realtorBenefits.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {realtorBenefits.map((benefit) => (
+                        <article
+                          key={benefit.id || benefit.slug}
+                          className="bg-cream-card border border-cream-border rounded-2xl p-5 flex flex-col h-full"
+                        >
+                          <div className="flex items-center justify-between gap-3 mb-3">
+                            <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">
+                              {benefit.provider || 'Close & Relax Partner'}
+                            </span>
+                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-cream-warm rounded-full border border-cream-border text-charcoal-muted">
+                              Member Exclusive
+                            </span>
+                          </div>
+
+                          <h4 className="font-editorial text-xl font-bold text-charcoal-deep">
+                            {benefit.title}
+                          </h4>
+
+                          {benefit.short_description && (
+                            <p className="text-xs text-charcoal-muted leading-relaxed mt-2">
+                              {benefit.short_description}
+                            </p>
+                          )}
+
+                          {benefit.benefit_details && (
+                            <div className="mt-4 bg-cream-warm border border-cream-border rounded-xl p-3 text-[11px] text-charcoal-muted leading-relaxed">
+                              {benefit.benefit_details}
+                            </div>
+                          )}
+
+                          {benefit.eligibility && (
+                            <p className="text-[10px] text-charcoal-muted mt-3">
+                              <span className="font-semibold text-charcoal-deep">Eligibility:</span> {benefit.eligibility}
+                            </p>
+                          )}
+
+                          <div className="mt-auto pt-5">
+                            {benefit.claim_url ? (
+                              <a
+                                href={normalizeWebsiteUrl(benefit.claim_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-semibold rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] transition-colors"
+                              >
+                                <span>{benefit.claim_label || 'Claim Benefit'}</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-[#D3B88A]" />
+                              </a>
+                            ) : (
+                              <div className="w-full py-2.5 px-4 text-center text-xs font-semibold rounded-xl bg-cream-warm border border-cream-border text-charcoal-muted">
+                                Claim instructions coming soon
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-cream-card border border-cream-border rounded-2xl p-5 text-xs text-charcoal-muted">
+                      New Realtor member benefits are being prepared.
+                    </div>
+                  )}
                 </div>
               </div>
 
