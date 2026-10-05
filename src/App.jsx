@@ -126,6 +126,7 @@ const getPlanConfig = (value) => {
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: true,
       allowsWelcomeVideo: true,
+      allowsChecklist: true,
       regularPrice: 59,
       foundingPrice: 29,
     };
@@ -140,6 +141,7 @@ const getPlanConfig = (value) => {
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: false,
       allowsWelcomeVideo: false,
+      allowsChecklist: false,
       regularPrice: 39,
       foundingPrice: 19,
     };
@@ -153,6 +155,7 @@ const getPlanConfig = (value) => {
     allowsVendorRecommendations: false,
     allowsDefaultVendorControl: false,
     allowsWelcomeVideo: false,
+    allowsChecklist: false,
     regularPrice: 0,
     foundingPrice: 0,
   };
@@ -739,6 +742,20 @@ export default function App() {
     recommendation: '',
   });
 
+  // Pro homeowner checklist management state
+  const [checklistItems, setChecklistItems] = useState([]);
+  const [checklistLoading, setChecklistLoading] = useState(false);
+  const [checklistManagerOpen, setChecklistManagerOpen] = useState(false);
+  const [checklistSaving, setChecklistSaving] = useState(false);
+  const [checklistError, setChecklistError] = useState(null);
+  const [editingChecklistId, setEditingChecklistId] = useState(null);
+  const [checklistForm, setChecklistForm] = useState({
+    title: '',
+    details: '',
+    timeframe: '',
+    is_active: true,
+  });
+
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
@@ -961,6 +978,39 @@ export default function App() {
     }
   };
 
+  const fetchChecklistItems = async (profileId = user?.id) => {
+    if (!profileId) {
+      setChecklistItems([]);
+      return [];
+    }
+
+    setChecklistLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('homeowner_checklist_items')
+        .select('*')
+        .eq('profile_id', profileId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading homeowner checklist:', error);
+        setChecklistError(error.message || 'Unable to load your homeowner checklist.');
+        return [];
+      }
+
+      const rows = data || [];
+      setChecklistItems(rows);
+      return rows;
+    } catch (err) {
+      console.error('Unexpected checklist loading error:', err);
+      setChecklistError(err.message || 'Unable to load your homeowner checklist.');
+      return [];
+    } finally {
+      setChecklistLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -1015,10 +1065,12 @@ export default function App() {
   useEffect(() => {
     if (!user?.id || !profile?.id) {
       setVendors([]);
+      setChecklistItems([]);
       return;
     }
 
     fetchUserVendors(profile.id);
+    fetchChecklistItems(profile.id);
   }, [user?.id, profile?.id]);
 
 
@@ -1700,6 +1752,145 @@ export default function App() {
     }
   };
 
+  const resetChecklistForm = () => {
+    setEditingChecklistId(null);
+    setChecklistForm({ title: '', details: '', timeframe: '', is_active: true });
+    setChecklistError(null);
+  };
+
+  const handleOpenChecklistManager = async () => {
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsChecklist) {
+      showToast('Advanced homeowner checklists are included with Pro.');
+      return;
+    }
+
+    resetChecklistForm();
+    setChecklistManagerOpen(true);
+    if (profile?.id) await fetchChecklistItems(profile.id);
+  };
+
+  const handleEditChecklistItem = (item) => {
+    setEditingChecklistId(item.id);
+    setChecklistForm({
+      title: item.title || '',
+      details: item.details || '',
+      timeframe: item.timeframe || '',
+      is_active: item.is_active !== false,
+    });
+    setChecklistError(null);
+  };
+
+  const handleSaveChecklistItem = async (event) => {
+    event.preventDefault();
+    if (!user?.id || !profile?.id) return;
+
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsChecklist) {
+      setChecklistError('Advanced homeowner checklists are a Pro feature.');
+      return;
+    }
+
+    const title = checklistForm.title.trim();
+    const details = checklistForm.details.trim();
+    const timeframe = checklistForm.timeframe.trim();
+
+    if (!title) {
+      setChecklistError('Please give this checklist item a title.');
+      return;
+    }
+
+    setChecklistSaving(true);
+    setChecklistError(null);
+
+    try {
+      const payload = {
+        title,
+        details: details || null,
+        timeframe: timeframe || null,
+        is_active: checklistForm.is_active,
+      };
+
+      let result;
+      if (editingChecklistId) {
+        result = await supabase
+          .from('homeowner_checklist_items')
+          .update(payload)
+          .eq('id', editingChecklistId)
+          .eq('profile_id', user.id)
+          .select('*')
+          .single();
+      } else {
+        const maxSort = checklistItems.reduce(
+          (max, item) => Math.max(max, Number(item.sort_order) || 0),
+          0
+        );
+        result = await supabase
+          .from('homeowner_checklist_items')
+          .insert([{
+            ...payload,
+            profile_id: user.id,
+            sort_order: maxSort + 1,
+          }])
+          .select('*')
+          .single();
+      }
+
+      if (result.error) {
+        console.error('Checklist save error:', result.error);
+        setChecklistError(result.error.message || 'Unable to save this checklist item.');
+        return;
+      }
+
+      await fetchChecklistItems(profile.id);
+      resetChecklistForm();
+      showToast(editingChecklistId ? 'Checklist item updated.' : 'Checklist item added.');
+    } catch (err) {
+      console.error('Unexpected checklist save error:', err);
+      setChecklistError(err.message || 'Unable to save this checklist item.');
+    } finally {
+      setChecklistSaving(false);
+    }
+  };
+
+  const handleDeleteChecklistItem = async (item) => {
+    if (!user?.id || !profile?.id || !item?.id) return;
+
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsChecklist) {
+      setChecklistError('Advanced homeowner checklists are a Pro feature.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Remove “${item.title}” from your homeowner checklist?`);
+    if (!confirmed) return;
+
+    setChecklistSaving(true);
+    setChecklistError(null);
+    try {
+      const { error } = await supabase
+        .from('homeowner_checklist_items')
+        .delete()
+        .eq('id', item.id)
+        .eq('profile_id', user.id);
+
+      if (error) {
+        console.error('Checklist delete error:', error);
+        setChecklistError(error.message || 'Unable to remove this checklist item.');
+        return;
+      }
+
+      await fetchChecklistItems(profile.id);
+      if (editingChecklistId === item.id) resetChecklistForm();
+      showToast('Checklist item removed.');
+    } catch (err) {
+      console.error('Unexpected checklist delete error:', err);
+      setChecklistError(err.message || 'Unable to remove this checklist item.');
+    } finally {
+      setChecklistSaving(false);
+    }
+  };
+
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
@@ -1711,6 +1902,7 @@ export default function App() {
   const allowsVendorRecommendations = planConfig.allowsVendorRecommendations;
   const allowsDefaultVendorControl = planConfig.allowsDefaultVendorControl;
   const allowsWelcomeVideo = planConfig.allowsWelcomeVideo;
+  const allowsChecklist = planConfig.allowsChecklist;
   const foundingPricingActive = isFoundingPricingActive();
   const customVendors = vendors.filter((vendor) => !vendor.is_default);
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
@@ -2168,6 +2360,49 @@ export default function App() {
                     Manage Vendors
                   </button>
                 </div>
+              </div>
+
+              {/* Pro Homeowner Checklist Card */}
+              <div className="bg-cream-warm p-6 rounded-2xl border border-cream-border flex flex-col justify-between md:col-span-2">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cream-card border border-cream-border flex items-center justify-center shrink-0">
+                      <CheckSquare className="w-5 h-5 text-gold-accent" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Homeowner Checklist</h3>
+                        <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#F4EBDD] rounded-full border border-[#E4D5BE] text-[#8C6B38]">Pro</span>
+                      </div>
+                      <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+                        Create a practical post-closing checklist your homeowners can work through right inside their hub. Add timing guidance, helpful details, and choose which items are currently visible.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Checklist Items</p>
+                      <p className="font-editorial text-2xl font-bold text-charcoal-deep">{allowsChecklist ? checklistItems.filter((item) => item.is_active !== false).length : '—'}</p>
+                    </div>
+                    <button
+                      onClick={handleOpenChecklistManager}
+                      className={`px-5 py-2.5 text-xs font-semibold rounded-xl border transition-colors ${
+                        allowsChecklist
+                          ? 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
+                          : 'bg-cream-card hover:bg-cream-subtle border-cream-border text-charcoal-deep'
+                      }`}
+                    >
+                      {allowsChecklist ? 'Manage Checklist' : 'Unlock with Pro'}
+                    </button>
+                  </div>
+                </div>
+
+                {!allowsChecklist && (
+                  <div className="mt-5 bg-cream-card border border-cream-border rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
+                    Advanced homeowner checklists are included with Pro. Existing hidden Pro checklist content is preserved if a plan is downgraded.
+                  </div>
+                )}
               </div>
 
             </div>
@@ -3860,6 +4095,172 @@ export default function App() {
               </form>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {}
+      {checklistManagerOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-5xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Pro Homeowner Experience</span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Manage Homeowner Checklist</h3>
+                <p className="text-[11px] text-charcoal-muted mt-1">{checklistItems.filter((item) => item.is_active !== false).length} active item{checklistItems.filter((item) => item.is_active !== false).length === 1 ? '' : 's'} on your hub.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { if (!checklistSaving) { setChecklistManagerOpen(false); resetChecklistForm(); } }}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+                aria-label="Close checklist manager"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Checklist</h4>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Items are displayed in the order you add them.</p>
+                  </div>
+                  {checklistLoading && <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />}
+                </div>
+
+                <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+                  {checklistItems.length === 0 && !checklistLoading ? (
+                    <div className="bg-cream-card border border-cream-border rounded-2xl p-5">
+                      <p className="text-sm font-semibold text-charcoal-deep">No checklist items yet.</p>
+                      <p className="text-xs text-charcoal-muted leading-relaxed mt-2">Add your first post-closing task on the right. You can include a suggested timeframe and a short explanation.</p>
+                    </div>
+                  ) : checklistItems.map((item, index) => (
+                    <div key={item.id} className="bg-cream-card border border-cream-border rounded-2xl p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 text-[10px] font-bold ${item.is_active !== false ? 'bg-[#F4EBDD] border-[#E4D5BE] text-[#8C6B38]' : 'bg-cream-subtle border-cream-border text-charcoal-muted'}`}>
+                          {index + 1}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="font-editorial text-lg font-semibold text-charcoal-deep">{item.title}</h5>
+                            {item.timeframe && <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cream-subtle border border-cream-border text-charcoal-muted">{item.timeframe}</span>}
+                            {item.is_active === false && <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cream-subtle border border-cream-border text-charcoal-muted">Hidden</span>}
+                          </div>
+                          {item.details && <p className="text-[11px] text-charcoal-muted leading-relaxed mt-2">{item.details}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-cream-border">
+                        <button
+                          type="button"
+                          onClick={() => handleEditChecklistItem(item)}
+                          className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-deep hover:bg-cream-subtle"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteChecklistItem(item)}
+                          disabled={checklistSaving}
+                          className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-muted hover:text-charcoal-deep disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="lg:border-l lg:border-cream-border lg:pl-8">
+                <div className="mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">{editingChecklistId ? 'Edit Checklist Item' : 'Add Checklist Item'}</span>
+                  <h4 className="font-editorial text-xl font-bold text-charcoal-deep mt-1">{editingChecklistId ? 'Update this homeowner task' : 'Add a useful next step'}</h4>
+                </div>
+
+                {checklistError && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <span>{checklistError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveChecklistItem} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="checklistTitle">Checklist Item *</label>
+                    <input
+                      id="checklistTitle"
+                      required
+                      maxLength={100}
+                      value={checklistForm.title}
+                      onChange={(e) => setChecklistForm({ ...checklistForm, title: e.target.value })}
+                      placeholder="e.g. Locate your main water shutoff"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{checklistForm.title.length}/100</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="checklistTimeframe">Suggested Timeframe</label>
+                    <input
+                      id="checklistTimeframe"
+                      maxLength={60}
+                      value={checklistForm.timeframe}
+                      onChange={(e) => setChecklistForm({ ...checklistForm, timeframe: e.target.value })}
+                      placeholder="e.g. First week, This month, Every spring"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="checklistDetails">Helpful Details</label>
+                    <textarea
+                      id="checklistDetails"
+                      rows={4}
+                      maxLength={280}
+                      value={checklistForm.details}
+                      onChange={(e) => setChecklistForm({ ...checklistForm, details: e.target.value })}
+                      placeholder="A short note explaining why this matters or what the homeowner should do."
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{checklistForm.details.length}/280</p>
+                  </div>
+
+                  <label className="flex items-start gap-3 bg-cream-card border border-cream-border rounded-xl p-4 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checklistForm.is_active}
+                      onChange={(e) => setChecklistForm({ ...checklistForm, is_active: e.target.checked })}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="block text-xs font-semibold text-charcoal-deep">Show this item on the homeowner hub</span>
+                      <span className="block text-[10px] text-charcoal-muted mt-1">Turn this off to save the item without displaying it publicly.</span>
+                    </span>
+                  </label>
+
+                  <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                    {editingChecklistId && (
+                      <button
+                        type="button"
+                        disabled={checklistSaving}
+                        onClick={resetChecklistForm}
+                        className="flex-1 py-2.5 rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-xs font-semibold text-charcoal-deep disabled:opacity-60"
+                      >
+                        Cancel Edit
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={checklistSaving}
+                      className="flex-1 py-2.5 rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {checklistSaving ? <><Loader2 className="w-4 h-4 animate-spin text-gold-accent" /><span>Saving...</span></> : <span>{editingChecklistId ? 'Save Checklist Changes' : 'Add Checklist Item'}</span>}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
           </div>
         </div>
       )}
