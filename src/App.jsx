@@ -753,6 +753,7 @@ export default function App() {
     title: '',
     details: '',
     timeframe: '',
+    recurrence_months: '',
     is_active: true,
   });
 
@@ -1778,7 +1779,7 @@ export default function App() {
 
   const resetChecklistForm = () => {
     setEditingChecklistId(null);
-    setChecklistForm({ title: '', details: '', timeframe: '', is_active: true });
+    setChecklistForm({ title: '', details: '', timeframe: '', recurrence_months: '', is_active: true });
     setChecklistError(null);
   };
 
@@ -1800,6 +1801,7 @@ export default function App() {
       title: item.title || '',
       details: item.details || '',
       timeframe: item.timeframe || '',
+      recurrence_months: item.recurrence_months ? String(item.recurrence_months) : '',
       is_active: item.is_active !== false,
     });
     setChecklistError(null);
@@ -1818,6 +1820,9 @@ export default function App() {
     const title = checklistForm.title.trim();
     const details = checklistForm.details.trim();
     const timeframe = checklistForm.timeframe.trim();
+    const recurrenceMonths = checklistForm.recurrence_months
+      ? Number(checklistForm.recurrence_months)
+      : null;
 
     if (!title) {
       setChecklistError('Please give this checklist item a title.');
@@ -1832,6 +1837,7 @@ export default function App() {
         title,
         details: details || null,
         timeframe: timeframe || null,
+        recurrence_months: recurrenceMonths,
         is_active: checklistForm.is_active,
       };
 
@@ -4169,6 +4175,11 @@ export default function App() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h5 className="font-editorial text-lg font-semibold text-charcoal-deep">{item.title}</h5>
                             {item.timeframe && <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cream-subtle border border-cream-border text-charcoal-muted">{item.timeframe}</span>}
+                            {item.recurrence_months && (
+                              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#F4EBDD] border border-[#E4D5BE] text-[#8C6B38]">
+                                Resets every {item.recurrence_months === 1 ? 'month' : `${item.recurrence_months} months`}
+                              </span>
+                            )}
                             {item.is_active === false && <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cream-subtle border border-cream-border text-charcoal-muted">Hidden</span>}
                           </div>
                           {item.details && <p className="text-[11px] text-charcoal-muted leading-relaxed mt-2">{item.details}</p>}
@@ -4234,6 +4245,26 @@ export default function App() {
                       placeholder="e.g. First week, This month, Every spring"
                       className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="checklistRecurrence">Automatic Reset</label>
+                    <select
+                      id="checklistRecurrence"
+                      value={checklistForm.recurrence_months}
+                      onChange={(e) => setChecklistForm({ ...checklistForm, recurrence_months: e.target.value })}
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    >
+                      <option value="">One-time task — never auto-reset</option>
+                      <option value="1">Every month</option>
+                      <option value="2">Every 2 months</option>
+                      <option value="3">Every 3 months</option>
+                      <option value="6">Every 6 months</option>
+                      <option value="12">Every year</option>
+                    </select>
+                    <p className="text-[10px] text-charcoal-muted leading-relaxed mt-1.5">
+                      After a homeowner checks off a recurring task, it will become due again on that same device after this interval.
+                    </p>
                   </div>
 
                   <div>
