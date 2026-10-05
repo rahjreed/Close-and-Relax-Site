@@ -2513,7 +2513,20 @@ export default function App() {
                           )}
 
                           <div className="mt-auto pt-5">
-                            {benefit.claim_url ? (
+                            {benefit.slug === 'vivint-member-discount' ? (
+                              <>
+                                <a
+                                  href={`sms:4632813454?body=${encodeURIComponent("Hi Roger, I'm a Close & Relax realtor and I'd like to claim the Vivint Realtor Benefit.")}`}
+                                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-semibold rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] transition-colors"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-[#D3B88A]" />
+                                  <span>Claim Realtor Benefit</span>
+                                </a>
+                                <p className="text-[10px] text-charcoal-muted text-center mt-2">
+                                  Opens a pre-filled text to Roger.
+                                </p>
+                              </>
+                            ) : benefit.claim_url ? (
                               <a
                                 href={normalizeWebsiteUrl(benefit.claim_url)}
                                 target="_blank"
