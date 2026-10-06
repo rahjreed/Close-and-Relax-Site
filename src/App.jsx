@@ -4999,27 +4999,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {allowsDefaultVendorControl && standardVendors.length === 0 && !vendorsLoading && (
-                  <div className="mt-4 bg-[#F7F1E7] border border-[#E5D6BE] rounded-2xl p-4">
-                    <div className="flex items-start gap-3">
-                      <ShieldCheck className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-charcoal-deep">Standard Close &amp; Relax resource removed</p>
-                        <p className="text-[10px] text-charcoal-muted leading-relaxed mt-1">
-                          Pro gives you full control. If you ever want the standard smart-home resource back, restore it here.
-                        </p>
-                        <button
-                          type="button"
-                          disabled={vendorSaving}
-                          onClick={handleRestoreStandardVendor}
-                          className="mt-3 px-3.5 py-2 rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-[10px] font-semibold disabled:opacity-60"
-                        >
-                          {vendorSaving ? 'Restoring...' : 'Restore Standard Resource'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </section>
 
               <section className="lg:border-l lg:border-cream-border lg:pl-8">
@@ -5207,6 +5186,28 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+
+                {allowsDefaultVendorControl && standardVendors.length === 0 && !vendorsLoading && (
+                  <div className="mt-4 bg-[#F7F1E7] border border-[#E5D6BE] rounded-2xl p-4">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheck className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-charcoal-deep">Standard Close &amp; Relax resource removed</p>
+                        <p className="text-[10px] text-charcoal-muted leading-relaxed mt-1">
+                          Pro gives you full control. If you ever want the standard smart-home resource back, restore it here.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={vendorSaving}
+                          onClick={handleRestoreStandardVendor}
+                          className="mt-3 px-3.5 py-2 rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-[10px] font-semibold disabled:opacity-60"
+                        >
+                          {vendorSaving ? 'Restoring...' : 'Restore Standard Resource'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section className="lg:border-l lg:border-cream-border lg:pl-8">
