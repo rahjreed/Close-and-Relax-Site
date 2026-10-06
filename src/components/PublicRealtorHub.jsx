@@ -47,6 +47,25 @@ const getInitials = (name = '') => {
 
 const phoneForHref = (value = '') => String(value || '').replace(/[^\d+]/g, '');
 
+// Capture Android/Chromium's install prompt as early as possible.
+// The browser can fire beforeinstallprompt before React finishes mounting,
+// so keeping a module-level copy prevents us from missing the automatic prompt.
+if (typeof window !== 'undefined' && !window.__closeRelaxInstallPromptListenerAttached) {
+  window.__closeRelaxInstallPromptListenerAttached = true;
+  window.__closeRelaxDeferredInstallPrompt = window.__closeRelaxDeferredInstallPrompt || null;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    window.__closeRelaxDeferredInstallPrompt = event;
+    window.dispatchEvent(new CustomEvent('closeandrelax-installprompt-ready'));
+  });
+
+  window.addEventListener('appinstalled', () => {
+    window.__closeRelaxDeferredInstallPrompt = null;
+    window.dispatchEvent(new CustomEvent('closeandrelax-app-installed'));
+  });
+}
+
 const getHubDeviceId = () => {
   const storageKey = 'closeandrelax-device-id';
 
@@ -564,12 +583,24 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     const userAgent = window.navigator.userAgent.toLowerCase();
     setIsIOS(/iphone|ipad|ipod/.test(userAgent));
 
-    const handleBeforeInstall = (event) => {
-      event.preventDefault();
-      setDeferredPrompt(event);
+    const syncDeferredPrompt = () => {
+      if (window.__closeRelaxDeferredInstallPrompt) {
+        setDeferredPrompt(window.__closeRelaxDeferredInstallPrompt);
+      }
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    const handlePromptReady = () => {
+      syncDeferredPrompt();
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstalled(true);
+    };
+
+    syncDeferredPrompt();
+    window.addEventListener('closeandrelax-installprompt-ready', handlePromptReady);
+    window.addEventListener('closeandrelax-app-installed', handleAppInstalled);
 
     // Home-screen icon rules:
     // - Pro (internal plan = premier): personalized realtor initials.
@@ -629,7 +660,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('closeandrelax-installprompt-ready', handlePromptReady);
+      window.removeEventListener('closeandrelax-app-installed', handleAppInstalled);
       URL.revokeObjectURL(manifestURL);
 
       if (createdAppleTouchIconLink && appleTouchIconLink?.parentNode) {
@@ -712,26 +744,38 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       });
     }
 
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
+    const currentPrompt =
+      deferredPrompt ||
+      (typeof window !== 'undefined' ? window.__closeRelaxDeferredInstallPrompt : null);
 
-      if (choiceResult?.outcome === 'accepted') {
-        setIsInstalled(true);
+    if (currentPrompt) {
+      try {
+        currentPrompt.prompt();
+        const choiceResult = await currentPrompt.userChoice;
 
-        if (profile?.id) {
-          recordHubActivity({
-            profileId: profile.id,
-            eventType: 'install_accepted',
-            source,
-          });
+        if (choiceResult?.outcome === 'accepted') {
+          setIsInstalled(true);
+
+          if (profile?.id) {
+            recordHubActivity({
+              profileId: profile.id,
+              eventType: 'install_accepted',
+              source,
+            });
+          }
+
+          triggerToast('Added to Home Screen!');
         }
 
-        triggerToast('Added to Home Screen!');
+        setDeferredPrompt(null);
+        if (typeof window !== 'undefined') {
+          window.__closeRelaxDeferredInstallPrompt = null;
+        }
+        return;
+      } catch {
+        // If Chromium refuses an already-consumed prompt, fall through to
+        // the platform-specific fallback below.
       }
-
-      setDeferredPrompt(null);
-      return;
     }
 
     if (isIOS) {
@@ -745,6 +789,60 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
       setShowIOSModal(true);
       return;
+    }
+
+    // On Android/Chromium the installability event can arrive a fraction of a
+    // second after a user taps. Give it a brief chance before showing manual steps.
+    if (typeof window !== 'undefined') {
+      const delayedPrompt = await new Promise((resolve) => {
+        if (window.__closeRelaxDeferredInstallPrompt) {
+          resolve(window.__closeRelaxDeferredInstallPrompt);
+          return;
+        }
+
+        let settled = false;
+
+        const finish = (value) => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener('closeandrelax-installprompt-ready', handleReady);
+          resolve(value);
+        };
+
+        const handleReady = () => {
+          finish(window.__closeRelaxDeferredInstallPrompt || null);
+        };
+
+        window.addEventListener('closeandrelax-installprompt-ready', handleReady, { once: true });
+        window.setTimeout(() => finish(null), 1800);
+      });
+
+      if (delayedPrompt) {
+        try {
+          delayedPrompt.prompt();
+          const choiceResult = await delayedPrompt.userChoice;
+
+          if (choiceResult?.outcome === 'accepted') {
+            setIsInstalled(true);
+
+            if (profile?.id) {
+              recordHubActivity({
+                profileId: profile.id,
+                eventType: 'install_accepted',
+                source,
+              });
+            }
+
+            triggerToast('Added to Home Screen!');
+          }
+
+          setDeferredPrompt(null);
+          window.__closeRelaxDeferredInstallPrompt = null;
+          return;
+        } catch {
+          // Fall through to manual instructions.
+        }
+      }
     }
 
     triggerToast("Open your browser menu and choose 'Add to Home screen'");
