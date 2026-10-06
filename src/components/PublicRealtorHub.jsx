@@ -222,6 +222,20 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       }));
   }, [internalPlan, profile?.checklist_items]);
 
+  const customHubSections = useMemo(() => {
+    if (internalPlan !== 'premier' || !Array.isArray(profile?.custom_hub_sections)) return [];
+
+    return profile.custom_hub_sections
+      .filter((section) => section && section.is_active !== false)
+      .map((section, index) => ({
+        id: section.id || `custom-section-${index}`,
+        title: section.title || 'Helpful Resource',
+        body: section.body || '',
+        buttonLabel: section.button_label || '',
+        buttonUrl: normalizeUrl(section.button_url || ''),
+      }));
+  }, [internalPlan, profile?.custom_hub_sections]);
+
   const checklistStorageKey = `closeandrelax-checklist-${profile?.id || profile?.slug || 'homeowner'}`;
   const completedChecklistCount = checklistItems.filter(
     (item) => Boolean(checklistCompletionDates[String(item.id)])
@@ -403,7 +417,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl, checklistItems.length]);
+  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl, checklistItems.length, customHubSections.length]);
 
   const triggerToast = (text) => {
     setToastMessage(text);
@@ -869,6 +883,63 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                   </button>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {customHubSections.length > 0 && (
+          <section className="mb-10">
+            <div className="hub-reveal text-center lg:text-left mb-5">
+              <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#9c7844] block mb-1">
+                More From {firstName}
+              </span>
+              <h2 className="hub-font-serif text-2xl sm:text-3xl text-[#1c1917] font-medium tracking-tight">
+                Helpful Things to Keep Handy
+              </h2>
+              <div className="w-10 h-[1.5px] bg-[#d9cdba] mx-auto lg:mx-0 mt-2.5"></div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {customHubSections.map((section) => (
+                <article
+                  key={section.id}
+                  className="hub-reveal hub-card-lift bg-white rounded-2xl p-5 sm:p-6 border border-[#ede4d6] hub-editorial-shadow hover:border-[#dbcbb4] flex flex-col h-full"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#f7f2ea] flex items-center justify-center border border-[#ebdcc7] shrink-0">
+                      <Bookmark className="w-4 h-4 text-[#9c7844]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#9c7844]">
+                        Homeowner Resource
+                      </span>
+                      <h3 className="hub-font-serif text-xl text-[#1c1917] font-semibold leading-tight mt-1">
+                        {section.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {section.body && (
+                    <p className="text-xs text-[#57534e] leading-relaxed whitespace-pre-line mt-4">
+                      {section.body}
+                    </p>
+                  )}
+
+                  {section.buttonLabel && section.buttonUrl && (
+                    <div className="mt-auto pt-5">
+                      <a
+                        href={section.buttonUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hub-icon-nudge inline-flex items-center justify-center gap-2 bg-[#292524] hover:bg-[#1c1917] text-[#faf8f5] py-2.5 px-4 rounded-xl text-xs font-semibold transition-transform active:scale-95 shadow-sm"
+                      >
+                        <span>{section.buttonLabel}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-[#e5d3b6]" />
+                      </a>
+                    </div>
+                  )}
+                </article>
+              ))}
             </div>
           </section>
         )}
