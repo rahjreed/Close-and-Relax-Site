@@ -29,7 +29,8 @@ import {
   Loader2,
   MapPin,
   Clock,
-  Gift
+  Gift,
+  GripVertical
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
@@ -742,6 +743,7 @@ export default function App() {
   const [vendorSaving, setVendorSaving] = useState(false);
   const [vendorError, setVendorError] = useState(null);
   const [editingVendorId, setEditingVendorId] = useState(null);
+  const [draggedVendorId, setDraggedVendorId] = useState(null);
   const [vendorForm, setVendorForm] = useState({
     name: '',
     category: '',
@@ -1752,6 +1754,63 @@ export default function App() {
       showToast(err.message || 'Unable to update your hub status.');
     } finally {
       setPublishLoading(false);
+    }
+  };
+
+  const handleVendorDrop = async (targetVendorId) => {
+    if (!draggedVendorId || !targetVendorId || draggedVendorId === targetVendorId || !profile?.id) {
+      setDraggedVendorId(null);
+      return;
+    }
+
+    const currentIndex = vendors.findIndex((vendor) => vendor.id === draggedVendorId);
+    const targetIndex = vendors.findIndex((vendor) => vendor.id === targetVendorId);
+
+    if (currentIndex === -1 || targetIndex === -1) {
+      setDraggedVendorId(null);
+      return;
+    }
+
+    const previousOrder = [...vendors];
+    const nextOrder = [...vendors];
+    const [movedVendor] = nextOrder.splice(currentIndex, 1);
+    nextOrder.splice(targetIndex, 0, movedVendor);
+
+    const normalizedOrder = nextOrder.map((vendor, index) => ({
+      ...vendor,
+      sort_order: index + 1,
+    }));
+
+    setVendors(normalizedOrder);
+    setDraggedVendorId(null);
+    setVendorError(null);
+
+    try {
+      const updates = await Promise.all(
+        normalizedOrder.map((vendor) =>
+          supabase
+            .from('vendors')
+            .update({ sort_order: vendor.sort_order })
+            .eq('id', vendor.id)
+            .eq('profile_id', profile.id)
+        )
+      );
+
+      const failedUpdate = updates.find((result) => result.error);
+      if (failedUpdate?.error) {
+        console.error('Vendor reorder error:', failedUpdate.error);
+        setVendors(previousOrder);
+        setVendorError(failedUpdate.error.message || 'Unable to save the new vendor order.');
+        await fetchUserVendors(profile.id);
+        return;
+      }
+
+      showToast('Vendor order updated.');
+    } catch (err) {
+      console.error('Unexpected vendor reorder error:', err);
+      setVendors(previousOrder);
+      setVendorError(err.message || 'Unable to save the new vendor order.');
+      await fetchUserVendors(profile.id);
     }
   };
 
@@ -5139,7 +5198,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Live Vendor List</h4>
-                    <p className="text-[11px] text-charcoal-muted mt-1">Changes publish to your hub immediately.</p>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Drag vendors into the order you want. Changes publish to your hub immediately.</p>
                   </div>
                   {vendorsLoading && <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />}
                 </div>
@@ -5148,9 +5207,31 @@ export default function App() {
                   {vendors.length === 0 && !vendorsLoading ? (
                     <div className="bg-cream-card border border-cream-border rounded-2xl p-5 text-xs text-charcoal-muted">No vendors are configured yet.</div>
                   ) : vendors.map((vendor) => (
-                    <div key={vendor.id} className="bg-cream-card border border-cream-border rounded-2xl p-4">
+                    <div
+                      key={vendor.id}
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggedVendorId(vendor.id);
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', vendor.id);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'move';
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        handleVendorDrop(vendor.id);
+                      }}
+                      onDragEnd={() => setDraggedVendorId(null)}
+                      className={`bg-cream-card border rounded-2xl p-4 transition-all ${
+                        draggedVendorId === vendor.id
+                          ? 'border-gold-accent opacity-60 scale-[0.99]'
+                          : 'border-cream-border'
+                      }`}
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">{vendor.category}</span>
                             {vendor.is_default && (
@@ -5163,6 +5244,14 @@ export default function App() {
                             {vendor.phone && <span>{vendor.phone}</span>}
                             {vendor.website && <span className="truncate max-w-[220px]">{vendor.website}</span>}
                           </div>
+                        </div>
+
+                        <div
+                          className="shrink-0 p-2 rounded-lg border border-cream-border bg-cream-warm text-charcoal-muted cursor-grab active:cursor-grabbing"
+                          title="Drag to reorder"
+                          aria-label={`Drag ${vendor.name} to reorder`}
+                        >
+                          <GripVertical className="w-4 h-4" />
                         </div>
                       </div>
                       <div className="flex gap-2 mt-3 pt-3 border-t border-cream-border">
