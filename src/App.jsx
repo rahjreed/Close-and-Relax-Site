@@ -744,6 +744,7 @@ export default function App() {
   const [vendorError, setVendorError] = useState(null);
   const [editingVendorId, setEditingVendorId] = useState(null);
   const [draggedVendorId, setDraggedVendorId] = useState(null);
+  const [vendorDragSnapshot, setVendorDragSnapshot] = useState(null);
   const [vendorForm, setVendorForm] = useState({
     name: '',
     category: '',
@@ -1757,37 +1758,46 @@ export default function App() {
     }
   };
 
-  const handleVendorDrop = async (targetVendorId) => {
-    if (!draggedVendorId || !targetVendorId || draggedVendorId === targetVendorId || !profile?.id) {
+  const handleVendorDragEnter = (targetVendorId) => {
+    if (!draggedVendorId || !targetVendorId || draggedVendorId === targetVendorId) return;
+
+    setVendors((currentVendors) => {
+      const currentIndex = currentVendors.findIndex((vendor) => vendor.id === draggedVendorId);
+      const targetIndex = currentVendors.findIndex((vendor) => vendor.id === targetVendorId);
+
+      if (currentIndex === -1 || targetIndex === -1 || currentIndex === targetIndex) {
+        return currentVendors;
+      }
+
+      const nextOrder = [...currentVendors];
+      const [movedVendor] = nextOrder.splice(currentIndex, 1);
+      nextOrder.splice(targetIndex, 0, movedVendor);
+
+      return nextOrder.map((vendor, index) => ({
+        ...vendor,
+        sort_order: index + 1,
+      }));
+    });
+  };
+
+  const persistVendorOrder = async () => {
+    if (!draggedVendorId || !profile?.id) {
       setDraggedVendorId(null);
+      setVendorDragSnapshot(null);
       return;
     }
 
-    const currentIndex = vendors.findIndex((vendor) => vendor.id === draggedVendorId);
-    const targetIndex = vendors.findIndex((vendor) => vendor.id === targetVendorId);
-
-    if (currentIndex === -1 || targetIndex === -1) {
-      setDraggedVendorId(null);
-      return;
-    }
-
-    const previousOrder = [...vendors];
-    const nextOrder = [...vendors];
-    const [movedVendor] = nextOrder.splice(currentIndex, 1);
-    nextOrder.splice(targetIndex, 0, movedVendor);
-
-    const normalizedOrder = nextOrder.map((vendor, index) => ({
+    const finalOrder = vendors.map((vendor, index) => ({
       ...vendor,
       sort_order: index + 1,
     }));
 
-    setVendors(normalizedOrder);
     setDraggedVendorId(null);
     setVendorError(null);
 
     try {
       const updates = await Promise.all(
-        normalizedOrder.map((vendor) =>
+        finalOrder.map((vendor) =>
           supabase
             .from('vendors')
             .update({ sort_order: vendor.sort_order })
@@ -1797,20 +1807,35 @@ export default function App() {
       );
 
       const failedUpdate = updates.find((result) => result.error);
+
       if (failedUpdate?.error) {
         console.error('Vendor reorder error:', failedUpdate.error);
-        setVendors(previousOrder);
+
+        if (vendorDragSnapshot) {
+          setVendors(vendorDragSnapshot);
+        } else {
+          await fetchUserVendors(profile.id);
+        }
+
         setVendorError(failedUpdate.error.message || 'Unable to save the new vendor order.');
-        await fetchUserVendors(profile.id);
+        setVendorDragSnapshot(null);
         return;
       }
 
+      setVendors(finalOrder);
+      setVendorDragSnapshot(null);
       showToast('Vendor order updated.');
     } catch (err) {
       console.error('Unexpected vendor reorder error:', err);
-      setVendors(previousOrder);
+
+      if (vendorDragSnapshot) {
+        setVendors(vendorDragSnapshot);
+      } else {
+        await fetchUserVendors(profile.id);
+      }
+
       setVendorError(err.message || 'Unable to save the new vendor order.');
-      await fetchUserVendors(profile.id);
+      setVendorDragSnapshot(null);
     }
   };
 
@@ -5198,7 +5223,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Live Vendor List</h4>
-                    <p className="text-[11px] text-charcoal-muted mt-1">Drag vendors into the order you want. Changes publish to your hub immediately.</p>
+                    <p className="text-[11px] text-charcoal-muted mt-1">Drag a vendor and the other resources will move out of the way as you position it. The final order saves when you release.</p>
                   </div>
                   {vendorsLoading && <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />}
                 </div>
@@ -5211,9 +5236,20 @@ export default function App() {
                       key={vendor.id}
                       draggable
                       onDragStart={(event) => {
+                        setVendorDragSnapshot(vendors.map((item) => ({ ...item })));
                         setDraggedVendorId(vendor.id);
                         event.dataTransfer.effectAllowed = 'move';
                         event.dataTransfer.setData('text/plain', vendor.id);
+
+                        // Keep the dragged card visible, but slightly transparent,
+                        // while neighboring cards reflow around its live position.
+                        requestAnimationFrame(() => {
+                          event.currentTarget.style.opacity = '0.72';
+                        });
+                      }}
+                      onDragEnter={(event) => {
+                        event.preventDefault();
+                        handleVendorDragEnter(vendor.id);
                       }}
                       onDragOver={(event) => {
                         event.preventDefault();
@@ -5221,12 +5257,14 @@ export default function App() {
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
-                        handleVendorDrop(vendor.id);
                       }}
-                      onDragEnd={() => setDraggedVendorId(null)}
-                      className={`bg-cream-card border rounded-2xl p-4 transition-all ${
+                      onDragEnd={(event) => {
+                        event.currentTarget.style.opacity = '';
+                        persistVendorOrder();
+                      }}
+                      className={`bg-cream-card border rounded-2xl p-4 transition-[transform,box-shadow,border-color,opacity] duration-200 ease-out ${
                         draggedVendorId === vendor.id
-                          ? 'border-gold-accent opacity-60 scale-[0.99]'
+                          ? 'border-gold-accent shadow-lg scale-[1.015]'
                           : 'border-cream-border'
                       }`}
                     >
