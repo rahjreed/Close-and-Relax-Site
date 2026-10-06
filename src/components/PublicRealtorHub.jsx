@@ -397,28 +397,22 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    const proIcon192 = proAppIconInitials
-      ? createInitialsIconDataUrl(proAppIconInitials, 192)
-      : '';
-    const proIcon512 = proAppIconInitials
-      ? createInitialsIconDataUrl(proAppIconInitials, 512)
-      : '';
-    const proAppleIcon = proAppIconInitials
-      ? createInitialsIconDataUrl(proAppIconInitials, 180)
-      : '';
+    // Home-screen icon rules:
+    // - Pro (internal plan = premier): personalized realtor initials.
+    // - Free + Core: standard Close & Relax "CR" icon.
+    // Realtor headshots are intentionally NEVER used as install icons.
+    const installIconText = proAppIconInitials || 'CR';
+    const installIcon192 = createInitialsIconDataUrl(installIconText, 192);
+    const installIcon512 = createInitialsIconDataUrl(installIconText, 512);
+    const installAppleIcon = createInitialsIconDataUrl(installIconText, 180);
 
     const manifestIcons =
-      proIcon192 && proIcon512
+      installIcon192 && installIcon512
         ? [
-            { src: proIcon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-            { src: proIcon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+            { src: installIcon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: installIcon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
           ]
-        : headshotUrl
-          ? [
-              { src: headshotUrl, sizes: '192x192', purpose: 'any maskable' },
-              { src: headshotUrl, sizes: '512x512', purpose: 'any maskable' },
-            ]
-          : [];
+        : [];
 
     const manifestJson = {
       name: `${realtorName}'s Homeowner Resource Hub`,
@@ -444,8 +438,9 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
     manifestLink.href = manifestURL;
 
-    // iPhone/iPad home-screen icons use apple-touch-icon instead of the
-    // manifest icon, so keep that in sync with the Pro initials treatment too.
+    // iPhone/iPad use apple-touch-icon rather than the manifest icon.
+    // Keep the same tier rule there too: Pro gets personalized initials;
+    // Free/Core get the standard Close & Relax CR icon.
     let appleTouchIconLink = document.querySelector('link[rel="apple-touch-icon"]');
     const createdAppleTouchIconLink = !appleTouchIconLink;
 
@@ -455,10 +450,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       document.head.appendChild(appleTouchIconLink);
     }
 
-    if (proAppleIcon) {
-      appleTouchIconLink.href = proAppleIcon;
-    } else if (headshotUrl) {
-      appleTouchIconLink.href = headshotUrl;
+    if (installAppleIcon) {
+      appleTouchIconLink.href = installAppleIcon;
     }
 
     return () => {
@@ -469,7 +462,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         appleTouchIconLink.parentNode.removeChild(appleTouchIconLink);
       }
     };
-  }, [realtorName, firstName, headshotUrl, proAppIconInitials]);
+  }, [realtorName, firstName, proAppIconInitials]);
 
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll('.hub-reveal'));
