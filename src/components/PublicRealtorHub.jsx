@@ -47,6 +47,57 @@ const getInitials = (name = '') => {
 
 const phoneForHref = (value = '') => String(value || '').replace(/[^\d+]/g, '');
 
+const getHubDeviceId = () => {
+  const storageKey = 'closeandrelax-device-id';
+
+  try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing) return existing;
+
+    const created =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+
+    window.localStorage.setItem(storageKey, created);
+    return created;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+};
+
+const recordHubActivity = async ({ profileId, eventType, source = null }) => {
+  if (!profileId || typeof window === 'undefined') return;
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey =
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_KEY ||
+    '';
+
+  if (!supabaseUrl || !supabaseAnonKey) return;
+
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/hub_activity_events`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        profile_id: profileId,
+        event_type: eventType,
+        source,
+        device_id: getHubDeviceId(),
+      }),
+    });
+  } catch {
+    // Tracking should never interrupt the homeowner experience.
+  }
+};
+
 const createInitialsIconDataUrl = (initials, size) => {
   if (typeof document === 'undefined' || !initials) return '';
 
@@ -243,7 +294,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
-  const [installAttentionDismissed, setInstallAttentionDismissed] = useState(false);
+  const [showFloatingSave, setShowFloatingSave] = useState(false);
   const [checklistCompletionDates, setChecklistCompletionDates] = useState({});
 
   const realtorName = profile?.full_name || 'Your Realtor';
@@ -447,12 +498,61 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   useEffect(() => {
+    if (!profile?.id) return;
+
+    const viewSessionKey = `closeandrelax-view-${profile.id}`;
+    const standaloneSessionKey = `closeandrelax-standalone-${profile.id}`;
+
     try {
-      const dismissed = window.localStorage.getItem('closeandrelax-install-attention-dismissed') === 'true';
-      setInstallAttentionDismissed(dismissed);
+      if (!window.sessionStorage.getItem(viewSessionKey)) {
+        recordHubActivity({
+          profileId: profile.id,
+          eventType: 'hub_view',
+          source: 'public_hub',
+        });
+        window.sessionStorage.setItem(viewSessionKey, 'true');
+      }
     } catch {
-      setInstallAttentionDismissed(false);
+      recordHubActivity({
+        profileId: profile.id,
+        eventType: 'hub_view',
+        source: 'public_hub',
+      });
     }
+
+    const launchedStandalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    if (launchedStandalone) {
+      try {
+        if (!window.sessionStorage.getItem(standaloneSessionKey)) {
+          recordHubActivity({
+            profileId: profile.id,
+            eventType: 'standalone_open',
+            source: 'installed_hub',
+          });
+          window.sessionStorage.setItem(standaloneSessionKey, 'true');
+        }
+      } catch {
+        recordHubActivity({
+          profileId: profile.id,
+          eventType: 'standalone_open',
+          source: 'installed_hub',
+        });
+      }
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowFloatingSave(window.scrollY > 260);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -603,26 +703,46 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     }
   };
 
-  const handleInstallClick = async () => {
-    setInstallAttentionDismissed(true);
-    try {
-      window.localStorage.setItem('closeandrelax-install-attention-dismissed', 'true');
-    } catch {
-      // The animation still stops for this visit if local storage is unavailable.
+  const handleInstallClick = async (source = 'main_button') => {
+    if (profile?.id) {
+      recordHubActivity({
+        profileId: profile.id,
+        eventType: 'save_click',
+        source,
+      });
     }
 
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
+
       if (choiceResult?.outcome === 'accepted') {
         setIsInstalled(true);
+
+        if (profile?.id) {
+          recordHubActivity({
+            profileId: profile.id,
+            eventType: 'install_accepted',
+            source,
+          });
+        }
+
         triggerToast('Added to Home Screen!');
       }
+
       setDeferredPrompt(null);
       return;
     }
 
     if (isIOS) {
+      if (profile?.id) {
+        recordHubActivity({
+          profileId: profile.id,
+          eventType: 'ios_instructions',
+          source,
+        });
+      }
+
       setShowIOSModal(true);
       return;
     }
@@ -707,51 +827,38 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         .hub-icon-nudge svg {
           transition: transform 180ms ease;
         }
-        .hub-guide-attention {
-          animation: hubGuideBounce 2.8s cubic-bezier(.22,.61,.36,1) infinite;
-          transform-origin: center;
-        }
-
-        .hub-guide-attention .hub-install-button {
+        .hub-install-attention {
           position: relative;
           overflow: hidden;
         }
-
-        .hub-guide-attention .hub-install-button::after {
+        .hub-install-attention::after {
           content: '';
           position: absolute;
           inset: -60% -35%;
-          background: linear-gradient(
-            110deg,
-            transparent 38%,
-            rgba(255,255,255,.18) 48%,
-            rgba(255,255,255,.34) 52%,
-            transparent 64%
-          );
+          background: linear-gradient(110deg, transparent 38%, rgba(255,255,255,.18) 48%, rgba(255,255,255,.34) 52%, transparent 64%);
           transform: translateX(-75%) rotate(2deg);
-          animation: hubChampagneShimmer 3.4s ease-in-out infinite;
+          animation: hubChampagneShimmer 3.6s ease-in-out infinite;
           pointer-events: none;
         }
-
-        @keyframes hubGuideBounce {
-          0%, 72%, 100% { transform: translateY(0); }
-          78% { transform: translateY(-7px); }
-          84% { transform: translateY(0); }
-          89% { transform: translateY(-3px); }
-          94% { transform: translateY(0); }
-        }
-
         @keyframes hubChampagneShimmer {
           0%, 58% { transform: translateX(-75%) rotate(2deg); opacity: 0; }
           66% { opacity: 1; }
           82% { transform: translateX(75%) rotate(2deg); opacity: .9; }
           88%, 100% { transform: translateX(75%) rotate(2deg); opacity: 0; }
         }
+        .hub-floating-save {
+          box-shadow: 0 14px 32px -16px rgba(28, 25, 23, .55), 0 4px 12px -6px rgba(28, 25, 23, .28);
+          animation: hubFloatingIn 320ms cubic-bezier(.22,.61,.36,1) both;
+        }
+        @keyframes hubFloatingIn {
+          from { opacity: 0; transform: translateY(10px) scale(.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         @media (prefers-reduced-motion: reduce) {
           .hub-reveal,
           .hub-card-lift,
           .hub-icon-nudge svg,
-          .hub-guide-attention {
+          .hub-install-attention {
             transition: none !important;
             animation: none !important;
           }
@@ -759,7 +866,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             opacity: 1 !important;
             transform: none !important;
           }
-          .hub-guide-attention .hub-install-button::after {
+          .hub-install-attention::after {
             display: none !important;
           }
         }
@@ -882,7 +989,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           )}
         </section>
 
-        <section className={`hub-reveal mb-10 ${!installAttentionDismissed && !isInstalled ? 'hub-guide-attention' : ''}`}>
+        <section className="hub-reveal mb-10">
           <div className="bg-gradient-to-r from-[#f5ede2] via-[#faf4ea] to-[#f5ede2] border border-[#ebdcc7] rounded-2xl p-4 sm:p-5 hub-editorial-shadow flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 text-center sm:text-left lg:text-center xl:text-left">
               <div className="w-10 h-10 rounded-xl bg-white border border-[#e2d3be] flex items-center justify-center text-[#9c7844] shrink-0 shadow-sm">
@@ -896,8 +1003,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
               </div>
             </div>
             <button
-              onClick={handleInstallClick}
-              className="hub-install-button w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
+              onClick={() => handleInstallClick('main_button')}
+              className="hub-install-attention w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
             >
               <Download className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>{isInstalled ? 'Added to Phone' : 'Add to Phone'}</span>
@@ -1237,6 +1344,21 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </div>
       </main>
 
+      {showFloatingSave && !isInstalled && (
+        <button
+          type="button"
+          onClick={() => handleInstallClick('floating_button')}
+          className="hub-floating-save fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 bg-[#1c1917] hover:bg-black text-[#faf8f5] border border-[#3a342e] rounded-full pl-3 pr-4 py-3 flex items-center gap-2.5 transition-transform active:scale-95"
+          aria-label="Save this homeowner guide to your phone"
+          title="Save Guide to Phone"
+        >
+          <span className="w-8 h-8 rounded-full bg-[#2c2926] border border-[#4a423a] flex items-center justify-center shrink-0">
+            <Download className="w-4 h-4 text-[#d9bc8a]" />
+          </span>
+          <span className="text-[11px] font-semibold tracking-wide">Save Guide</span>
+        </button>
+      )}
+
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-[#faf8f5] border border-[#ebdcc7] rounded-3xl p-6 max-w-sm w-full hub-editorial-shadow-lg text-center relative">
@@ -1282,5 +1404,4 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     </div>
   );
 }
-
 
