@@ -1034,10 +1034,17 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {customHubSections.map((section) => (
+              {customHubSections.map((section, index) => {
+                const shouldSpanFullWidth =
+                  customHubSections.length === 1 ||
+                  (customHubSections.length % 2 === 1 && index === customHubSections.length - 1);
+
+                return (
                 <article
                   key={section.id}
-                  className="hub-reveal hub-card-lift bg-white rounded-2xl p-5 sm:p-6 border border-[#ede4d6] hub-editorial-shadow hover:border-[#dbcbb4] flex flex-col h-full"
+                  className={`hub-reveal hub-card-lift bg-white rounded-2xl p-5 sm:p-6 border border-[#ede4d6] hub-editorial-shadow hover:border-[#dbcbb4] flex flex-col h-full ${
+                    shouldSpanFullWidth ? 'lg:col-span-2' : ''
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#f7f2ea] flex items-center justify-center border border-[#ebdcc7] shrink-0">
@@ -1073,7 +1080,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                     </div>
                   )}
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
