@@ -2670,13 +2670,22 @@ export default function App() {
 
       {}
       {currentView === 'dashboard' && user ? (
-        <main className="min-h-[calc(100vh-72px)] bg-[#EEEAE4] px-6 sm:px-8 py-12 md:py-16 border-t border-[#DDD6CB]">
-          <div className="max-w-6xl mx-auto bg-[#FBF9F5] rounded-3xl p-8 sm:p-12 border border-[#D8D0C5] shadow-[0_24px_60px_-34px_rgba(45,39,33,0.38),0_8px_24px_-18px_rgba(45,39,33,0.20)] mb-8">
+        <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-6 sm:px-8 py-12 md:py-16 border-t border-[#3A3530]">
+          <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-8 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
+              <div className="-mx-8 sm:-mx-12 -mt-8 sm:-mt-12 mb-8 sm:mb-10 px-8 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#C8A873]">Close &amp; Relax</p>
+                    <p className="text-xs text-[#D8D0C6] mt-1">Realtor Control Center</p>
+                  </div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#C8A873] shadow-[0_0_0_4px_rgba(200,168,115,0.12)]"></div>
+                </div>
+              </div>
             
             {/* Header / Welcome Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#DDD6CB]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#D4CBC0]">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE5DE] border border-[#DDD6CB] text-xs font-medium text-charcoal-muted mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E5DED5] border border-[#D4CBC0] text-xs font-medium text-charcoal-muted mb-3">
                   <span className="w-2 h-2 rounded-full bg-gold-accent"></span>
                   <span>Realtor Dashboard</span>
                 </div>
@@ -2691,7 +2700,7 @@ export default function App() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handlePreviewMyHub}
-                  className="px-5 py-2.5 text-xs font-semibold rounded-full bg-[#EAE5DE] hover:bg-[#D8D0C5] text-charcoal-deep border border-[#DDD6CB] flex items-center gap-2 transition-all"
+                  className="px-5 py-2.5 text-xs font-semibold rounded-full bg-[#E5DED5] hover:bg-[#D8D0C5] text-charcoal-deep border border-[#D4CBC0] flex items-center gap-2 transition-all"
                 >
                   <Eye className="w-3.5 h-3.5 text-gold-accent" />
                   <span>Preview My Hub</span>
@@ -2707,8 +2716,8 @@ export default function App() {
             </div>
 
             {/* Hub Status Overview Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 border-b border-[#DDD6CB]">
-              <div className="bg-[#F3F0EB] p-5 rounded-2xl border border-[#DDD6CB]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 border-b border-[#D4CBC0]">
+              <div className="bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Active Plan</span>
                 <p className="font-editorial text-2xl font-bold text-charcoal-deep mt-1 capitalize">
                   {publicPlanName} Tier
@@ -2718,7 +2727,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="bg-[#F3F0EB] p-5 rounded-2xl border border-[#DDD6CB]">
+              <div className="bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Hub Status</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`w-2.5 h-2.5 rounded-full ${profile?.is_published ? 'bg-emerald-600' : 'bg-amber-600'}`}></span>
@@ -2735,7 +2744,7 @@ export default function App() {
                   disabled={publishLoading || !profile}
                   className={`mt-4 w-full py-2 text-[11px] font-semibold rounded-xl border transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 ${
                     profile?.is_published
-                      ? 'bg-[#FFFDFC] hover:bg-[#EAE5DE] border-[#DDD6CB] text-charcoal-deep'
+                      ? 'bg-[#FCFAF6] hover:bg-[#E5DED5] border-[#D4CBC0] text-charcoal-deep'
                       : 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
                   }`}
                 >
@@ -2744,7 +2753,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="bg-[#F3F0EB] p-5 rounded-2xl border border-[#DDD6CB]">
+              <div className="bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Shareable Link</span>
                 {publicHubUrl ? (
                   <a
@@ -2765,8 +2774,8 @@ export default function App() {
             </div>
 
             {/* Homeowner Hub Activity */}
-            <div className="py-8 border-b border-[#DDD6CB]">
-              <div className="bg-[#F3F0EB] rounded-2xl border border-[#DDD6CB] p-5 sm:p-6">
+            <div className="py-8 border-b border-[#D4CBC0]">
+              <div className="bg-[#EEE8E0] rounded-2xl border border-[#D4CBC0] p-5 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -2782,7 +2791,7 @@ export default function App() {
                     type="button"
                     onClick={() => fetchHubActivity(profile?.id)}
                     disabled={hubActivityLoading || !profile?.id}
-                    className="self-start px-3.5 py-2 rounded-xl bg-[#FFFDFC] hover:bg-[#EAE5DE] border border-[#DDD6CB] text-[10px] font-semibold text-charcoal-deep flex items-center gap-1.5 disabled:opacity-60"
+                    className="self-start px-3.5 py-2 rounded-xl bg-[#FCFAF6] hover:bg-[#E5DED5] border border-[#D4CBC0] text-[10px] font-semibold text-charcoal-deep flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {hubActivityLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     <span>{hubActivityLoading ? 'Refreshing…' : 'Refresh Activity'}</span>
@@ -2790,14 +2799,14 @@ export default function App() {
                 </div>
 
                 {hubActivityError ? (
-                  <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4 text-xs text-charcoal-muted flex items-start gap-2">
+                  <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4 text-xs text-charcoal-muted flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
                     <span>{hubActivityError}</span>
                   </div>
                 ) : (
                   <>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4">
+                      <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Eye className="w-4 h-4 text-gold-accent" />
                           <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Hub Views</span>
@@ -2806,7 +2815,7 @@ export default function App() {
                         <p className="text-[10px] text-charcoal-muted mt-1">Recorded browsing sessions</p>
                       </div>
 
-                      <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4">
+                      <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <User className="w-4 h-4 text-gold-accent" />
                           <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Unique Devices</span>
@@ -2815,7 +2824,7 @@ export default function App() {
                         <p className="text-[10px] text-charcoal-muted mt-1">Approximate unique browsers</p>
                       </div>
 
-                      <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4">
+                      <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Smartphone className="w-4 h-4 text-gold-accent" />
                           <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Save Clicks</span>
@@ -2824,7 +2833,7 @@ export default function App() {
                         <p className="text-[10px] text-charcoal-muted mt-1">Main + floating Save Guide</p>
                       </div>
 
-                      <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4">
+                      <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Check className="w-4 h-4 text-gold-accent" />
                           <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Confirmed Saves</span>
@@ -2845,8 +2854,8 @@ export default function App() {
             </div>
 
             {/* Plan Access Overview */}
-            <div className="py-8 border-b border-[#DDD6CB]">
-              <div className="bg-[#F3F0EB] rounded-2xl border border-[#DDD6CB] p-5 sm:p-6">
+            <div className="py-8 border-b border-[#D4CBC0]">
+              <div className="bg-[#EEE8E0] rounded-2xl border border-[#D4CBC0] p-5 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -2865,7 +2874,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                  <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl p-4">
+                  <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Included for Everyone</span>
                       <Check className="w-4 h-4 text-gold-accent" />
@@ -2878,7 +2887,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className={`bg-[#FFFDFC] border rounded-xl p-4 ${allowsPremiumProfile ? 'border-[#DDD6CB]' : 'border-[#DDD6CB] opacity-70'}`}>
+                  <div className={`bg-[#FCFAF6] border rounded-xl p-4 ${allowsPremiumProfile ? 'border-[#D4CBC0]' : 'border-[#D4CBC0] opacity-70'}`}>
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Core Branding</span>
                       {allowsPremiumProfile ? <Check className="w-4 h-4 text-gold-accent" /> : <Lock className="w-4 h-4 text-charcoal-muted" />}
@@ -2894,7 +2903,7 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className={`bg-[#FFFDFC] border rounded-xl p-4 ${displayPlan === 'premier' ? 'border-[#D9C49D]' : 'border-[#DDD6CB] opacity-70'}`}>
+                  <div className={`bg-[#FCFAF6] border rounded-xl p-4 ${displayPlan === 'premier' ? 'border-[#D9C49D]' : 'border-[#D4CBC0] opacity-70'}`}>
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Pro Customization</span>
                       {displayPlan === 'premier' ? <Check className="w-4 h-4 text-gold-accent" /> : <Lock className="w-4 h-4 text-charcoal-muted" />}
@@ -2923,20 +2932,20 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
               
               {/* My Profile Card */}
-              <div className="bg-[#F3F0EB] p-6 rounded-2xl border border-[#DDD6CB] flex flex-col justify-between">
+              <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <User className="w-5 h-5 text-gold-accent" />
                       <h3 className="font-editorial text-xl font-bold text-charcoal-deep">My Profile &amp; Identity</h3>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#FFFDFC] rounded border border-[#DDD6CB] text-charcoal-muted">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#FCFAF6] rounded border border-[#D4CBC0] text-charcoal-muted">
                       Profile Config
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-4 mb-5 bg-[#FFFDFC] border border-[#DDD6CB] rounded-2xl p-4">
-                    <div className="w-16 h-16 rounded-full border border-[#B5966B]/70 bg-[#EAE5DE] overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="flex items-center gap-4 mb-5 bg-[#FCFAF6] border border-[#D4CBC0] rounded-2xl p-4">
+                    <div className="w-16 h-16 rounded-full border border-[#B5966B]/70 bg-[#E5DED5] overflow-hidden shrink-0 flex items-center justify-center">
                       {allowsPremiumProfile && profile?.headshot_url ? (
                         <img src={profile.headshot_url} alt={displayName} className="w-full h-full object-cover" />
                       ) : (
@@ -2951,31 +2960,31 @@ export default function App() {
                   </div>
 
                   <div className="space-y-3 text-xs text-charcoal-muted mb-6">
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Full Name</span>
                       <span className="text-right">{displayName}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Brokerage</span>
                       <span className="text-right">{displayBrokerage}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Market City</span>
                       <span className="text-right">{profile?.city || user?.user_metadata?.market_city || 'Not specified'}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Public Email</span>
                       <span className="text-right truncate">{profile?.email || user.email}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Public Phone</span>
                       <span className="text-right truncate">{profile?.phone || 'Not added'}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Website</span>
                       <span className="text-right truncate max-w-[55%]">{allowsPremiumProfile ? (profile?.website_url || 'Not added') : 'Core feature'}</span>
                     </div>
-                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#DDD6CB]/60">
+                    <div className="flex justify-between gap-4 py-1.5 border-b border-[#D4CBC0]/60">
                       <span className="font-medium text-charcoal-deep">Realtor Subdomain</span>
                       <span className="text-right truncate">{profile?.slug ? `${profile.slug}.closeandrelax.com` : 'Not assigned'}</span>
                     </div>
@@ -2984,21 +2993,21 @@ export default function App() {
 
                 <button
                   onClick={handleOpenProfileEditor}
-                  className="w-full py-2.5 text-xs font-semibold rounded-xl bg-[#FFFDFC] hover:bg-[#EAE5DE] border border-[#DDD6CB] text-charcoal-deep transition-colors"
+                  className="w-full py-2.5 text-xs font-semibold rounded-xl bg-[#FCFAF6] hover:bg-[#E5DED5] border border-[#D4CBC0] text-charcoal-deep transition-colors"
                 >
                   Edit Profile Information
                 </button>
               </div>
 
               {/* My Vendors Card */}
-              <div className="bg-[#F3F0EB] p-6 rounded-2xl border border-[#DDD6CB] flex flex-col justify-between">
+              <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-gold-accent" />
                       <h3 className="font-editorial text-xl font-bold text-charcoal-deep">My Preferred Vendors</h3>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#FFFDFC] rounded border border-[#DDD6CB] text-charcoal-muted">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#FCFAF6] rounded border border-[#D4CBC0] text-charcoal-muted">
                       {customVendors.length}/{vendorLimit} Custom
                     </span>
                   </div>
@@ -3007,7 +3016,7 @@ export default function App() {
                     Your hub includes the standard Close &amp; Relax smart-home resource, and your <span className="font-semibold text-charcoal-deep">{publicPlanName}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals.
                   </p>
 
-                  <div className="bg-[#FFFDFC] p-3 rounded-xl border border-[#DDD6CB] text-[11px] text-charcoal-muted space-y-2">
+                  <div className="bg-[#FCFAF6] p-3 rounded-xl border border-[#D4CBC0] text-[11px] text-charcoal-muted space-y-2">
                     <p className="font-semibold text-charcoal-deep">Current vendor setup</p>
                     <p>• {standardVendors.length} standard Close &amp; Relax resource{standardVendors.length === 1 ? '' : 's'}</p>
                     <p>• {customVendors.length} of {vendorLimit} custom vendor slots used</p>
@@ -3023,7 +3032,7 @@ export default function App() {
                 <div className="pt-6">
                   <button
                     onClick={handleOpenVendorManager}
-                    className="w-full py-2.5 text-xs font-semibold rounded-xl bg-[#FFFDFC] hover:bg-[#EAE5DE] border border-[#DDD6CB] text-charcoal-deep transition-colors"
+                    className="w-full py-2.5 text-xs font-semibold rounded-xl bg-[#FCFAF6] hover:bg-[#E5DED5] border border-[#D4CBC0] text-charcoal-deep transition-colors"
                   >
                     Manage Vendors
                   </button>
@@ -3031,11 +3040,11 @@ export default function App() {
               </div>
 
               {/* Realtor Member Benefits Card */}
-              <div className="bg-[#F3F0EB] p-6 rounded-2xl border border-[#DDD6CB] flex flex-col justify-between md:col-span-2">
+              <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between md:col-span-2">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#FFFDFC] border border-[#DDD6CB] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] flex items-center justify-center shrink-0">
                         <Gift className="w-5 h-5 text-gold-accent" />
                       </div>
                       <div>
@@ -3058,12 +3067,12 @@ export default function App() {
                   </div>
 
                   {realtorBenefitsLoading ? (
-                    <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-2xl p-5 flex items-center gap-3 text-xs text-charcoal-muted">
+                    <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-2xl p-5 flex items-center gap-3 text-xs text-charcoal-muted">
                       <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
                       Loading your member benefits…
                     </div>
                   ) : realtorBenefitsError ? (
-                    <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-2xl p-5 text-xs text-charcoal-muted">
+                    <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-2xl p-5 text-xs text-charcoal-muted">
                       <div className="flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
                         <span>{realtorBenefitsError}</span>
@@ -3074,13 +3083,13 @@ export default function App() {
                       {realtorBenefits.map((benefit) => (
                         <article
                           key={benefit.id || benefit.slug}
-                          className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-2xl p-5 flex flex-col h-full"
+                          className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-2xl p-5 flex flex-col h-full"
                         >
                           <div className="flex items-center justify-between gap-3 mb-3">
                             <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">
                               {benefit.provider || 'Close & Relax Partner'}
                             </span>
-                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#F3F0EB] rounded-full border border-[#DDD6CB] text-charcoal-muted">
+                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#EEE8E0] rounded-full border border-[#D4CBC0] text-charcoal-muted">
                               Member Exclusive
                             </span>
                           </div>
@@ -3096,7 +3105,7 @@ export default function App() {
                           )}
 
                           {benefit.benefit_details && (
-                            <div className="mt-4 bg-[#F3F0EB] border border-[#DDD6CB] rounded-xl p-3 text-[11px] text-charcoal-muted leading-relaxed">
+                            <div className="mt-4 bg-[#EEE8E0] border border-[#D4CBC0] rounded-xl p-3 text-[11px] text-charcoal-muted leading-relaxed">
                               {benefit.benefit_details}
                             </div>
                           )}
@@ -3124,7 +3133,7 @@ export default function App() {
 
                                 <a
                                   href={`sms:4632813454?body=${encodeURIComponent("Hi Roger, I'm a Close & Relax realtor and I'd like to claim the Vivint Realtor Benefit.")}`}
-                                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 mt-2 text-xs font-semibold rounded-xl bg-[#F3F0EB] hover:bg-[#EAE5DE] border border-[#DDD6CB] text-charcoal-deep transition-colors"
+                                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 mt-2 text-xs font-semibold rounded-xl bg-[#EEE8E0] hover:bg-[#E5DED5] border border-[#D4CBC0] text-charcoal-deep transition-colors"
                                 >
                                   <MessageSquare className="w-3.5 h-3.5 text-gold-accent" />
                                   <span>Prefer to text? Text Roger</span>
@@ -3145,7 +3154,7 @@ export default function App() {
                                 <ExternalLink className="w-3.5 h-3.5 text-[#D3B88A]" />
                               </a>
                             ) : (
-                              <div className="w-full py-2.5 px-4 text-center text-xs font-semibold rounded-xl bg-[#F3F0EB] border border-[#DDD6CB] text-charcoal-muted">
+                              <div className="w-full py-2.5 px-4 text-center text-xs font-semibold rounded-xl bg-[#EEE8E0] border border-[#D4CBC0] text-charcoal-muted">
                                 Claim instructions coming soon
                               </div>
                             )}
@@ -3154,7 +3163,7 @@ export default function App() {
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-[#FFFDFC] border border-[#DDD6CB] rounded-2xl p-5 text-xs text-charcoal-muted">
+                    <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-2xl p-5 text-xs text-charcoal-muted">
                       New Realtor member benefits are being prepared.
                     </div>
                   )}
@@ -3162,10 +3171,10 @@ export default function App() {
               </div>
 
               {/* Pro Homeowner Checklist Card */}
-              <div className="bg-[#F3F0EB] p-6 rounded-2xl border border-[#DDD6CB] flex flex-col justify-between md:col-span-2">
+              <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between md:col-span-2">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#FFFDFC] border border-[#DDD6CB] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] flex items-center justify-center shrink-0">
                       <CheckSquare className="w-5 h-5 text-gold-accent" />
                     </div>
                     <div>
@@ -3189,7 +3198,7 @@ export default function App() {
                       className={`px-5 py-2.5 text-xs font-semibold rounded-xl border transition-colors ${
                         allowsChecklist
                           ? 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
-                          : 'bg-[#FFFDFC] hover:bg-[#EAE5DE] border-[#DDD6CB] text-charcoal-deep'
+                          : 'bg-[#FCFAF6] hover:bg-[#E5DED5] border-[#D4CBC0] text-charcoal-deep'
                       }`}
                     >
                       {allowsChecklist ? 'Manage Checklist' : 'Unlock with Pro'}
@@ -3198,17 +3207,17 @@ export default function App() {
                 </div>
 
                 {!allowsChecklist && (
-                  <div className="mt-5 bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
+                  <div className="mt-5 bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
                     Advanced homeowner checklists are included with Pro. Existing hidden Pro checklist content is preserved if a plan is downgraded.
                   </div>
                 )}
               </div>
 
               {/* Pro Custom Hub Sections Card */}
-              <div className="bg-[#F3F0EB] p-6 rounded-2xl border border-[#DDD6CB] flex flex-col justify-between md:col-span-2">
+              <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between md:col-span-2">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#FFFDFC] border border-[#DDD6CB] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] flex items-center justify-center shrink-0">
                       <Layers className="w-5 h-5 text-gold-accent" />
                     </div>
                     <div>
@@ -3234,7 +3243,7 @@ export default function App() {
                       className={`px-5 py-2.5 text-xs font-semibold rounded-xl border transition-colors ${
                         allowsCustomSections
                           ? 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
-                          : 'bg-[#FFFDFC] hover:bg-[#EAE5DE] border-[#DDD6CB] text-charcoal-deep'
+                          : 'bg-[#FCFAF6] hover:bg-[#E5DED5] border-[#D4CBC0] text-charcoal-deep'
                       }`}
                     >
                       {allowsCustomSections ? 'Manage Sections' : 'Unlock with Pro'}
@@ -3243,7 +3252,7 @@ export default function App() {
                 </div>
 
                 {!allowsCustomSections && (
-                  <div className="mt-5 bg-[#FFFDFC] border border-[#DDD6CB] rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
+                  <div className="mt-5 bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
                     Custom homeowner hub sections are included with Pro. Existing Pro-only content remains preserved if a plan is downgraded.
                   </div>
                 )}
@@ -3252,7 +3261,7 @@ export default function App() {
             </div>
 
             {/* Quick Return Bar */}
-            <div className="mt-8 pt-6 border-t border-[#DDD6CB] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-charcoal-muted">
+            <div className="mt-8 pt-6 border-t border-[#3A3530] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-charcoal-muted">
               <span>Looking to review marketing details or plan features?</span>
               <button
                 onClick={() => setCurrentView('marketing')}
