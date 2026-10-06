@@ -788,6 +788,11 @@ export default function App() {
   const [realtorBenefitsLoading, setRealtorBenefitsLoading] = useState(false);
   const [realtorBenefitsError, setRealtorBenefitsError] = useState(null);
 
+  // Lightweight homeowner hub activity
+  const [hubActivityEvents, setHubActivityEvents] = useState([]);
+  const [hubActivityLoading, setHubActivityLoading] = useState(false);
+  const [hubActivityError, setHubActivityError] = useState(null);
+
   // Public wildcard subdomain state
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
@@ -1113,6 +1118,41 @@ export default function App() {
     }
   };
 
+  const fetchHubActivity = async (profileId = user?.id) => {
+    if (!profileId) {
+      setHubActivityEvents([]);
+      return [];
+    }
+
+    setHubActivityLoading(true);
+    setHubActivityError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('hub_activity_events')
+        .select('event_type, source, device_id, created_at')
+        .eq('profile_id', profileId)
+        .order('created_at', { ascending: false })
+        .limit(5000);
+
+      if (error) {
+        console.error('Error loading hub activity:', error);
+        setHubActivityError(error.message || 'Unable to load hub activity.');
+        return [];
+      }
+
+      const rows = data || [];
+      setHubActivityEvents(rows);
+      return rows;
+    } catch (err) {
+      console.error('Unexpected hub activity loading error:', err);
+      setHubActivityError(err.message || 'Unable to load hub activity.');
+      return [];
+    } finally {
+      setHubActivityLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -1170,6 +1210,7 @@ export default function App() {
       setChecklistItems([]);
       setCustomHubSections([]);
       setRealtorBenefits([]);
+      setHubActivityEvents([]);
       return;
     }
 
@@ -1177,6 +1218,7 @@ export default function App() {
     fetchChecklistItems(profile.id);
     fetchCustomHubSections(profile.id);
     fetchRealtorBenefits();
+    fetchHubActivity(profile.id);
   }, [user?.id, profile?.id, profile?.plan]);
 
 
@@ -2359,6 +2401,22 @@ export default function App() {
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
   const publicHubUrl = profile?.slug ? `https://${profile.slug}.closeandrelax.com` : null;
 
+  const hubViewEvents = hubActivityEvents.filter((event) => event.event_type === 'hub_view');
+  const saveClickEvents = hubActivityEvents.filter((event) => event.event_type === 'save_click');
+  const standaloneOpenEvents = hubActivityEvents.filter((event) => event.event_type === 'standalone_open');
+  const iosInstructionEvents = hubActivityEvents.filter((event) => event.event_type === 'ios_instructions');
+
+  const uniqueHubDevices = new Set(
+    hubViewEvents.map((event) => event.device_id).filter(Boolean)
+  ).size;
+
+  const confirmedInstallDevices = new Set(
+    hubActivityEvents
+      .filter((event) => event.event_type === 'install_accepted' || event.event_type === 'standalone_open')
+      .map((event) => event.device_id)
+      .filter(Boolean)
+  ).size;
+
   const handlePreviewMyHub = () => {
     if (!profile?.slug) {
       showToast('Your realtor subdomain has not been assigned yet.');
@@ -2703,6 +2761,86 @@ export default function App() {
                 <p className="text-xs text-charcoal-muted mt-0.5">
                   {profile?.is_published ? 'Live and ready to share with clients' : 'Your link becomes public when the hub is published'}
                 </p>
+              </div>
+            </div>
+
+            {/* Homeowner Hub Activity */}
+            <div className="py-8 border-b border-cream-border">
+              <div className="bg-cream-warm rounded-2xl border border-cream-border p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Eye className="w-5 h-5 text-gold-accent" />
+                      <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Hub Activity</h3>
+                    </div>
+                    <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+                      A simple look at whether homeowners are opening your hub and saving it to their phones.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchHubActivity(profile?.id)}
+                    disabled={hubActivityLoading || !profile?.id}
+                    className="self-start px-3.5 py-2 rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-[10px] font-semibold text-charcoal-deep flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    {hubActivityLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{hubActivityLoading ? 'Refreshing…' : 'Refresh Activity'}</span>
+                  </button>
+                </div>
+
+                {hubActivityError ? (
+                  <div className="bg-cream-card border border-cream-border rounded-xl p-4 text-xs text-charcoal-muted flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-gold-accent shrink-0 mt-0.5" />
+                    <span>{hubActivityError}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div className="bg-cream-card border border-cream-border rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Eye className="w-4 h-4 text-gold-accent" />
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Hub Views</span>
+                        </div>
+                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{hubViewEvents.length}</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Recorded browsing sessions</p>
+                      </div>
+
+                      <div className="bg-cream-card border border-cream-border rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4 text-gold-accent" />
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Unique Devices</span>
+                        </div>
+                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{uniqueHubDevices}</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Approximate unique browsers</p>
+                      </div>
+
+                      <div className="bg-cream-card border border-cream-border rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Smartphone className="w-4 h-4 text-gold-accent" />
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Save Clicks</span>
+                        </div>
+                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{saveClickEvents.length}</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Main + floating Save Guide</p>
+                      </div>
+
+                      <div className="bg-cream-card border border-cream-border rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Check className="w-4 h-4 text-gold-accent" />
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Confirmed Saves</span>
+                        </div>
+                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{confirmedInstallDevices}</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Unique devices with install confirmation or app launch</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[10px] text-charcoal-muted">
+                      <span>Installed-app opens: <strong className="text-charcoal-deep">{standaloneOpenEvents.length}</strong></span>
+                      <span>iPhone save instructions viewed: <strong className="text-charcoal-deep">{iosInstructionEvents.length}</strong></span>
+                      <span>Tracking begins from the day Hub Activity was enabled.</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
