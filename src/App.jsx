@@ -1247,6 +1247,7 @@ export default function App() {
           } else {
             const publicPlan = getPlanConfig(data.plan);
             let publicChecklistItems = [];
+            let publicCustomHubSections = [];
 
             if (publicPlan.allowsChecklist) {
               const { data: checklistData, error: checklistLoadError } = await supabase
@@ -1263,6 +1264,24 @@ export default function App() {
                 console.error('Error loading public homeowner checklist:', checklistLoadError);
               } else {
                 publicChecklistItems = checklistData || [];
+              }
+            }
+
+            if (publicPlan.allowsCustomSections) {
+              const { data: customSectionData, error: customSectionLoadError } = await supabase
+                .from('custom_hub_sections')
+                .select('*')
+                .eq('profile_id', data.id)
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+
+              if (!isMounted) return;
+
+              if (customSectionLoadError) {
+                console.error('Error loading public custom hub sections:', customSectionLoadError);
+              } else {
+                publicCustomHubSections = customSectionData || [];
               }
             }
 
@@ -1290,6 +1309,7 @@ export default function App() {
               ...publicData,
               vendors: visibleVendors,
               checklist_items: publicPlan.allowsChecklist ? publicChecklistItems : [],
+              custom_hub_sections: publicPlan.allowsCustomSections ? publicCustomHubSections : [],
             });
           }
         }
