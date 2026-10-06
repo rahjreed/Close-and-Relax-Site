@@ -25,6 +25,8 @@ import {
   Video,
 } from 'lucide-react';
 
+import { supabase } from '../lib/supabase';
+
 const normalizeUrl = (value = '') => {
   const trimmed = String(value || '').trim();
   if (!trimmed) return '';
@@ -66,6 +68,15 @@ if (typeof window !== 'undefined' && !window.__closeRelaxInstallPromptListenerAt
   });
 }
 
+const createFallbackUuid = () => {
+  // RFC 4122-style v4 fallback for browsers that do not expose crypto.randomUUID().
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+};
+
 const getHubDeviceId = () => {
   const storageKey = 'closeandrelax-device-id';
 
@@ -76,44 +87,36 @@ const getHubDeviceId = () => {
     const created =
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+        : createFallbackUuid();
 
     window.localStorage.setItem(storageKey, created);
     return created;
   } catch {
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return createFallbackUuid();
   }
 };
 
 const recordHubActivity = async ({ profileId, eventType, source = null }) => {
   if (!profileId || typeof window === 'undefined') return;
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey =
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_KEY ||
-    '';
-
-  if (!supabaseUrl || !supabaseAnonKey) return;
-
   try {
-    await fetch(`${supabaseUrl}/rest/v1/hub_activity_events`, {
-      method: 'POST',
-      headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${supabaseAnonKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        profile_id: profileId,
-        event_type: eventType,
-        source,
-        device_id: getHubDeviceId(),
-      }),
-    });
-  } catch {
+    const { error } = await supabase
+      .from('hub_activity_events')
+      .insert([
+        {
+          profile_id: profileId,
+          event_type: eventType,
+          source,
+          device_id: getHubDeviceId(),
+        },
+      ]);
+
+    if (error) {
+      console.warn('Close & Relax hub activity was not recorded:', error.message);
+    }
+  } catch (error) {
     // Tracking should never interrupt the homeowner experience.
+    console.warn('Close & Relax hub activity tracking error:', error?.message || error);
   }
 };
 
