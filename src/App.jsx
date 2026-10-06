@@ -2844,6 +2844,81 @@ export default function App() {
               </div>
             </div>
 
+            {/* Plan Access Overview */}
+            <div className="py-8 border-b border-cream-border">
+              <div className="bg-cream-warm rounded-2xl border border-cream-border p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lock className="w-5 h-5 text-gold-accent" />
+                      <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Your Plan Access</h3>
+                    </div>
+                    <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+                      Your dashboard only unlocks the branding and homeowner tools included with your current plan.
+                    </p>
+                  </div>
+
+                  <div className="sm:text-right shrink-0">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Current Plan</p>
+                    <p className="font-editorial text-xl font-bold text-charcoal-deep">{publicPlanName}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                  <div className="bg-cream-card border border-cream-border rounded-xl p-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Included for Everyone</span>
+                      <Check className="w-4 h-4 text-gold-accent" />
+                    </div>
+                    <div className="space-y-2 text-[11px] text-charcoal-muted">
+                      <p>• Dedicated homeowner hub</p>
+                      <p>• Add-to-phone experience</p>
+                      <p>• Hub Activity</p>
+                      <p>• Up to {vendorLimit} preferred vendors on your current plan</p>
+                    </div>
+                  </div>
+
+                  <div className={`bg-cream-card border rounded-xl p-4 ${allowsPremiumProfile ? 'border-cream-border' : 'border-cream-border opacity-70'}`}>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Core Branding</span>
+                      {allowsPremiumProfile ? <Check className="w-4 h-4 text-gold-accent" /> : <Lock className="w-4 h-4 text-charcoal-muted" />}
+                    </div>
+                    <div className="space-y-2 text-[11px] text-charcoal-muted">
+                      <p>• Realtor headshot</p>
+                      <p>• Bio, website &amp; social links</p>
+                      <p>• Vendor recommendation notes</p>
+                      <p>• Up to 8 preferred vendors</p>
+                    </div>
+                    {!allowsPremiumProfile && (
+                      <p className="text-[10px] font-semibold text-charcoal-deep mt-3">Available on Core &amp; Pro</p>
+                    )}
+                  </div>
+
+                  <div className={`bg-cream-card border rounded-xl p-4 ${displayPlan === 'premier' ? 'border-[#D9C49D]' : 'border-cream-border opacity-70'}`}>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-gold-accent">Pro Customization</span>
+                      {displayPlan === 'premier' ? <Check className="w-4 h-4 text-gold-accent" /> : <Lock className="w-4 h-4 text-charcoal-muted" />}
+                    </div>
+                    <div className="space-y-2 text-[11px] text-charcoal-muted">
+                      <p>• YouTube welcome video</p>
+                      <p>• Advanced homeowner checklist</p>
+                      <p>• Custom homeowner sections</p>
+                      <p>• Custom home-screen initials icon</p>
+                      <p>• Full standard-resource control</p>
+                      <p>• Up to 15 preferred vendors</p>
+                    </div>
+                    {displayPlan !== 'premier' && (
+                      <p className="text-[10px] font-semibold text-charcoal-deep mt-3">Available on Pro</p>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-charcoal-muted mt-4">
+                  Billing controls will be connected near launch. Until then, plan changes remain admin-controlled.
+                </p>
+              </div>
+            </div>
+
             {/* Dashboard Workspace Panels */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
               
