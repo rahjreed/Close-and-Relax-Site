@@ -58,22 +58,86 @@ const createInitialsIconDataUrl = (initials, size) => {
     const context = canvas.getContext('2d');
     if (!context) return '';
 
-    // Premium Close & Relax app-icon treatment.
-    context.fillStyle = '#191816';
+    const cleanInitials = String(initials)
+      .trim()
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 2)
+      .toUpperCase();
+
+    if (!cleanInitials) return '';
+
+    // Refined Close & Relax icon:
+    // warm charcoal, softer champagne lettering, lighter frame,
+    // and more breathing room than the earlier badge-like version.
+    const background = context.createLinearGradient(0, 0, size, size);
+    background.addColorStop(0, '#25211D');
+    background.addColorStop(1, '#151311');
+    context.fillStyle = background;
     context.fillRect(0, 0, size, size);
 
-    // Subtle inner ring so masked/rounded OS icons still feel intentional.
-    context.strokeStyle = '#B5966B';
-    context.lineWidth = Math.max(2, Math.round(size * 0.018));
-    const inset = Math.round(size * 0.095);
-    context.strokeRect(inset, inset, size - inset * 2, size - inset * 2);
+    // Soft inner vignette adds depth without making the icon glossy.
+    const vignette = context.createRadialGradient(
+      size * 0.5,
+      size * 0.42,
+      size * 0.08,
+      size * 0.5,
+      size * 0.5,
+      size * 0.72
+    );
+    vignette.addColorStop(0, 'rgba(255,255,255,0.025)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.10)');
+    context.fillStyle = vignette;
+    context.fillRect(0, 0, size, size);
 
-    const cleanInitials = String(initials).trim().slice(0, 2).toUpperCase();
-    context.fillStyle = '#D3B88A';
+    // Thin rounded champagne frame.
+    const inset = Math.round(size * 0.085);
+    const radius = Math.round(size * 0.105);
+    const lineWidth = Math.max(2, Math.round(size * 0.009));
+
+    context.save();
+    context.strokeStyle = '#BFA77C';
+    context.globalAlpha = 0.72;
+    context.lineWidth = lineWidth;
+    context.beginPath();
+
+    const x = inset;
+    const y = inset;
+    const w = size - inset * 2;
+    const h = size - inset * 2;
+
+    context.moveTo(x + radius, y);
+    context.lineTo(x + w - radius, y);
+    context.quadraticCurveTo(x + w, y, x + w, y + radius);
+    context.lineTo(x + w, y + h - radius);
+    context.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    context.lineTo(x + radius, y + h);
+    context.quadraticCurveTo(x, y + h, x, y + h - radius);
+    context.lineTo(x, y + radius);
+    context.quadraticCurveTo(x, y, x + radius, y);
+    context.closePath();
+    context.stroke();
+    context.restore();
+
+    // Refined monogram.
+    const fontSize = Math.round(size * (cleanInitials.length === 1 ? 0.39 : 0.305));
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.font = `700 ${Math.round(size * (cleanInitials.length === 1 ? 0.44 : 0.34))}px Georgia, serif`;
-    context.fillText(cleanInitials, size / 2, size / 2 + Math.round(size * 0.015));
+    context.font = `600 ${fontSize}px Georgia, "Times New Roman", serif`;
+
+    // Tiny shadow for crispness at phone-icon size.
+    context.shadowColor = 'rgba(0,0,0,0.22)';
+    context.shadowBlur = Math.max(1, Math.round(size * 0.012));
+    context.shadowOffsetY = Math.max(1, Math.round(size * 0.008));
+
+    const textGradient = context.createLinearGradient(0, size * 0.28, 0, size * 0.72);
+    textGradient.addColorStop(0, '#EFE3C8');
+    textGradient.addColorStop(1, '#C9A86F');
+    context.fillStyle = textGradient;
+
+    // A slight visual lift keeps the monogram optically centered.
+    context.fillText(cleanInitials, size / 2, size / 2 - Math.round(size * 0.012));
+
+    context.shadowColor = 'transparent';
 
     return canvas.toDataURL('image/png');
   } catch {
@@ -1176,3 +1240,4 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     </div>
   );
 }
+
