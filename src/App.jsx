@@ -808,6 +808,17 @@ export default function App() {
   const [authError, setAuthError] = useState(null);
   const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
 
+  // Password recovery state
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [passwordRecoveryError, setPasswordRecoveryError] = useState(null);
+  const [passwordRecoveryLoading, setPasswordRecoveryLoading] = useState(false);
+  const [newPasswordData, setNewPasswordData] = useState({
+    password: '',
+    confirmPassword: '',
+  });
+
   // Route-aware view state. The app still uses the existing marketing/dashboard UI,
   // but the browser URL is now the source of truth for refreshable routes.
   const getCurrentAppPath = () => {
@@ -817,9 +828,12 @@ export default function App() {
     return rawPath.replace(/\/+$/, '') || '/';
   };
 
-  const [currentView, _setCurrentView] = useState(() =>
-    getCurrentAppPath() === '/dashboard' ? 'dashboard' : 'marketing'
-  );
+  const [currentView, _setCurrentView] = useState(() => {
+    const path = getCurrentAppPath();
+    if (path === '/dashboard') return 'dashboard';
+    if (path === '/reset-password') return 'reset-password';
+    return 'marketing';
+  });
 
   const updateBrowserPath = (path, { replace = false } = {}) => {
     if (typeof window === 'undefined' || isRealtorSubdomain) return;
@@ -888,6 +902,14 @@ export default function App() {
         _setCurrentView('marketing');
         _setLoginModalOpen(false);
         _setSignupModalOpen(true);
+        return;
+      }
+
+      if (path === '/reset-password') {
+        _setCurrentView('reset-password');
+        _setLoginModalOpen(false);
+        _setSignupModalOpen(false);
+        setForgotPasswordOpen(false);
         return;
       }
 
@@ -1184,9 +1206,23 @@ export default function App() {
       setSession(newSession);
       setUser(currentUser);
 
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecoveryError(null);
+        setNewPasswordData({ password: '', confirmPassword: '' });
+        _setLoginModalOpen(false);
+        _setSignupModalOpen(false);
+        setForgotPasswordOpen(false);
+        _setCurrentView('reset-password');
+        updateBrowserPath('/reset-password', { replace: true });
+        return;
+      }
+
       if (!currentUser) {
         setProfile(null);
-        _setCurrentView('marketing');
+
+        if (getCurrentAppPath() !== '/reset-password') {
+          _setCurrentView('marketing');
+        }
       }
     });
 
@@ -1396,6 +1432,7 @@ export default function App() {
   };
 
   const handleOpenSignup = (planId = "partner") => {
+    setForgotPasswordOpen(false);
     setSelectedPlan(planId);
     setAuthError(null);
     setEmailConfirmationRequired(false);
@@ -1404,9 +1441,88 @@ export default function App() {
   };
 
   const handleOpenLogin = () => {
+    setForgotPasswordOpen(false);
     setAuthError(null);
     setSignupModalOpen(false);
     setLoginModalOpen(true);
+  };
+
+  const handleOpenForgotPassword = () => {
+    setPasswordRecoveryError(null);
+    setForgotPasswordSent(false);
+    setForgotPasswordEmail(loginData.email.trim());
+    _setLoginModalOpen(false);
+    setForgotPasswordOpen(true);
+  };
+
+  const handleForgotPasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    const email = forgotPasswordEmail.trim();
+    if (!email) {
+      setPasswordRecoveryError('Enter the email address you use for Close & Relax.');
+      return;
+    }
+
+    setPasswordRecoveryLoading(true);
+    setPasswordRecoveryError(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://closeandrelax.com/reset-password',
+      });
+
+      if (error) {
+        setPasswordRecoveryError(error.message || 'Unable to send the password reset email.');
+        return;
+      }
+
+      setForgotPasswordSent(true);
+    } catch (err) {
+      setPasswordRecoveryError(err.message || 'Unable to send the password reset email.');
+    } finally {
+      setPasswordRecoveryLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (event) => {
+    event.preventDefault();
+
+    const password = newPasswordData.password;
+    const confirmPassword = newPasswordData.confirmPassword;
+
+    if (password.length < 8) {
+      setPasswordRecoveryError('Your new password must be at least 8 characters.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordRecoveryError('The two passwords do not match.');
+      return;
+    }
+
+    setPasswordRecoveryLoading(true);
+    setPasswordRecoveryError(null);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        setPasswordRecoveryError(error.message || 'Unable to update your password.');
+        return;
+      }
+
+      await supabase.auth.signOut();
+      setNewPasswordData({ password: '', confirmPassword: '' });
+      _setCurrentView('marketing');
+      updateBrowserPath('/login', { replace: true });
+      _setLoginModalOpen(true);
+      showToast('Password updated. Sign in with your new password.');
+    } catch (err) {
+      setPasswordRecoveryError(err.message || 'Unable to update your password.');
+    } finally {
+      setPasswordRecoveryLoading(false);
+    }
   };
 
   const handleSignupSubmit = async (e) => {
@@ -2670,7 +2786,89 @@ export default function App() {
       </header>
 
       {}
-      {currentView === 'dashboard' && user ? (
+      {currentView === 'reset-password' ? (
+        <main className="min-h-[calc(100vh-80px)] bg-[#24211E] px-6 py-14 sm:py-20 flex items-start justify-center">
+          <div className="w-full max-w-md bg-[#F8F5EF] rounded-3xl border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72)] overflow-hidden">
+            <div className="bg-[#2E2A26] border-b border-[#4B443D] px-7 py-5">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-[#C8A873]">Close &amp; Relax</p>
+              <p className="text-xs text-[#D8D0C6] mt-1">Secure Account Recovery</p>
+            </div>
+
+            <div className="p-7 sm:p-8">
+              <div className="w-11 h-11 rounded-2xl bg-[#EEE8E0] border border-[#D4CBC0] flex items-center justify-center mb-5">
+                <Key className="w-5 h-5 text-gold-accent" />
+              </div>
+
+              <h1 className="font-editorial text-3xl font-semibold text-charcoal-deep">Choose a new password</h1>
+              <p className="text-sm text-charcoal-muted leading-relaxed mt-2 mb-6">
+                Enter a new password for your Close &amp; Relax Realtor account.
+              </p>
+
+              {passwordRecoveryError && (
+                <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <span>{passwordRecoveryError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="newPassword" className="block text-xs font-semibold text-charcoal-deep mb-1">
+                    New Password
+                  </label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={newPasswordData.password}
+                    onChange={(e) => setNewPasswordData({ ...newPasswordData, password: e.target.value })}
+                    placeholder="At least 8 characters"
+                    className="w-full text-sm px-4 py-3 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmNewPassword" className="block text-xs font-semibold text-charcoal-deep mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    id="confirmNewPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={newPasswordData.confirmPassword}
+                    onChange={(e) => setNewPasswordData({ ...newPasswordData, confirmPassword: e.target.value })}
+                    placeholder="Type it again"
+                    className="w-full text-sm px-4 py-3 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passwordRecoveryLoading}
+                  className="w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {passwordRecoveryLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                      <span>Updating Password...</span>
+                    </>
+                  ) : (
+                    <span>Update Password</span>
+                  )}
+                </button>
+              </form>
+
+              <p className="text-[11px] text-charcoal-muted text-center mt-5">
+                Open this page from the secure password-reset link sent to your email.
+              </p>
+            </div>
+          </div>
+        </main>
+      ) : currentView === 'dashboard' && user ? (
         <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-6 sm:px-8 py-12 md:py-16 border-t border-[#3A3530]">
           <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-8 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
               <div className="-mx-8 sm:-mx-12 -mt-8 sm:-mt-12 mb-8 sm:mb-10 px-8 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
@@ -5738,6 +5936,105 @@ export default function App() {
       )}
 
       {}
+      {forgotPasswordOpen && (
+        <div className="fixed inset-0 z-[60] bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl border border-cream-border shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 sm:px-8 py-5 border-b border-cream-border flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gold-accent">Account Recovery</span>
+                <h2 className="font-editorial text-2xl font-semibold text-charcoal-deep mt-1">Reset your password</h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotPasswordOpen(false);
+                  setPasswordRecoveryError(null);
+                  setForgotPasswordSent(false);
+                  setLoginModalOpen(true);
+                }}
+                className="w-8 h-8 rounded-full border border-cream-border bg-cream-card hover:bg-cream-subtle flex items-center justify-center text-charcoal-muted"
+                aria-label="Close password reset"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              {forgotPasswordSent ? (
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#F4EBDD] border border-[#E4D5BE] flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-5 h-5 text-gold-accent" />
+                  </div>
+                  <h3 className="font-editorial text-xl font-semibold text-charcoal-deep">Check your email</h3>
+                  <p className="text-sm text-charcoal-muted leading-relaxed mt-2">
+                    If an account exists for <span className="font-semibold text-charcoal-deep">{forgotPasswordEmail.trim()}</span>, a secure reset link will be sent.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordOpen(false);
+                      setForgotPasswordSent(false);
+                      setLoginModalOpen(true);
+                    }}
+                    className="mt-6 w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold"
+                  >
+                    Back to Log In
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-charcoal-muted leading-relaxed mb-5">
+                    Enter the email address you use for Close &amp; Relax. We’ll send you a secure link to choose a new password.
+                  </p>
+
+                  {passwordRecoveryError && (
+                    <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <span>{passwordRecoveryError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                    <div>
+                      <label htmlFor="forgotPasswordEmail" className="block text-xs font-semibold text-charcoal-deep mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        id="forgotPasswordEmail"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        placeholder="you@brokerage.com"
+                        className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={passwordRecoveryLoading}
+                      className="w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {passwordRecoveryLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                          <span>Sending Reset Link...</span>
+                        </>
+                      ) : (
+                        <span>Email Me a Reset Link</span>
+                      )}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {}
       {loginModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="bg-cream-warm rounded-3xl max-w-md w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
@@ -5791,8 +6088,8 @@ export default function App() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => showToast("Password reset feature will be emailed to your address.")}
-                      className="text-[11px] text-charcoal-muted hover:text-charcoal-deep"
+                      onClick={handleOpenForgotPassword}
+                      className="text-[11px] text-charcoal-muted hover:text-charcoal-deep underline underline-offset-2"
                     >
                       Forgot?
                     </button>
