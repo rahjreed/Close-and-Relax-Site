@@ -128,6 +128,7 @@ const getPlanConfig = (value) => {
       allowsDefaultVendorControl: true,
       allowsWelcomeVideo: true,
       allowsChecklist: true,
+      allowsCustomSections: true,
       regularPrice: 59,
       foundingPrice: 29,
     };
@@ -143,6 +144,7 @@ const getPlanConfig = (value) => {
       allowsDefaultVendorControl: false,
       allowsWelcomeVideo: false,
       allowsChecklist: false,
+      allowsCustomSections: false,
       regularPrice: 39,
       foundingPrice: 19,
     };
@@ -157,6 +159,7 @@ const getPlanConfig = (value) => {
     allowsDefaultVendorControl: false,
     allowsWelcomeVideo: false,
     allowsChecklist: false,
+    allowsCustomSections: false,
     regularPrice: 0,
     foundingPrice: 0,
   };
@@ -758,6 +761,21 @@ export default function App() {
     is_active: true,
   });
 
+  // Pro custom homeowner hub sections
+  const [customHubSections, setCustomHubSections] = useState([]);
+  const [customHubSectionsLoading, setCustomHubSectionsLoading] = useState(false);
+  const [customHubSectionsManagerOpen, setCustomHubSectionsManagerOpen] = useState(false);
+  const [customHubSectionSaving, setCustomHubSectionSaving] = useState(false);
+  const [customHubSectionError, setCustomHubSectionError] = useState(null);
+  const [editingCustomHubSectionId, setEditingCustomHubSectionId] = useState(null);
+  const [customHubSectionForm, setCustomHubSectionForm] = useState({
+    title: '',
+    body: '',
+    button_label: '',
+    button_url: '',
+    is_active: true,
+  });
+
   // Close & Relax member benefits for Realtors
   const [realtorBenefits, setRealtorBenefits] = useState([]);
   const [realtorBenefitsLoading, setRealtorBenefitsLoading] = useState(false);
@@ -1018,6 +1036,41 @@ export default function App() {
     }
   };
 
+  const fetchCustomHubSections = async (profileId = user?.id) => {
+    if (!profileId) {
+      setCustomHubSections([]);
+      return [];
+    }
+
+    setCustomHubSectionsLoading(true);
+    setCustomHubSectionError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('custom_hub_sections')
+        .select('*')
+        .eq('profile_id', profileId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading custom hub sections:', error);
+        setCustomHubSectionError(error.message || 'Unable to load your custom sections.');
+        return [];
+      }
+
+      const rows = data || [];
+      setCustomHubSections(rows);
+      return rows;
+    } catch (err) {
+      console.error('Unexpected custom section loading error:', err);
+      setCustomHubSectionError(err.message || 'Unable to load your custom sections.');
+      return [];
+    } finally {
+      setCustomHubSectionsLoading(false);
+    }
+  };
+
   const fetchRealtorBenefits = async () => {
     if (!user?.id) {
       setRealtorBenefits([]);
@@ -1108,12 +1161,14 @@ export default function App() {
     if (!user?.id || !profile?.id) {
       setVendors([]);
       setChecklistItems([]);
+      setCustomHubSections([]);
       setRealtorBenefits([]);
       return;
     }
 
     fetchUserVendors(profile.id);
     fetchChecklistItems(profile.id);
+    fetchCustomHubSections(profile.id);
     fetchRealtorBenefits();
   }, [user?.id, profile?.id, profile?.plan]);
 
@@ -1964,6 +2019,173 @@ export default function App() {
     }
   };
 
+  const resetCustomHubSectionForm = () => {
+    setEditingCustomHubSectionId(null);
+    setCustomHubSectionForm({
+      title: '',
+      body: '',
+      button_label: '',
+      button_url: '',
+      is_active: true,
+    });
+    setCustomHubSectionError(null);
+  };
+
+  const handleOpenCustomHubSectionsManager = async () => {
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsCustomSections) {
+      showToast('Custom homeowner hub sections are included with Pro.');
+      return;
+    }
+
+    resetCustomHubSectionForm();
+    setCustomHubSectionsManagerOpen(true);
+    if (profile?.id) await fetchCustomHubSections(profile.id);
+  };
+
+  const handleEditCustomHubSection = (section) => {
+    setEditingCustomHubSectionId(section.id);
+    setCustomHubSectionForm({
+      title: section.title || '',
+      body: section.body || '',
+      button_label: section.button_label || '',
+      button_url: section.button_url || '',
+      is_active: section.is_active !== false,
+    });
+    setCustomHubSectionError(null);
+  };
+
+  const handleSaveCustomHubSection = async (event) => {
+    event.preventDefault();
+    if (!user?.id || !profile?.id) return;
+
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsCustomSections) {
+      setCustomHubSectionError('Custom homeowner hub sections are a Pro feature.');
+      return;
+    }
+
+    const title = customHubSectionForm.title.trim();
+    const body = customHubSectionForm.body.trim();
+    const buttonLabel = customHubSectionForm.button_label.trim();
+    const buttonUrl = customHubSectionForm.button_url.trim();
+
+    if (!title) {
+      setCustomHubSectionError('Please give this section a title.');
+      return;
+    }
+
+    if (buttonUrl && !isValidOptionalUrl(buttonUrl)) {
+      setCustomHubSectionError('Please enter a valid button URL.');
+      return;
+    }
+
+    if (buttonUrl && !buttonLabel) {
+      setCustomHubSectionError('Add a button label when you include a button URL.');
+      return;
+    }
+
+    if (buttonLabel && !buttonUrl) {
+      setCustomHubSectionError('Add a button URL when you include a button label.');
+      return;
+    }
+
+    setCustomHubSectionSaving(true);
+    setCustomHubSectionError(null);
+
+    try {
+      const payload = {
+        title,
+        body: body || null,
+        button_label: buttonLabel || null,
+        button_url: buttonUrl ? normalizeWebsiteUrl(buttonUrl) : null,
+        is_active: customHubSectionForm.is_active,
+      };
+
+      let result;
+
+      if (editingCustomHubSectionId) {
+        result = await supabase
+          .from('custom_hub_sections')
+          .update(payload)
+          .eq('id', editingCustomHubSectionId)
+          .eq('profile_id', user.id)
+          .select('*')
+          .single();
+      } else {
+        const maxSort = customHubSections.reduce(
+          (max, section) => Math.max(max, Number(section.sort_order) || 0),
+          0
+        );
+
+        result = await supabase
+          .from('custom_hub_sections')
+          .insert([{
+            ...payload,
+            profile_id: user.id,
+            sort_order: maxSort + 1,
+          }])
+          .select('*')
+          .single();
+      }
+
+      if (result.error) {
+        console.error('Custom hub section save error:', result.error);
+        setCustomHubSectionError(result.error.message || 'Unable to save this custom section.');
+        return;
+      }
+
+      const wasEditing = Boolean(editingCustomHubSectionId);
+      await fetchCustomHubSections(profile.id);
+      resetCustomHubSectionForm();
+      showToast(wasEditing ? 'Custom section updated.' : 'Custom section added.');
+    } catch (err) {
+      console.error('Unexpected custom hub section save error:', err);
+      setCustomHubSectionError(err.message || 'Unable to save this custom section.');
+    } finally {
+      setCustomHubSectionSaving(false);
+    }
+  };
+
+  const handleDeleteCustomHubSection = async (section) => {
+    if (!user?.id || !profile?.id || !section?.id) return;
+
+    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    if (!currentPlan.allowsCustomSections) {
+      setCustomHubSectionError('Custom homeowner hub sections are a Pro feature.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Remove “${section.title}” from your custom hub sections?`);
+    if (!confirmed) return;
+
+    setCustomHubSectionSaving(true);
+    setCustomHubSectionError(null);
+
+    try {
+      const { error } = await supabase
+        .from('custom_hub_sections')
+        .delete()
+        .eq('id', section.id)
+        .eq('profile_id', user.id);
+
+      if (error) {
+        console.error('Custom hub section delete error:', error);
+        setCustomHubSectionError(error.message || 'Unable to remove this custom section.');
+        return;
+      }
+
+      await fetchCustomHubSections(profile.id);
+      if (editingCustomHubSectionId === section.id) resetCustomHubSectionForm();
+      showToast('Custom section removed.');
+    } catch (err) {
+      console.error('Unexpected custom hub section delete error:', err);
+      setCustomHubSectionError(err.message || 'Unable to remove this custom section.');
+    } finally {
+      setCustomHubSectionSaving(false);
+    }
+  };
+
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
   const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
@@ -1976,6 +2198,7 @@ export default function App() {
   const allowsDefaultVendorControl = planConfig.allowsDefaultVendorControl;
   const allowsWelcomeVideo = planConfig.allowsWelcomeVideo;
   const allowsChecklist = planConfig.allowsChecklist;
+  const allowsCustomSections = planConfig.allowsCustomSections;
   const foundingPricingActive = isFoundingPricingActive();
   const customVendors = vendors.filter((vendor) => !vendor.is_default);
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
@@ -2605,6 +2828,51 @@ export default function App() {
                 {!allowsChecklist && (
                   <div className="mt-5 bg-cream-card border border-cream-border rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
                     Advanced homeowner checklists are included with Pro. Existing hidden Pro checklist content is preserved if a plan is downgraded.
+                  </div>
+                )}
+              </div>
+
+              {/* Pro Custom Hub Sections Card */}
+              <div className="bg-cream-warm p-6 rounded-2xl border border-cream-border flex flex-col justify-between md:col-span-2">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cream-card border border-cream-border flex items-center justify-center shrink-0">
+                      <Layers className="w-5 h-5 text-gold-accent" />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Custom Hub Sections</h3>
+                        <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#F4EBDD] rounded-full border border-[#E4D5BE] text-[#8C6B38]">Pro</span>
+                      </div>
+                      <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
+                        Add your own homeowner content beyond vendors and checklists—local favorites, utility links, lender resources, neighborhood tips, moving information, or anything else you want clients to keep handy.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">Active Sections</p>
+                      <p className="font-editorial text-2xl font-bold text-charcoal-deep">
+                        {allowsCustomSections ? customHubSections.filter((section) => section.is_active !== false).length : '—'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleOpenCustomHubSectionsManager}
+                      className={`px-5 py-2.5 text-xs font-semibold rounded-xl border transition-colors ${
+                        allowsCustomSections
+                          ? 'bg-[#191816] hover:bg-[#262421] border-[#191816] text-[#FAF7F2]'
+                          : 'bg-cream-card hover:bg-cream-subtle border-cream-border text-charcoal-deep'
+                      }`}
+                    >
+                      {allowsCustomSections ? 'Manage Sections' : 'Unlock with Pro'}
+                    </button>
+                  </div>
+                </div>
+
+                {!allowsCustomSections && (
+                  <div className="mt-5 bg-cream-card border border-cream-border rounded-xl px-4 py-3 text-[11px] text-charcoal-muted">
+                    Custom homeowner hub sections are included with Pro. Existing Pro-only content remains preserved if a plan is downgraded.
                   </div>
                 )}
               </div>
@@ -4299,6 +4567,231 @@ export default function App() {
               </form>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {}
+      {customHubSectionsManagerOpen && (
+        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-cream-warm rounded-3xl max-w-5xl w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
+            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Pro Homeowner Experience</span>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Manage Custom Hub Sections</h3>
+                <p className="text-[11px] text-charcoal-muted mt-1">
+                  {customHubSections.filter((section) => section.is_active !== false).length} active custom section{customHubSections.filter((section) => section.is_active !== false).length === 1 ? '' : 's'}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!customHubSectionSaving) {
+                    setCustomHubSectionsManagerOpen(false);
+                    resetCustomHubSectionForm();
+                  }
+                }}
+                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
+                aria-label="Close custom sections manager"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <section>
+                <div className="mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">Your Sections</span>
+                  <h4 className="font-editorial text-xl font-bold text-charcoal-deep mt-1">Flexible homeowner content</h4>
+                  <p className="text-[11px] text-charcoal-muted mt-1">
+                    These sections will appear on the public homeowner hub once we connect the public display in the next step.
+                  </p>
+                </div>
+
+                {customHubSectionsLoading ? (
+                  <div className="bg-cream-card border border-cream-border rounded-2xl p-5 flex items-center gap-3 text-xs text-charcoal-muted">
+                    <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                    Loading custom sections…
+                  </div>
+                ) : customHubSections.length === 0 ? (
+                  <div className="bg-cream-card border border-cream-border rounded-2xl p-6 text-center">
+                    <Layers className="w-6 h-6 text-gold-accent mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-charcoal-deep">No custom sections yet</p>
+                    <p className="text-[11px] text-charcoal-muted mt-1">
+                      Add your first section using the form.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                    {customHubSections.map((section) => (
+                      <div key={section.id} className="bg-cream-card border border-cream-border rounded-2xl p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h5 className="font-editorial text-lg font-bold text-charcoal-deep">{section.title}</h5>
+                              {section.is_active === false && (
+                                <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cream-subtle border border-cream-border text-charcoal-muted">
+                                  Hidden
+                                </span>
+                              )}
+                            </div>
+                            {section.body && (
+                              <p className="text-[11px] text-charcoal-muted leading-relaxed mt-2 line-clamp-3">
+                                {section.body}
+                              </p>
+                            )}
+                            {section.button_label && (
+                              <p className="text-[10px] text-gold-accent font-semibold mt-2">
+                                Button: {section.button_label}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-cream-border">
+                          <button
+                            type="button"
+                            onClick={() => handleEditCustomHubSection(section)}
+                            className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-deep hover:bg-cream-subtle"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomHubSection(section)}
+                            disabled={customHubSectionSaving}
+                            className="px-3 py-1.5 rounded-lg border border-cream-border bg-cream-warm text-[10px] font-semibold text-charcoal-muted hover:text-charcoal-deep disabled:opacity-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="lg:border-l lg:border-cream-border lg:pl-8">
+                <div className="mb-4">
+                  <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-gold-accent">
+                    {editingCustomHubSectionId ? 'Edit Custom Section' : 'Add Custom Section'}
+                  </span>
+                  <h4 className="font-editorial text-xl font-bold text-charcoal-deep mt-1">
+                    {editingCustomHubSectionId ? 'Update this section' : 'Add something useful for homeowners'}
+                  </h4>
+                </div>
+
+                {customHubSectionError && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <span>{customHubSectionError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveCustomHubSection} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="customSectionTitle">Section Title *</label>
+                    <input
+                      id="customSectionTitle"
+                      required
+                      maxLength={80}
+                      value={customHubSectionForm.title}
+                      onChange={(e) => setCustomHubSectionForm({ ...customHubSectionForm, title: e.target.value })}
+                      placeholder="e.g. Local Favorites"
+                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{customHubSectionForm.title.length}/80</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="customSectionBody">Section Content</label>
+                    <textarea
+                      id="customSectionBody"
+                      rows={6}
+                      maxLength={600}
+                      value={customHubSectionForm.body}
+                      onChange={(e) => setCustomHubSectionForm({ ...customHubSectionForm, body: e.target.value })}
+                      placeholder="Share a helpful note, list of tips, neighborhood information, utility details, or anything else you want clients to keep handy."
+                      className="w-full text-sm px-4 py-3 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep resize-y"
+                    />
+                    <p className="text-[10px] text-charcoal-muted mt-1 text-right">{customHubSectionForm.body.length}/600</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="customSectionButtonLabel">Optional Button Label</label>
+                      <input
+                        id="customSectionButtonLabel"
+                        maxLength={40}
+                        value={customHubSectionForm.button_label}
+                        onChange={(e) => setCustomHubSectionForm({ ...customHubSectionForm, button_label: e.target.value })}
+                        placeholder="e.g. View Utilities"
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="customSectionButtonUrl">Optional Button URL</label>
+                      <input
+                        id="customSectionButtonUrl"
+                        maxLength={500}
+                        value={customHubSectionForm.button_url}
+                        onChange={(e) => setCustomHubSectionForm({ ...customHubSectionForm, button_url: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-charcoal-muted leading-relaxed">
+                    If you add a button, enter both a label and a URL. Leave both blank if this section only needs text.
+                  </p>
+
+                  <label className="flex items-start gap-3 bg-cream-card border border-cream-border rounded-xl p-4 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customHubSectionForm.is_active}
+                      onChange={(e) => setCustomHubSectionForm({ ...customHubSectionForm, is_active: e.target.checked })}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="block text-xs font-semibold text-charcoal-deep">Show this section on the homeowner hub</span>
+                      <span className="block text-[10px] text-charcoal-muted mt-1">
+                        Turn this off to keep the content saved without displaying it publicly.
+                      </span>
+                    </span>
+                  </label>
+
+                  <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                    {editingCustomHubSectionId && (
+                      <button
+                        type="button"
+                        disabled={customHubSectionSaving}
+                        onClick={resetCustomHubSectionForm}
+                        className="flex-1 py-2.5 rounded-xl bg-cream-card hover:bg-cream-subtle border border-cream-border text-xs font-semibold text-charcoal-deep disabled:opacity-60"
+                      >
+                        Cancel Edit
+                      </button>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={customHubSectionSaving}
+                      className="flex-1 py-2.5 rounded-xl bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {customHubSectionSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <span>{editingCustomHubSectionId ? 'Save Section Changes' : 'Add Custom Section'}</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
           </div>
         </div>
       )}
