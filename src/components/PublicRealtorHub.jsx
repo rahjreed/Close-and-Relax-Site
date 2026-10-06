@@ -243,6 +243,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
+  const [installAttentionDismissed, setInstallAttentionDismissed] = useState(false);
   const [checklistCompletionDates, setChecklistCompletionDates] = useState({});
 
   const realtorName = profile?.full_name || 'Your Realtor';
@@ -446,6 +447,15 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   useEffect(() => {
+    try {
+      const dismissed = window.localStorage.getItem('closeandrelax-install-attention-dismissed') === 'true';
+      setInstallAttentionDismissed(dismissed);
+    } catch {
+      setInstallAttentionDismissed(false);
+    }
+  }, []);
+
+  useEffect(() => {
     const isStandalone =
       window.matchMedia?.('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
@@ -594,6 +604,13 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const handleInstallClick = async () => {
+    setInstallAttentionDismissed(true);
+    try {
+      window.localStorage.setItem('closeandrelax-install-attention-dismissed', 'true');
+    } catch {
+      // The animation still stops for this visit if local storage is unavailable.
+    }
+
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
@@ -690,34 +707,51 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         .hub-icon-nudge svg {
           transition: transform 180ms ease;
         }
-        .hub-install-attention {
+        .hub-guide-attention {
+          animation: hubGuideBounce 2.8s cubic-bezier(.22,.61,.36,1) infinite;
+          transform-origin: center;
+        }
+
+        .hub-guide-attention .hub-install-button {
           position: relative;
           overflow: hidden;
-          animation: hubSoftPulse 900ms ease 900ms 1 both;
         }
-        .hub-install-attention::after {
+
+        .hub-guide-attention .hub-install-button::after {
           content: '';
           position: absolute;
           inset: -60% -35%;
-          background: linear-gradient(110deg, transparent 38%, rgba(255,255,255,.22) 49%, rgba(255,255,255,.38) 52%, transparent 63%);
-          transform: translateX(-70%) rotate(2deg);
-          animation: hubChampagneShimmer 1100ms ease 1350ms 1 both;
+          background: linear-gradient(
+            110deg,
+            transparent 38%,
+            rgba(255,255,255,.18) 48%,
+            rgba(255,255,255,.34) 52%,
+            transparent 64%
+          );
+          transform: translateX(-75%) rotate(2deg);
+          animation: hubChampagneShimmer 3.4s ease-in-out infinite;
           pointer-events: none;
         }
-        @keyframes hubSoftPulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-          45% { transform: scale(1.018); box-shadow: 0 10px 24px -12px rgba(156,120,68,.55); }
+
+        @keyframes hubGuideBounce {
+          0%, 72%, 100% { transform: translateY(0); }
+          78% { transform: translateY(-7px); }
+          84% { transform: translateY(0); }
+          89% { transform: translateY(-3px); }
+          94% { transform: translateY(0); }
         }
+
         @keyframes hubChampagneShimmer {
-          from { transform: translateX(-70%) rotate(2deg); opacity: 0; }
-          20% { opacity: 1; }
-          to { transform: translateX(70%) rotate(2deg); opacity: 0; }
+          0%, 58% { transform: translateX(-75%) rotate(2deg); opacity: 0; }
+          66% { opacity: 1; }
+          82% { transform: translateX(75%) rotate(2deg); opacity: .9; }
+          88%, 100% { transform: translateX(75%) rotate(2deg); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
           .hub-reveal,
           .hub-card-lift,
           .hub-icon-nudge svg,
-          .hub-install-attention {
+          .hub-guide-attention {
             transition: none !important;
             animation: none !important;
           }
@@ -725,7 +759,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             opacity: 1 !important;
             transform: none !important;
           }
-          .hub-install-attention::after {
+          .hub-guide-attention .hub-install-button::after {
             display: none !important;
           }
         }
@@ -848,7 +882,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           )}
         </section>
 
-        <section className="hub-reveal mb-10">
+        <section className={`hub-reveal mb-10 ${!installAttentionDismissed && !isInstalled ? 'hub-guide-attention' : ''}`}>
           <div className="bg-gradient-to-r from-[#f5ede2] via-[#faf4ea] to-[#f5ede2] border border-[#ebdcc7] rounded-2xl p-4 sm:p-5 hub-editorial-shadow flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 text-center sm:text-left lg:text-center xl:text-left">
               <div className="w-10 h-10 rounded-xl bg-white border border-[#e2d3be] flex items-center justify-center text-[#9c7844] shrink-0 shadow-sm">
@@ -863,7 +897,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             </div>
             <button
               onClick={handleInstallClick}
-              className="hub-install-attention w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
+              className="hub-install-button w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
             >
               <Download className="w-3.5 h-3.5 text-[#d4af37]" />
               <span>{isInstalled ? 'Added to Phone' : 'Add to Phone'}</span>
@@ -1248,4 +1282,5 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     </div>
   );
 }
+
 
