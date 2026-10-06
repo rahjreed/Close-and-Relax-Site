@@ -47,6 +47,40 @@ const getInitials = (name = '') => {
 
 const phoneForHref = (value = '') => String(value || '').replace(/[^\d+]/g, '');
 
+const createInitialsIconDataUrl = (initials, size) => {
+  if (typeof document === 'undefined' || !initials) return '';
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext('2d');
+    if (!context) return '';
+
+    // Premium Close & Relax app-icon treatment.
+    context.fillStyle = '#191816';
+    context.fillRect(0, 0, size, size);
+
+    // Subtle inner ring so masked/rounded OS icons still feel intentional.
+    context.strokeStyle = '#B5966B';
+    context.lineWidth = Math.max(2, Math.round(size * 0.018));
+    const inset = Math.round(size * 0.095);
+    context.strokeRect(inset, inset, size - inset * 2, size - inset * 2);
+
+    const cleanInitials = String(initials).trim().slice(0, 2).toUpperCase();
+    context.fillStyle = '#D3B88A';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = `700 ${Math.round(size * (cleanInitials.length === 1 ? 0.44 : 0.34))}px Georgia, serif`;
+    context.fillText(cleanInitials, size / 2, size / 2 + Math.round(size * 0.015));
+
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+};
+
 const normalizeInternalPlan = (value) => {
   const plan = String(value || 'partner').toLowerCase();
   if (plan === 'free' || plan === 'partner') return 'partner';
@@ -167,6 +201,12 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const bio = profile?.bio || '';
   const websiteUrl = normalizeUrl(profile?.website_url || profile?.website || '');
   const internalPlan = normalizeInternalPlan(profile?.plan);
+  const proAppIconInitials = internalPlan === 'premier'
+    ? String(profile?.app_icon_initials || getInitials(realtorName))
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 2)
+        .toUpperCase()
+    : '';
   const welcomeVideoId = internalPlan === 'premier'
     ? getYouTubeVideoId(profile?.welcome_video_url || '')
     : '';
@@ -357,6 +397,29 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
+    const proIcon192 = proAppIconInitials
+      ? createInitialsIconDataUrl(proAppIconInitials, 192)
+      : '';
+    const proIcon512 = proAppIconInitials
+      ? createInitialsIconDataUrl(proAppIconInitials, 512)
+      : '';
+    const proAppleIcon = proAppIconInitials
+      ? createInitialsIconDataUrl(proAppIconInitials, 180)
+      : '';
+
+    const manifestIcons =
+      proIcon192 && proIcon512
+        ? [
+            { src: proIcon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+            { src: proIcon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          ]
+        : headshotUrl
+          ? [
+              { src: headshotUrl, sizes: '192x192', purpose: 'any maskable' },
+              { src: headshotUrl, sizes: '512x512', purpose: 'any maskable' },
+            ]
+          : [];
+
     const manifestJson = {
       name: `${realtorName}'s Homeowner Resource Hub`,
       short_name: `${firstName}'s Home Hub`,
@@ -365,14 +428,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       background_color: '#faf8f5',
       theme_color: '#faf8f5',
       description: `Post-closing homeowner resources curated by ${realtorName}.`,
-      ...(headshotUrl
-        ? {
-            icons: [
-              { src: headshotUrl, sizes: '192x192', type: 'image/jpeg', purpose: 'any maskable' },
-              { src: headshotUrl, sizes: '512x512', type: 'image/jpeg', purpose: 'any maskable' },
-            ],
-          }
-        : {}),
+      ...(manifestIcons.length > 0 ? { icons: manifestIcons } : {}),
     };
 
     const stringManifest = JSON.stringify(manifestJson);
@@ -388,11 +444,32 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
     manifestLink.href = manifestURL;
 
+    // iPhone/iPad home-screen icons use apple-touch-icon instead of the
+    // manifest icon, so keep that in sync with the Pro initials treatment too.
+    let appleTouchIconLink = document.querySelector('link[rel="apple-touch-icon"]');
+    const createdAppleTouchIconLink = !appleTouchIconLink;
+
+    if (!appleTouchIconLink) {
+      appleTouchIconLink = document.createElement('link');
+      appleTouchIconLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleTouchIconLink);
+    }
+
+    if (proAppleIcon) {
+      appleTouchIconLink.href = proAppleIcon;
+    } else if (headshotUrl) {
+      appleTouchIconLink.href = headshotUrl;
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       URL.revokeObjectURL(manifestURL);
+
+      if (createdAppleTouchIconLink && appleTouchIconLink?.parentNode) {
+        appleTouchIconLink.parentNode.removeChild(appleTouchIconLink);
+      }
     };
-  }, [realtorName, firstName, headshotUrl]);
+  }, [realtorName, firstName, headshotUrl, proAppIconInitials]);
 
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll('.hub-reveal'));
