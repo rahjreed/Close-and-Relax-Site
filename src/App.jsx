@@ -3,6 +3,7 @@ import {
   Phone,
   MessageSquare,
   Check,
+  CheckCircle2,
   Smartphone,
   ShieldCheck,
   ArrowRight,
@@ -2771,6 +2772,108 @@ export default function App() {
                   {profile?.is_published ? 'Live and ready to share with clients' : 'Your link becomes public when the hub is published'}
                 </p>
               </div>
+            </div>
+
+            {/* Launch Checklist */}
+            <div className="pb-8 border-b border-[#D4CBC0]">
+              {(() => {
+                const launchItems = [
+                  {
+                    label: 'Complete your profile',
+                    complete: Boolean(profile?.full_name && profile?.city && profile?.phone),
+                    detail: 'Name, market and phone number',
+                  },
+                  {
+                    label: 'Choose your hub link',
+                    complete: Boolean(profile?.slug),
+                    detail: profile?.slug ? `${profile.slug}.closeandrelax.com` : 'Create your realtor subdomain',
+                  },
+                  {
+                    label: 'Add at least one resource',
+                    complete: vendors.length > 0,
+                    detail: vendors.length > 0 ? `${vendors.length} resource${vendors.length === 1 ? '' : 's'} added` : 'Add your first trusted resource',
+                  },
+                  {
+                    label: 'Publish your homeowner hub',
+                    complete: Boolean(profile?.is_published),
+                    detail: profile?.is_published ? 'Your hub is live' : 'Publish when you are ready to share',
+                  },
+                ];
+
+                const completedLaunchItems = launchItems.filter((item) => item.complete).length;
+                const launchPercent = Math.round((completedLaunchItems / launchItems.length) * 100);
+
+                return (
+                  <div className="bg-[#EEE8E0] rounded-2xl border border-[#D4CBC0] p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <CheckCircle2 className="w-5 h-5 text-gold-accent" />
+                          <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Launch Checklist</h3>
+                        </div>
+                        <p className="text-xs text-charcoal-muted">
+                          The essentials to make your Close &amp; Relax hub ready to share.
+                        </p>
+                      </div>
+
+                      <div className="sm:text-right">
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">
+                          {completedLaunchItems} of {launchItems.length} complete
+                        </p>
+                        <p className="font-editorial text-xl font-bold text-charcoal-deep">{launchPercent}%</p>
+                      </div>
+                    </div>
+
+                    <div className="h-1.5 rounded-full bg-[#DDD6CB] overflow-hidden mb-5">
+                      <div
+                        className="h-full rounded-full bg-[#B89561] transition-all duration-300"
+                        style={{ width: `${launchPercent}%` }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {launchItems.map((item) => (
+                        <div
+                          key={item.label}
+                          className={`rounded-xl border p-4 flex items-start gap-3 ${
+                            item.complete
+                              ? 'bg-[#FCFAF6] border-[#D8C9B3]'
+                              : 'bg-[#F8F5EF] border-[#D4CBC0]'
+                          }`}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                              item.complete
+                                ? 'bg-[#2E2A26] text-[#D8BC8B]'
+                                : 'bg-[#E5DED5] text-charcoal-muted'
+                            }`}
+                          >
+                            {item.complete ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : (
+                              <span className="w-2 h-2 rounded-full bg-current opacity-70" />
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-charcoal-deep">{item.label}</p>
+                            <p className="text-[10px] text-charcoal-muted mt-1 break-words">{item.detail}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {launchPercent === 100 && (
+                      <div className="mt-4 rounded-xl bg-[#2E2A26] border border-[#4B443D] px-4 py-3 flex items-center gap-3">
+                        <Sparkles className="w-4 h-4 text-[#D8BC8B] shrink-0" />
+                        <p className="text-[11px] text-[#E9E1D7]">
+                          Your hub has the essentials in place and is ready to share with homeowners.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Homeowner Hub Activity */}
