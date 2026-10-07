@@ -1217,6 +1217,15 @@ export default function App() {
         return;
       }
 
+      if (event === 'SIGNED_IN' && currentUser && getCurrentAppPath() !== '/reset-password') {
+        _setLoginModalOpen(false);
+        _setSignupModalOpen(false);
+        setForgotPasswordOpen(false);
+        _setCurrentView('dashboard');
+        updateBrowserPath('/dashboard', { replace: true });
+        return;
+      }
+
       if (!currentUser) {
         setProfile(null);
 
@@ -1566,6 +1575,31 @@ export default function App() {
     } catch (err) {
       setAuthError(err.message || 'An unexpected error occurred during signup.');
     } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setActionLoading(true);
+    setAuthError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'https://closeandrelax.com',
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        setAuthError(error.message || 'Unable to continue with Google.');
+        setActionLoading(false);
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Unable to continue with Google.');
       setActionLoading(false);
     }
   };
@@ -4723,6 +4757,10 @@ export default function App() {
                 </div>
               ) : (
                 <>
+                  <p className="text-[11px] text-charcoal-muted leading-relaxed mb-5">
+                    Prefer a faster setup? Continue with Google. New Google accounts begin on the Free plan; paid plan selection can be changed from the dashboard when billing is enabled.
+                  </p>
+
                   {/* Plan Selector Tab inside Signup Modal */}
                   <div className="mb-6">
                     <label className="block text-xs font-semibold text-charcoal-deep mb-2">
@@ -4772,6 +4810,31 @@ export default function App() {
                       <span>{authError}</span>
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    disabled={actionLoading}
+                    className="w-full py-3 px-5 rounded-full bg-white hover:bg-[#F8F6F2] text-charcoal-deep text-sm font-semibold border border-[#D8D2C8] transition-all shadow-sm flex items-center justify-center gap-3 disabled:opacity-60"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-5 h-5 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.38Z"/>
+                      <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.39l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A10 10 0 0 0 12 22Z"/>
+                      <path fill="#FBBC05" d="M6.39 13.93A6.03 6.03 0 0 1 6.07 12c0-.67.12-1.32.32-1.93v-2.6H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.53l3.35-2.6Z"/>
+                      <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.96 2.95 14.7 2 12 2a10 10 0 0 0-8.96 5.47l3.35 2.6C7.18 7.7 9.39 5.94 12 5.94Z"/>
+                    </svg>
+                    <span>{actionLoading ? 'Connecting...' : 'Continue with Google'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="h-px flex-1 bg-cream-border"></div>
+                    <span className="text-[10px] uppercase tracking-[0.15em] text-charcoal-muted font-semibold">or use email</span>
+                    <div className="h-px flex-1 bg-cream-border"></div>
+                  </div>
 
                   <form onSubmit={handleSignupSubmit} className="space-y-4 text-left">
                     <div>
@@ -6064,6 +6127,31 @@ export default function App() {
                   <span>{authError}</span>
                 </div>
               )}
+
+              <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    disabled={actionLoading}
+                    className="w-full py-3 px-5 rounded-full bg-white hover:bg-[#F8F6F2] text-charcoal-deep text-sm font-semibold border border-[#D8D2C8] transition-all shadow-sm flex items-center justify-center gap-3 disabled:opacity-60"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-5 h-5 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.38Z"/>
+                      <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.39l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.6A10 10 0 0 0 12 22Z"/>
+                      <path fill="#FBBC05" d="M6.39 13.93A6.03 6.03 0 0 1 6.07 12c0-.67.12-1.32.32-1.93v-2.6H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.53l3.35-2.6Z"/>
+                      <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.96 2.95 14.7 2 12 2a10 10 0 0 0-8.96 5.47l3.35 2.6C7.18 7.7 9.39 5.94 12 5.94Z"/>
+                    </svg>
+                    <span>{actionLoading ? 'Connecting...' : 'Continue with Google'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="h-px flex-1 bg-cream-border"></div>
+                    <span className="text-[10px] uppercase tracking-[0.15em] text-charcoal-muted font-semibold">or use email</span>
+                    <div className="h-px flex-1 bg-cream-border"></div>
+                  </div>
 
               <form onSubmit={handleLoginSubmit} className="space-y-4 text-left">
                 <div>
