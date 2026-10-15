@@ -124,7 +124,7 @@ const getPlanConfig = (value) => {
     return {
       internalPlan,
       name: 'Pro',
-      vendorLimit: 15,
+      vendorLimit: 30,
       allowsPremiumProfile: true,
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: true,
@@ -132,7 +132,7 @@ const getPlanConfig = (value) => {
       allowsChecklist: true,
       allowsCustomSections: true,
       allowsCustomAppIcon: true,
-      regularPrice: 59,
+      regularPrice: 39,
       foundingPrice: 29,
     };
   }
@@ -141,7 +141,7 @@ const getPlanConfig = (value) => {
     return {
       internalPlan,
       name: 'Core',
-      vendorLimit: 8,
+      vendorLimit: 15,
       allowsPremiumProfile: true,
       allowsVendorRecommendations: true,
       allowsDefaultVendorControl: false,
@@ -149,7 +149,7 @@ const getPlanConfig = (value) => {
       allowsChecklist: false,
       allowsCustomSections: false,
       allowsCustomAppIcon: false,
-      regularPrice: 39,
+      regularPrice: 29,
       foundingPrice: 19,
     };
   }
@@ -157,7 +157,7 @@ const getPlanConfig = (value) => {
   return {
     internalPlan: 'partner',
     name: 'Free',
-    vendorLimit: 3,
+    vendorLimit: 5,
     allowsPremiumProfile: false,
     allowsVendorRecommendations: false,
     allowsDefaultVendorControl: false,
@@ -213,7 +213,7 @@ const PRICING_TIERS = [
     badge: "Always Free",
     regularPrice: 0,
     foundingPrice: 0,
-    period: "/ forever",
+    period: "/ month",
     description: "A genuinely useful homeowner concierge that keeps you visible after closing without turning the hub into a sales page.",
     popular: false,
     ctaText: "Create Free Account",
@@ -222,7 +222,7 @@ const PRICING_TIERS = [
       "Essential identity: name, brokerage, phone, email & market",
       "Direct Call & Text contact actions for buyers",
       "Standard Close & Relax resource content",
-      "Add up to 3 of your own preferred vendors",
+      "Add up to 5 of your own preferred vendors",
       "Dedicated shareable subdomain",
       "Responsive mobile hub & save-to-phone PWA experience",
       "Close & Relax branding remains visible",
@@ -232,7 +232,7 @@ const PRICING_TIERS = [
     id: "pro",
     name: "Core",
     badge: "Most Popular",
-    regularPrice: 39,
+    regularPrice: 29,
     foundingPrice: 19,
     period: "/ month",
     description: "For active Realtors who want their hub to feel unmistakably personal, polished, and useful long after closing day.",
@@ -241,7 +241,7 @@ const PRICING_TIERS = [
     features: [
       "Everything in Free, plus stronger personalization",
       "Professional Realtor headshot",
-      "Add up to 8 preferred vendors",
+      "Add up to 15 preferred vendors",
       "Personal one-line recommendation notes under vendors",
       "Personalized welcome message & short bio",
       "Professional website and social profile links",
@@ -254,7 +254,7 @@ const PRICING_TIERS = [
     id: "premier",
     name: "Pro",
     badge: "Maximum Control",
-    regularPrice: 59,
+    regularPrice: 39,
     foundingPrice: 29,
     period: "/ month",
     description: "For Realtors who want the most control, richer media, deeper homeowner resources, and a near-white-label experience.",
@@ -262,7 +262,7 @@ const PRICING_TIERS = [
     ctaText: "Choose Pro",
     features: [
       "Everything in Core, plus advanced hub controls",
-      "Add up to 15 preferred vendors",
+      "Add up to 30 preferred vendors",
       "Greater vendor control, including default resource replacement/removal",
       "Premium branding control",
       "Custom home-screen app icon",
@@ -277,15 +277,15 @@ const PRICING_TIERS = [
 const FAQ_ITEMS = [
   {
     question: "What can I customize on the Free plan?",
-    answer: "Free is designed to be genuinely useful: your name, brokerage, direct phone, public email, market, dedicated subdomain, standard Close & Relax homeowner resources, and up to 3 preferred vendors. Core adds your professional headshot and richer personalization such as custom welcome content, bio, social links, vendor recommendation notes, and additional editing controls.",
+    answer: "Free is designed to be genuinely useful: your name, brokerage, direct phone, public email, market, dedicated subdomain, standard Close & Relax homeowner resources, and up to 5 preferred vendors. Core adds your professional headshot and richer personalization such as custom welcome content, bio, social links, vendor recommendation notes, and additional editing controls.",
   },
   {
     question: "Can I add my own vendors on Free?",
-    answer: "Yes. Free includes up to 3 of your own preferred vendors in addition to the standard Close & Relax resource. Core expands that to 8, and Pro expands it to 15.",
+    answer: "Yes. Free includes up to 5 of your own preferred vendors in addition to the standard Close & Relax resource. Core expands that to 15, and Pro expands it to 30.",
   },
   {
     question: "What is the difference between Core and Pro?",
-    answer: "Core is $39/month and supports up to 8 preferred vendors, a Realtor headshot, personal recommendation notes, richer profile branding, and more self-service editing. Pro is $59/month and supports up to 15 preferred vendors plus greater vendor control, premium branding, a YouTube welcome video, a custom app icon, advanced checklists, and custom sections.",
+    answer: "Core is $29/month and supports up to 15 preferred vendors, a Realtor headshot, personal recommendation notes, richer profile branding, and more self-service editing. Pro is $39/month and supports up to 30 preferred vendors plus greater vendor control, premium branding, a YouTube welcome video, a custom app icon, advanced checklists, and custom sections.",
   },
   {
     question: "How does Founding Member pricing work?",
@@ -2922,7 +2922,7 @@ export default function App() {
                   {publicPlanName} Tier
                 </p>
                 <p className="text-xs text-charcoal-muted mt-0.5">
-                  {displayPlan === 'premier' ? 'Up to 15 vendors + greater resource control' : displayPlan === 'pro' ? 'Up to 8 vendors + personal recommendations' : 'Standard resources + up to 3 vendors'}
+                  {displayPlan === 'premier' ? 'Up to 30 vendors + greater resource control' : displayPlan === 'pro' ? 'Up to 15 vendors + personal recommendations' : 'Standard resources + up to 5 vendors'}
                 </p>
               </div>
 
@@ -3197,7 +3197,7 @@ export default function App() {
                       <p>• Realtor headshot</p>
                       <p>• Bio, website &amp; social links</p>
                       <p>• Vendor recommendation notes</p>
-                      <p>• Up to 8 preferred vendors</p>
+                      <p>• Up to 15 preferred vendors</p>
                     </div>
                     {!allowsPremiumProfile && (
                       <p className="text-[10px] font-semibold text-charcoal-deep mt-3">Available on Core &amp; Pro</p>
@@ -3215,7 +3215,7 @@ export default function App() {
                       <p>• Custom homeowner sections</p>
                       <p>• Custom home-screen initials icon</p>
                       <p>• Full standard-resource control</p>
-                      <p>• Up to 15 preferred vendors</p>
+                      <p>• Up to 30 preferred vendors</p>
                     </div>
                     {displayPlan !== 'premier' && (
                       <p className="text-[10px] font-semibold text-charcoal-deep mt-3">Available on Pro</p>
@@ -3834,7 +3834,7 @@ export default function App() {
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                        <span><strong>Personal guidance from you:</strong> your own handpicked vendors (3 on Free, 8 on Core, up to 15 on Pro).</span>
+                        <span><strong>Personal guidance from you:</strong> your own handpicked vendors (5 on Free, 15 on Core, up to 30 on Pro).</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="w-5 h-5 rounded-full bg-[#191816] text-[#FAF7F2] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
@@ -3898,7 +3898,7 @@ export default function App() {
                     Curated Trusted Professionals
                   </h3>
                   <p className="text-sm text-charcoal-muted leading-relaxed">
-                    Built around trusted homeowner resources, plus your own preferred vendors: up to 3 on Free, 8 on Core, or 15 on Pro with greater vendor/resource control.
+                    Built around trusted homeowner resources, plus your own preferred vendors: up to 5 on Free, 15 on Core, or 30 on Pro with greater vendor/resource control.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-cream-border text-xs text-charcoal-muted">
@@ -4293,7 +4293,7 @@ export default function App() {
                   Invest in Relationships, Not Ad Clicks.
                 </h2>
                 <p className="text-base sm:text-lg text-charcoal-muted leading-relaxed">
-                  Start free with your essential contact identity and up to 3 preferred vendors, then unlock your headshot, richer personalization, and more vendor capacity when you are ready.
+                  Start free with your essential contact identity and up to 5 preferred vendors, then unlock your headshot, richer personalization, and more vendor capacity when you are ready.
                 </p>
               </div>
 
@@ -4749,7 +4749,7 @@ export default function App() {
                             : "text-charcoal-muted hover:text-charcoal-deep"
                         }`}
                       >
-                        Core ({foundingPricingActive ? '$19 founding' : '$39/mo'})
+                        Core ({foundingPricingActive ? '$19 founding' : '$29/mo'})
                       </button>
                       <button
                         type="button"
@@ -4760,7 +4760,7 @@ export default function App() {
                             : "text-charcoal-muted hover:text-charcoal-deep"
                         }`}
                       >
-                        Pro ({foundingPricingActive ? '$29 founding' : '$59/mo'})
+                        Pro ({foundingPricingActive ? '$29 founding' : '$39/mo'})
                       </button>
                     </div>
                   </div>
