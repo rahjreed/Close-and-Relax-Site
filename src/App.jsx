@@ -37,6 +37,9 @@ import {
 import { supabase } from './lib/supabase';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
 import EmergencyServicesEditor from './components/EmergencyServicesEditor';
+import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
+import InsuranceLeads from './components/InsuranceLeads';
+import { getVivintTextHref } from './lib/partnerContacts';
 import { EMERGENCY_CATEGORIES, loadEmergencyServices } from './lib/emergencyServices';
 
 const LIZ_VENDORS = [
@@ -3312,7 +3315,21 @@ export default function App() {
                 <EmergencyServicesEditor key={profile.id} profileId={profile.id} />
               )}
 
-              {/* Realtor Member Benefits Card */}
+              {/* Homeowner Savings visibility */}
+              {user?.id && (
+                <InsuranceLeads key={user.id} userId={user.id} accessToken={session?.access_token} />
+              )}
+              {profile?.id && profile.id === user?.id && (
+                <HomeownerSavingsSettings
+                  key={`savings-${profile.id}`}
+                  profile={profile}
+                  onProfileUpdated={(updated) => setProfile((current) => (
+                    current?.id === updated.id ? { ...current, ...updated } : current
+                  ))}
+                />
+              )}
+
+              {/* Realtor-only membership benefits remain separate from homeowner offers. */}
               <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between md:col-span-2">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
@@ -3405,7 +3422,7 @@ export default function App() {
                                 ) : null}
 
                                 <a
-                                  href={`sms:4632813454?body=${encodeURIComponent("Hi Roger, I'm a Close & Relax realtor and I'd like to claim the Vivint Realtor Benefit.")}`}
+                                  href={getVivintTextHref('realtor')}
                                   className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 mt-2 text-xs font-semibold rounded-xl bg-[#EEE8E0] hover:bg-[#E5DED5] border border-[#D4CBC0] text-charcoal-deep transition-colors"
                                 >
                                   <MessageSquare className="w-3.5 h-3.5 text-gold-accent" />

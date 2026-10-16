@@ -28,6 +28,8 @@ import {
 import { supabase } from '../lib/supabase';
 import EmergencyServicesSection from './EmergencyServicesSection';
 import ChecklistDueDateAdjustment from './ChecklistDueDateAdjustment';
+import HomeownerSavingsSection from './HomeownerSavingsSection';
+import { SAVINGS_CLICK_EVENTS } from '../lib/homeownerSavings';
 import {
   adjustChecklistDueDate,
   getAdjustedChecklistDueDate,
@@ -1407,6 +1409,18 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
             )}
           </div>
         </section>
+
+        <HomeownerSavingsSection
+          profile={profile}
+          onOfferClick={(code) => {
+            const eventType = SAVINGS_CLICK_EVENTS[code];
+            if (eventType) void recordHubActivity({
+              profileId: profile.id,
+              eventType,
+              source: 'homeowner_savings',
+            });
+          }}
+        />
 
         <section className="hub-reveal bg-white rounded-2xl p-6 border border-[#ebdcc7] text-center hub-editorial-shadow mb-10">
           <Heart className="w-5 h-5 text-[#9c7844] mx-auto mb-2.5" />
