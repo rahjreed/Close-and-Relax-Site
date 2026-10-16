@@ -27,6 +27,16 @@ import {
 
 import { supabase } from '../lib/supabase';
 import EmergencyServicesSection from './EmergencyServicesSection';
+import ChecklistDueDateAdjustment from './ChecklistDueDateAdjustment';
+import {
+  adjustChecklistDueDate,
+  getAdjustedChecklistDueDate,
+  getChecklistCompletedAt,
+  getChecklistDueDate,
+  normalizeStoredChecklistProgress,
+  toggleChecklistCompletion,
+  toLocalDateString,
+} from '../lib/checklistProgress';
 
 const normalizeUrl = (value = '') => {
   const trimmed = String(value || '').trim();
@@ -272,23 +282,6 @@ const getRecurrenceLabel = (months) => {
   return `Every ${months} months`;
 };
 
-const addMonthsClamped = (dateValue, months) => {
-  const source = new Date(dateValue);
-  if (!months || Number.isNaN(source.getTime())) return null;
-
-  const result = new Date(source);
-  const originalDay = result.getDate();
-  result.setDate(1);
-  result.setMonth(result.getMonth() + months);
-  const lastDayOfTargetMonth = new Date(
-    result.getFullYear(),
-    result.getMonth() + 1,
-    0
-  ).getDate();
-  result.setDate(Math.min(originalDay, lastDayOfTargetMonth));
-  return result;
-};
-
 const formatChecklistDate = (dateValue) => {
   const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
   if (Number.isNaN(date.getTime())) return '';
@@ -318,7 +311,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
   const [toastMessage, setToastMessage] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [showFloatingSave, setShowFloatingSave] = useState(false);
-  const [checklistCompletionDates, setChecklistCompletionDates] = useState({});
+  const [checklistProgressByItem, setChecklistProgressByItem] = useState({});
+  const [checklistStorageUnavailable, setChecklistStorageUnavailable] = useState(false);
 
   const realtorName = profile?.full_name || 'Your Realtor';
   const firstName = getFirstName(realtorName);
@@ -417,67 +411,36 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
 
   const checklistStorageKey = `closeandrelax-checklist-${profile?.id || profile?.slug || 'homeowner'}`;
   const completedChecklistCount = checklistItems.filter(
-    (item) => Boolean(checklistCompletionDates[String(item.id)])
+    (item) => Boolean(getChecklistCompletedAt(checklistProgressByItem[String(item.id)]))
   ).length;
   const checklistProgress = checklistItems.length > 0
     ? Math.round((completedChecklistCount / checklistItems.length) * 100)
     : 0;
 
-  const normalizeStoredChecklistProgress = (savedValue) => {
-    const validItemsById = new Map(
-      checklistItems.map((item) => [String(item.id), item])
-    );
-    const now = new Date();
-    const normalized = {};
-
-    // Step 52C stored only an array of checked IDs. Preserve those checkmarks
-    // during the upgrade and start their recurrence clock at migration time.
-    if (Array.isArray(savedValue)) {
-      savedValue.map(String).forEach((itemId) => {
-        if (validItemsById.has(itemId)) {
-          normalized[itemId] = now.toISOString();
-        }
-      });
-      return normalized;
+  const persistChecklistProgress = (progress) => {
+    try {
+      window.localStorage.setItem(checklistStorageKey, JSON.stringify(progress));
+      setChecklistStorageUnavailable(false);
+    } catch {
+      // Completion and adjusted dates still work during this visit.
+      setChecklistStorageUnavailable(true);
     }
-
-    if (!savedValue || typeof savedValue !== 'object') return normalized;
-
-    Object.entries(savedValue).forEach(([itemId, completedAt]) => {
-      const item = validItemsById.get(String(itemId));
-      if (!item || typeof completedAt !== 'string') return;
-
-      const completedDate = new Date(completedAt);
-      if (Number.isNaN(completedDate.getTime())) return;
-
-      if (item.recurrenceMonths) {
-        const dueAgainAt = addMonthsClamped(completedDate, item.recurrenceMonths);
-        if (dueAgainAt && dueAgainAt <= now) return;
-      }
-
-      normalized[String(itemId)] = completedDate.toISOString();
-    });
-
-    return normalized;
   };
 
   const refreshChecklistProgress = () => {
     if (checklistItems.length === 0) {
-      setChecklistCompletionDates({});
+      setChecklistProgressByItem({});
       return;
     }
-
     try {
       const rawValue = window.localStorage.getItem(checklistStorageKey);
       const saved = rawValue ? JSON.parse(rawValue) : {};
-      const normalized = normalizeStoredChecklistProgress(saved);
-      setChecklistCompletionDates(normalized);
-
-      // Also writes migrations and automatically removes recurring items
-      // that have reached their next due date.
-      window.localStorage.setItem(checklistStorageKey, JSON.stringify(normalized));
+      const normalized = normalizeStoredChecklistProgress(saved, checklistItems);
+      setChecklistProgressByItem(normalized);
+      persistChecklistProgress(normalized);
     } catch {
-      setChecklistCompletionDates({});
+      setChecklistStorageUnavailable(true);
+      setChecklistProgressByItem((current) => normalizeStoredChecklistProgress(current, checklistItems));
     }
   };
 
@@ -499,23 +462,17 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
   }, [checklistStorageKey, checklistItems]);
 
   const toggleChecklistItem = (itemId) => {
-    const normalizedId = String(itemId);
+    setChecklistProgressByItem((current) => {
+      const next = toggleChecklistCompletion(current, checklistItems, itemId);
+      persistChecklistProgress(next);
+      return next;
+    });
+  };
 
-    setChecklistCompletionDates((current) => {
-      const next = { ...current };
-
-      if (next[normalizedId]) {
-        delete next[normalizedId];
-      } else {
-        next[normalizedId] = new Date().toISOString();
-      }
-
-      try {
-        window.localStorage.setItem(checklistStorageKey, JSON.stringify(next));
-      } catch {
-        // The checklist still works for this visit if local storage is unavailable.
-      }
-
+  const saveAdjustedChecklistDueDate = (itemId, nextDueDate) => {
+    setChecklistProgressByItem((current) => {
+      const next = adjustChecklistDueDate(current, checklistItems, itemId, nextDueDate);
+      persistChecklistProgress(next);
       return next;
     });
   };
@@ -1175,7 +1132,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
                   A Few Things to Keep on Your Radar
                 </h2>
                 <p className="text-xs text-[#78716c] leading-relaxed mt-1.5 max-w-xl">
-                  Check items off as you handle them. Your progress stays saved on this device, and recurring tasks automatically become due again when their reset period arrives.
+                  Check items off as you handle them. Your progress stays saved on this device, and recurring tasks automatically become due again when their reset period arrives. Adjust a recurring task’s next due date if you are joining mid-cycle or setting up a new browser.
                 </p>
               </div>
 
@@ -1194,70 +1151,89 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
               />
             </div>
 
+            {checklistStorageUnavailable && (
+              <p role="status" className="text-xs text-[#8a6b3d] mb-4">Your browser could not save checklist changes. They will stay for this visit only.</p>
+            )}
+
             <div className="space-y-3">
               {checklistItems.map((item) => {
                 const itemId = String(item.id);
-                const completedAt = checklistCompletionDates[itemId] || '';
-                const isComplete = Boolean(completedAt);
-                const dueAgainAt =
-                  isComplete && item.recurrenceMonths
-                    ? addMonthsClamped(completedAt, item.recurrenceMonths)
-                    : null;
+                const itemProgress = checklistProgressByItem[itemId];
+                const isComplete = Boolean(getChecklistCompletedAt(itemProgress));
+                const adjustedDueAt = getAdjustedChecklistDueDate(itemProgress);
+                const dueAgainAt = getChecklistDueDate(itemProgress, item.recurrenceMonths);
+                const dueDay = dueAgainAt ? toLocalDateString(dueAgainAt) : '';
+                const today = toLocalDateString();
+                const dueLabel = !isComplete && dueDay <= today
+                  ? (dueDay === today ? 'Due today' : 'Overdue')
+                  : (isComplete ? 'Completed • due again' : 'Next due');
                 const recurrenceLabel = getRecurrenceLabel(item.recurrenceMonths);
 
                 return (
-                  <button
+                  <div
                     key={itemId}
-                    type="button"
-                    onClick={() => toggleChecklistItem(itemId)}
-                    aria-pressed={isComplete}
-                    className={`w-full text-left rounded-2xl border p-4 transition-all ${
+                    className={`w-full text-left rounded-2xl border transition-all ${
                       isComplete
                         ? 'bg-[#f7f3ec] border-[#d8c6aa]'
                         : 'bg-[#fffdfa] border-[#ede4d6] hover:border-[#dbcbb4] hover:bg-[#fdfaf6]'
                     }`}
                   >
-                    <div className="flex items-start gap-3.5">
-                      <span
-                        className={`mt-0.5 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                          isComplete
-                            ? 'bg-[#9c7844] border-[#9c7844] text-white'
-                            : 'bg-white border-[#cfc3b1] text-transparent'
-                        }`}
-                        aria-hidden="true"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleChecklistItem(itemId)}
+                      aria-pressed={isComplete}
+                      aria-label={`${isComplete ? 'Mark incomplete' : 'Mark complete'}: ${item.title}`}
+                      className="block w-full text-left rounded-2xl p-4"
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <span
+                          className={`mt-0.5 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                            isComplete
+                              ? 'bg-[#9c7844] border-[#9c7844] text-white'
+                              : 'bg-white border-[#cfc3b1] text-transparent'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </span>
 
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className={`hub-font-serif text-base sm:text-lg font-semibold leading-tight ${isComplete ? 'text-[#78716c] line-through' : 'text-[#1c1917]'}`}>
-                            {item.title}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className={`hub-font-serif text-base sm:text-lg font-semibold leading-tight ${isComplete ? 'text-[#78716c] line-through' : 'text-[#1c1917]'}`}>
+                              {item.title}
+                            </span>
+                            {item.timeframe && (
+                              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#f7f2ea] border border-[#e7dccb] text-[#8a6b3d]">
+                                {item.timeframe}
+                              </span>
+                            )}
+                            {recurrenceLabel && (
+                              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#eef4ec] border border-[#d8e4d4] text-[#55704f]">
+                                Auto-reset: {recurrenceLabel}
+                              </span>
+                            )}
                           </span>
-                          {item.timeframe && (
-                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#f7f2ea] border border-[#e7dccb] text-[#8a6b3d]">
-                              {item.timeframe}
+                          {item.details && (
+                            <span className={`block text-[11px] leading-relaxed mt-1.5 ${isComplete ? 'text-[#a8a29e]' : 'text-[#57534e]'}`}>
+                              {item.details}
                             </span>
                           )}
-                          {recurrenceLabel && (
-                            <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#eef4ec] border border-[#d8e4d4] text-[#55704f]">
-                              Auto-reset: {recurrenceLabel}
+                          {dueAgainAt && (
+                            <span className="block text-[11px] font-semibold text-[#55704f] mt-2">
+                              {dueLabel} {formatChecklistDate(dueAgainAt)}{adjustedDueAt ? ' • adjusted on this device' : ''}
                             </span>
                           )}
                         </span>
-                        {item.details && (
-                          <span className={`block text-[11px] leading-relaxed mt-1.5 ${isComplete ? 'text-[#a8a29e]' : 'text-[#57534e]'}`}>
-                            {item.details}
-                          </span>
-                        )}
-                        {isComplete && dueAgainAt && (
-                          <span className="block text-[10px] font-semibold text-[#7a8f70] mt-2">
-                            Completed • due again {formatChecklistDate(dueAgainAt)}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </button>
+                      </div>
+                    </button>
+                    {item.recurrenceMonths && (
+                      <ChecklistDueDateAdjustment
+                        title={item.title}
+                        nextDueDate={dueAgainAt}
+                        onSave={(date) => saveAdjustedChecklistDueDate(itemId, date)}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
