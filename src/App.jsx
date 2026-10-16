@@ -36,6 +36,8 @@ import {
 
 import { supabase } from './lib/supabase';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
+import EmergencyServicesEditor from './components/EmergencyServicesEditor';
+import { EMERGENCY_CATEGORIES, loadEmergencyServices } from './lib/emergencyServices';
 
 const LIZ_VENDORS = [
   {
@@ -798,6 +800,7 @@ export default function App() {
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
   const [publicProfileError, setPublicProfileError] = useState(null);
+  const [publicEmergencyServices, setPublicEmergencyServices] = useState({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: true, error: null });
 
   // Authentication State
   const [session, setSession] = useState(null);
@@ -1308,97 +1311,51 @@ export default function App() {
           .maybeSingle();
 
         if (!isMounted) return;
-
-        if (error) {
-          console.error('Error loading public realtor profile:', error);
+        if (error) throw error;
+        if (!data) {
           setPublicProfile(null);
-          setPublicProfileError(error.message || 'Unable to load this realtor hub.');
-        } else if (!data) {
-          setPublicProfile(null);
-        } else {
-          const { data: publicVendors, error: vendorLoadError } = await supabase
-            .from('vendors')
-            .select('*')
-            .eq('profile_id', data.id)
-            .eq('is_active', true)
-            .order('sort_order', { ascending: true })
-            .order('created_at', { ascending: true });
-
-          if (!isMounted) return;
-
-          if (vendorLoadError) {
-            console.error('Error loading public vendors:', vendorLoadError);
-            setPublicProfileError(vendorLoadError.message || 'Unable to load this realtor hub.');
-            setPublicProfile(null);
-          } else {
-            const publicPlan = getPlanConfig(data.plan);
-            let publicChecklistItems = [];
-            let publicCustomHubSections = [];
-
-            if (publicPlan.allowsChecklist) {
-              const { data: checklistData, error: checklistLoadError } = await supabase
-                .from('homeowner_checklist_items')
-                .select('*')
-                .eq('profile_id', data.id)
-                .eq('is_active', true)
-                .order('sort_order', { ascending: true })
-                .order('created_at', { ascending: true });
-
-              if (!isMounted) return;
-
-              if (checklistLoadError) {
-                console.error('Error loading public homeowner checklist:', checklistLoadError);
-              } else {
-                publicChecklistItems = checklistData || [];
-              }
-            }
-
-            if (publicPlan.allowsCustomSections) {
-              const { data: customSectionData, error: customSectionLoadError } = await supabase
-                .from('custom_hub_sections')
-                .select('*')
-                .eq('profile_id', data.id)
-                .eq('is_active', true)
-                .order('sort_order', { ascending: true })
-                .order('created_at', { ascending: true });
-
-              if (!isMounted) return;
-
-              if (customSectionLoadError) {
-                console.error('Error loading public custom hub sections:', customSectionLoadError);
-              } else {
-                publicCustomHubSections = customSectionData || [];
-              }
-            }
-
-            const visibleVendors = (publicVendors || []).map((vendor) => ({
-              ...vendor,
-              recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
-            }));
-            const premiumProfileData = publicPlan.allowsPremiumProfile
-              ? data
-              : {
-                  ...data,
-                  headshot_url: '',
-                  welcome_message: '',
-                  bio: '',
-                  website_url: '',
-                  instagram_url: '',
-                  facebook_url: '',
-                  linkedin_url: '',
-                };
-            const publicData = {
-              ...premiumProfileData,
-              welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
-            };
-            setPublicProfile({
-              ...publicData,
-              vendors: visibleVendors,
-              checklist_items: publicPlan.allowsChecklist ? publicChecklistItems : [],
-              custom_hub_sections: publicPlan.allowsCustomSections ? publicCustomHubSections : [],
-            });
-          }
+          return;
         }
+
+        const publicPlan = getPlanConfig(data.plan);
+        const premiumProfileData = publicPlan.allowsPremiumProfile ? data : {
+          ...data, headshot_url: '', welcome_message: '', bio: '', website_url: '',
+          instagram_url: '', facebook_url: '', linkedin_url: '',
+        };
+        // Render the profile immediately. Each content collection loads independently,
+        // so a vendor outage cannot delay or hide the fixed emergency section.
+        setPublicProfile({
+          ...premiumProfileData,
+          welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
+          vendors: [], vendor_loading: true, vendor_load_error: false,
+          checklist_items: [], custom_hub_sections: [],
+        });
+
+        const loadCollection = async (table, property, transform = (rows) => rows) => {
+          try {
+            const { data: rows, error: loadError } = await supabase.from(table)
+              .select('*').eq('profile_id', data.id).eq('is_active', true)
+              .order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+            if (loadError) throw loadError;
+            if (!isMounted) return;
+            setPublicProfile((current) => current?.id === data.id ? {
+              ...current, [property]: transform(rows || []),
+              ...(property === 'vendors' ? { vendor_loading: false, vendor_load_error: false } : {}),
+            } : current);
+          } catch (loadError) {
+            console.error(`Error loading public ${table}:`, loadError);
+            if (isMounted && property === 'vendors') {
+              setPublicProfile((current) => current?.id === data.id ? {
+                ...current, vendor_loading: false, vendor_load_error: true,
+              } : current);
+            }
+          }
+        };
+        void loadCollection('vendors', 'vendors', (rows) => rows.map((vendor) => ({
+          ...vendor, recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
+        })));
+        if (publicPlan.allowsChecklist) void loadCollection('homeowner_checklist_items', 'checklist_items');
+        if (publicPlan.allowsCustomSections) void loadCollection('custom_hub_sections', 'custom_hub_sections');
       } catch (err) {
         if (!isMounted) return;
         console.error('Unexpected public profile error:', err);
@@ -1415,6 +1372,16 @@ export default function App() {
       isMounted = false;
     };
   }, [isRealtorSubdomain, subdomainSlug]);
+
+  useEffect(() => {
+    let current = true;
+    setPublicEmergencyServices({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: true, error: null });
+    if (!isRealtorSubdomain || !publicProfile?.id) return () => { current = false; };
+    loadEmergencyServices(publicProfile.id)
+      .then((result) => { if (current) setPublicEmergencyServices({ ...result, loading: false }); })
+      .catch(() => { if (current) setPublicEmergencyServices({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: false, error: 'Emergency contacts are temporarily unavailable. Please try again shortly.' }); });
+    return () => { current = false; };
+  }, [isRealtorSubdomain, publicProfile?.id]);
 
   useEffect(() => {
     return () => {
@@ -2557,7 +2524,7 @@ export default function App() {
       return <PublicHubStatusPage />;
     }
 
-    return <PublicRealtorHubDesign profile={publicProfile} fallbackResources={STANDARD_HOME_RESOURCES} />;
+    return <PublicRealtorHubDesign profile={publicProfile} fallbackResources={STANDARD_HOME_RESOURCES} emergencyServices={publicEmergencyServices} />;
   }
 
   return (
@@ -3184,6 +3151,7 @@ export default function App() {
                       <p>• Dedicated homeowner hub</p>
                       <p>• Add-to-phone experience</p>
                       <p>• Hub Activity</p>
+                      <p>• Fixed emergency categories with separate provider assignments</p>
                       <p>• Up to {vendorLimit} preferred vendors on your current plan</p>
                     </div>
                   </div>
@@ -3339,6 +3307,10 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {profile?.id && profile.id === user?.id && (
+                <EmergencyServicesEditor key={profile.id} profileId={profile.id} />
+              )}
 
               {/* Realtor Member Benefits Card */}
               <div className="bg-[#EEE8E0] p-6 rounded-2xl border border-[#D4CBC0] flex flex-col justify-between md:col-span-2">

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
+import EmergencyServicesSection from './EmergencyServicesSection';
 
 const normalizeUrl = (value = '') => {
   const trimmed = String(value || '').trim();
@@ -309,7 +310,7 @@ const getVendorIcon = (category = '') => {
   return Home;
 };
 
-export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
+export default function PublicRealtorHub({ profile, fallbackResources = [], emergencyServices }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -1328,6 +1329,15 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </section>
         )}
 
+        <EmergencyServicesSection
+          categories={emergencyServices?.categories}
+          assignments={emergencyServices?.assignments}
+          loading={emergencyServices?.loading}
+          error={emergencyServices?.error}
+          realtorPhone={phone}
+          realtorEmail={email}
+        />
+
         <section className="mb-12">
           <div className="hub-reveal text-center lg:text-left mb-6">
             <span className="text-[10px] uppercase tracking-[0.25em] font-semibold text-[#9c7844] block mb-1">
@@ -1340,7 +1350,11 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {resources.length > 0 ? (
+            {profile?.vendor_loading ? (
+              <p role="status" className="text-xs text-[#57534e]">Loading preferred vendors…</p>
+            ) : profile?.vendor_load_error ? (
+              <p role="status" className="text-xs text-[#57534e]">Preferred vendors are temporarily unavailable. Please try again shortly.</p>
+            ) : resources.length > 0 ? (
               resources.map((pro) => {
                 const IconComponent = getVendorIcon(pro.category);
                 const vendorPhoneHref = phoneForHref(pro.phone);
