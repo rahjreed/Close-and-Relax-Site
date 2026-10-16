@@ -47,7 +47,7 @@ export default function HomeownerSavingsSettings({ profile, onProfileUpdated }) 
         </h3>
       </div>
       <p className="text-xs text-charcoal-muted leading-relaxed mt-3">
-        Included automatically on every hub: Vivint Home Security and Goosehead Homeowners
+        Included automatically on every hub: Vivint Home Security and Home &amp; Auto
         Insurance. Close &amp; Relax manages the offers and provider links. They are separate from
         your Preferred Vendors and Emergency &amp; Urgent Services, and do not use vendor slots.
       </p>

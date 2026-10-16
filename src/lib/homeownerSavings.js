@@ -1,3 +1,4 @@
+import { insuranceUrl } from './insuranceFunnel.js';
 import { getVivintTextHref } from './partnerContacts.js';
 
 export const SAVINGS_CLICK_EVENTS = Object.freeze({
@@ -16,11 +17,11 @@ export const HOMEOWNER_SAVINGS_OFFERS = Object.freeze([
   },
   {
     code: 'goosehead',
-    title: 'Goosehead Homeowners Insurance',
-    eyebrow: 'Coverage for your home',
+    title: 'Home & Auto Insurance',
+    eyebrow: 'Home, auto, or both',
     description:
-      'Review your homeowners insurance and explore coverage options that may fit your needs and budget. Discuss coverage and pricing directly with an insurance professional.',
-    ctaLabel: 'Explore homeowners insurance options',
+      'Explore home and auto insurance options with Goosehead. Request a callback to discuss coverage and pricing with an insurance professional.',
+    ctaLabel: 'Explore insurance options',
   },
 ]);
 
@@ -54,8 +55,7 @@ export function resolveHomeownerSavingsOffers(destinations = []) {
     const webUrl = offer.code === 'vivint' ? normalizeSavingsUrl(destination?.cta_url) : '';
     return {
       ...offer,
-      href: webUrl || (offer.code === 'vivint' ? getVivintTextHref('homeowner') : ''),
-      requestForm: offer.code === 'goosehead' && !webUrl,
+      href: webUrl || (offer.code === 'vivint' ? getVivintTextHref('homeowner') : insuranceUrl()),
       external: Boolean(webUrl),
       ctaLabel:
         !webUrl && offer.code === 'vivint' ? 'Ask about Vivint home security' : offer.ctaLabel,

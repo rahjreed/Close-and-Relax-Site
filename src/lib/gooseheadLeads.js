@@ -1,5 +1,7 @@
 export {
   CALLBACK_WINDOWS,
+  INSURANCE_TYPES,
+  validateInsuranceStep,
   localToday,
   validateGooseheadLead,
 } from '../../supabase/functions/_shared/gooseheadLead.js';

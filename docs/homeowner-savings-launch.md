@@ -1,7 +1,11 @@
 # Homeowner Savings and private Insurance Leads launch
 
-This implementation is local only. The migration has not been applied and the
-Edge Function has not been deployed. There is no email delivery dependency.
+The initial Savings migration, owner allowlist membership and Edge Function are
+now deployed. The dedicated Home & Auto funnel is a separate, undeployed local
+revision; see [insurance-funnel.md](insurance-funnel.md) before any further rollout.
+
+The following records the initial implementation and launch procedure. There is
+no email delivery dependency.
 
 ## Architecture and access
 
@@ -68,7 +72,7 @@ columns/index, scheduled-job route and email-service secrets were removed from
 the un-applied implementation. No Resend API key, sender, retry job or email
 provider is needed. No previous version of this migration should be deployed.
 
-## Production steps requiring approval
+## Historical initial production steps
 
 1. Verify production project **Close & Relax**, ref `hphcejnvxyccmwmofdqc`, and
    confirm `20261016033634_homeowner_savings.sql` is still unapplied. Review and
@@ -104,7 +108,9 @@ provider is needed. No previous version of this migration should be deployed.
 6. Confirm the public privacy notice and internal retention/access process cover
    insurance callback requests. No automated deletion or forwarding is included.
 
-Nothing above has been performed against production during this implementation.
+The initial migration, confirmed owner membership and Edge Function were approved
+and deployed after the initial implementation. The newer funnel migration and
+updated function remain local; follow `insurance-funnel.md` for the next rollout.
 
 ## Tracking and local checks
 

@@ -123,7 +123,9 @@ Deno.serve(async (request: Request) => {
         {
           error: error.message.includes('Too many')
             ? 'Too many requests. Please try again later.'
-            : 'This request could not be saved. Check your details and try again.',
+            : error.message.includes('This referral is unavailable.')
+              ? 'This referral is unavailable. Open /insurance without a referral to continue.'
+              : 'This request could not be saved. Check your details and try again.',
         },
         origin,
       );
