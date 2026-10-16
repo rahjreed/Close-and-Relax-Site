@@ -1,0 +1,4 @@
+# Public homeowner submissions have no homeowner account/JWT. The handler
+# enforces origin, Turnstile, validation, rate limits, and service-only storage.
+[functions.goosehead-lead]
+verify_jwt = false
