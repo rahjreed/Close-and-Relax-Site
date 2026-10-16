@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Gift, ShieldCheck, Home, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import GooseheadLeadForm from './GooseheadLeadForm';
+import { insuranceUrl } from '../lib/insuranceFunnel';
 import {
   loadHomeownerSavingsDestinations,
   resolveHomeownerSavingsOffers,
@@ -12,7 +12,6 @@ export default function HomeownerSavingsSection({ profile, onOfferClick }) {
   const visible = shouldShowHomeownerSavings(profile);
   const [data, setData] = useState({ offers: resolveHomeownerSavingsOffers(), error: null });
   const [loading, setLoading] = useState(true);
-  const [gooseheadOpen, setGooseheadOpen] = useState(false);
   useEffect(() => {
     let current = true;
     if (!visible)
@@ -83,46 +82,35 @@ export default function HomeownerSavingsSection({ profile, onOfferClick }) {
               <div className="mt-auto">
                 {offer.href ? (
                   <a
-                    href={offer.href}
+                    href={offer.code === 'goosehead' ? insuranceUrl(profile?.id) : offer.href}
                     target={offer.external ? '_blank' : undefined}
                     rel={offer.external ? 'noopener noreferrer' : undefined}
-                    onClick={() => {
+                    onClick={async (event) => {
+                      const navigate =
+                        offer.code === 'goosehead' &&
+                        event?.button === 0 &&
+                        !event.metaKey &&
+                        !event.ctrlKey &&
+                        !event.shiftKey &&
+                        !event.altKey;
+                      if (navigate) event.preventDefault();
                       try {
-                        onOfferClick?.(offer.code);
+                        const tracking = onOfferClick?.(offer.code);
+                        if (navigate)
+                          await Promise.race([
+                            Promise.resolve(tracking),
+                            new Promise((resolve) => setTimeout(resolve, 500)),
+                          ]);
                       } catch {
                         /* Tracking never blocks navigation. */
                       }
+                      if (navigate) window.location.assign(insuranceUrl(profile?.id));
                     }}
                     className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#35543a] px-4 py-3 text-xs font-semibold text-white hover:bg-[#29442d]"
                   >
                     {offer.ctaLabel}
                     <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   </a>
-                ) : offer.requestForm ? (
-                  <>
-                    <button
-                      type="button"
-                      aria-expanded={gooseheadOpen}
-                      onClick={() => {
-                        try {
-                          onOfferClick?.(offer.code);
-                        } catch {
-                          /* Analytics must not block the form. */
-                        }
-                        setGooseheadOpen(true);
-                      }}
-                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#35543a] px-4 py-3 text-xs font-semibold text-white hover:bg-[#29442d]"
-                    >
-                      {offer.ctaLabel}
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    </button>
-                    {gooseheadOpen && (
-                      <GooseheadLeadForm
-                        profileId={profile?.id}
-                        onClose={() => setGooseheadOpen(false)}
-                      />
-                    )}
-                  </>
                 ) : null}
               </div>
             </article>

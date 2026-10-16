@@ -39,8 +39,8 @@ test('launch offers are fixed Vivint and Goosehead; missing configuration cannot
     const offers = resolveHomeownerSavingsOffers(rows);
     assert.equal(offers.length, 2);
     assert(offers[0].href.startsWith(`sms:${VIVINT_CONTACT_PHONE}`));
-    assert.equal(offers[1].href, '');
-    assert.equal(offers[1].requestForm, true);
+    assert.equal(offers[1].href, 'https://closeandrelax.com/insurance');
+    assert.equal(offers[1].requestForm, undefined);
   }
 });
 
@@ -50,8 +50,8 @@ test('Vivint configuration overrides its fallback; Goosehead always uses the pri
     { code: 'goosehead', cta_url: 'https://example.com/insurance' },
   ]);
   assert.equal(offers[0].href, 'https://example.com/security');
-  assert.equal(offers[1].href, '');
-  assert.equal(offers[1].requestForm, true);
+  assert.equal(offers[1].href, 'https://closeandrelax.com/insurance');
+  assert.equal(offers[1].requestForm, undefined);
   assert.equal(offers[1].external, false);
   assert.equal(offers[0].external, true);
   for (const invalid of [
@@ -93,7 +93,7 @@ test('configuration failures produce safe default cards without blocking the hub
   assert(result.error);
   assert.equal(result.offers.length, 2);
   assert(result.offers[0].href.startsWith('sms:'));
-  assert.equal(result.offers[1].href, '');
+  assert.equal(result.offers[1].href, 'https://closeandrelax.com/insurance');
 });
 
 test('visibility writes use only the current profile flag and reject non-Pro callers', async () => {

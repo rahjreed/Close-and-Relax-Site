@@ -1414,7 +1414,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
           profile={profile}
           onOfferClick={(code) => {
             const eventType = SAVINGS_CLICK_EVENTS[code];
-            if (eventType) void recordHubActivity({
+            if (eventType) return recordHubActivity({
               profileId: profile.id,
               eventType,
               source: 'homeowner_savings',

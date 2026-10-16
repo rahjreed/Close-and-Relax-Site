@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { INSURANCE_TYPES } from '../lib/gooseheadLeads';
 import { supabase } from '../lib/supabase';
 import {
   INSURANCE_LEAD_STATUSES,
@@ -131,14 +132,23 @@ export default function InsuranceLeads({ userId, accessToken }) {
               {[
                 ['Phone', lead.phone],
                 ['Email', lead.email],
-                ['Property address', lead.address],
+                [
+                  'Coverage requested',
+                  INSURANCE_TYPES.find((item) => item.value === lead.insurance_type)?.label ||
+                    'Home insurance',
+                ],
+                ['Property address', lead.address || 'Not provided (auto only)'],
                 [
                   'Callback',
                   `${lead.callback_date} · ${lead.callback_window} (${lead.callback_timezone})`,
                 ],
                 ['Submitted', new Date(lead.created_at).toLocaleString()],
-                ['Referring Realtor', lead.referring_realtor_name || 'Name unavailable'],
-                ['Realtor profile ID', lead.profile_id || 'Profile no longer available'],
+                [
+                  'Referring Realtor',
+                  lead.referring_realtor_name ||
+                    (lead.profile_id ? 'Name unavailable' : 'Direct request'),
+                ],
+                ['Realtor profile ID', lead.profile_id || 'Direct request / profile unavailable'],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-xs text-charcoal-muted">{label}</dt>

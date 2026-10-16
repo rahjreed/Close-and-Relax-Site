@@ -37,6 +37,8 @@ import {
 import { supabase } from './lib/supabase';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
 import EmergencyServicesEditor from './components/EmergencyServicesEditor';
+import InsurancePage from './components/InsurancePage';
+import { isInsurancePath } from './lib/insuranceFunnel';
 import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
 import InsuranceLeads from './components/InsuranceLeads';
 import { getVivintTextHref } from './lib/partnerContacts';
@@ -696,6 +698,17 @@ function PublicHubStatusPage({ loading = false }) {
 }
 
 export default function App() {
+  const readLocation = () => ({ pathname: window.location.pathname, search: window.location.search });
+  const [location, setLocation] = useState(readLocation);
+  useEffect(() => {
+    const onBackOrForward = () => setLocation(readLocation());
+    window.addEventListener('popstate', onBackOrForward);
+    return () => window.removeEventListener('popstate', onBackOrForward);
+  }, []);
+  return isInsurancePath(location.pathname) ? <InsurancePage key={location.search} /> : <CloseRelaxApp />;
+}
+
+function CloseRelaxApp() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
   const rootDomainSuffix = '.closeandrelax.com';
   const subdomainCandidate = hostname.endsWith(rootDomainSuffix)
