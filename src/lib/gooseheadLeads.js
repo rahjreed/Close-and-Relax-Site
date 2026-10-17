@@ -1,6 +1,9 @@
 export {
   CALLBACK_WINDOWS,
   INSURANCE_TYPES,
+  US_STATES,
+  PROPERTY_ADDRESS_FIELDS,
+  validatePropertyAddress,
   validateInsuranceStep,
   localToday,
   validateGooseheadLead,

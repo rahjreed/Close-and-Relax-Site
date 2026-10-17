@@ -3,30 +3,16 @@ import { supabase } from '../lib/supabase';
 import {
   CALLBACK_WINDOWS,
   INSURANCE_TYPES,
+  US_STATES,
+  PROPERTY_ADDRESS_FIELDS,
   localToday,
   validateInsuranceStep,
   validateGooseheadLead,
   submitGooseheadLead,
 } from '../lib/gooseheadLeads';
 
-let captchaReady;
-function loadCaptcha() {
-  if (window.turnstile) return Promise.resolve(window.turnstile);
-  if (!captchaReady)
-    captchaReady = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve(window.turnstile);
-      script.onerror = () => {
-        captchaReady = null;
-        reject(new Error('Verification is unavailable. Please reload and try again.'));
-      };
-      document.head.appendChild(script);
-    });
-  return captchaReady;
-}
+import { loadTurnstile, normalizeTurnstileSiteKey, turnstileFailure } from '../lib/turnstile';
+const EMPTY_ADDRESS = Object.fromEntries(PROPERTY_ADDRESS_FIELDS.map(([name]) => [name, '']));
 const STEPS = ['Coverage', 'Details', 'Contact', 'Callback', 'Review'];
 const TITLES = [
   'What are you looking to review?',
@@ -41,6 +27,9 @@ export default function InsuranceWizard({
   referralError = '',
   siteKey = import.meta.env?.VITE_TURNSTILE_SITE_KEY || '',
 }) {
+  const publicSiteKey = normalizeTurnstileSiteKey(siteKey);
+  const [captchaIssue, setCaptchaIssue] = useState(null);
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const formId = useId(),
     container = useRef(null),
     widget = useRef(null),
@@ -53,7 +42,7 @@ export default function InsuranceWizard({
     insurance_type: '',
     full_name: '',
     phone: '',
-    address: '',
+    ...EMPTY_ADDRESS,
     email: '',
     callback_date: localToday(timezone),
     callback_window: '',
@@ -69,31 +58,47 @@ export default function InsuranceWizard({
   }, [step, accepted]);
   useEffect(() => {
     let current = true;
-    if (!siteKey || accepted || step !== 4) return;
+    if (!publicSiteKey || accepted || step !== 4) return;
     setToken('');
-    loadCaptcha()
+    setCaptchaIssue(null);
+    loadTurnstile()
       .then((api) => {
         if (!current || !container.current) return;
         widget.current = api.render(container.current, {
-          sitekey: siteKey,
+          sitekey: publicSiteKey,
           size: 'compact',
           action: 'goosehead_lead',
           callback: (value) => {
-            if (current) setToken(value);
+            if (current) {
+              setToken(value);
+              setCaptchaIssue(null);
+            }
           },
           'expired-callback': () => {
-            if (current) setToken('');
-          },
-          'error-callback': () => {
             if (current) {
               setToken('');
-              setError('Verification is unavailable. Please try again.');
+              setCaptchaIssue({
+                message: 'Verification expired. Please verify again.',
+                retryable: true,
+                code: '',
+              });
+            }
+          },
+          'error-callback': (code) => {
+            if (current) {
+              setToken('');
+              setCaptchaIssue(turnstileFailure(code));
             }
           },
         });
       })
       .catch(() => {
-        if (current) setError('Verification is unavailable. Please reload and try again.');
+        if (current)
+          setCaptchaIssue({
+            message: 'Verification could not load. Please retry verification.',
+            retryable: true,
+            code: '',
+          });
       });
     return () => {
       current = false;
@@ -102,10 +107,14 @@ export default function InsuranceWizard({
         widget.current = null;
       }
     };
-  }, [siteKey, accepted, step]);
+  }, [publicSiteKey, accepted, step, captchaAttempt]);
   const update = (field, value) => {
     setError('');
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'insurance_type' && value === 'auto' ? EMPTY_ADDRESS : {}),
+    }));
   };
   const submit = async (event) => {
     event.preventDefault();
@@ -126,7 +135,7 @@ export default function InsuranceWizard({
     if (saving) return;
     setSaving(true);
     try {
-      if (!siteKey)
+      if (!publicSiteKey)
         throw new Error('The request form is temporarily unavailable. Please try again later.');
       const lead = validateGooseheadLead({
         ...form,
@@ -141,7 +150,7 @@ export default function InsuranceWizard({
         full_name: '',
         phone: '',
         email: '',
-        address: '',
+        ...EMPTY_ADDRESS,
         contact_consent: false,
       }));
     } catch (err) {
@@ -245,7 +254,6 @@ export default function InsuranceWizard({
                     checked={form.insurance_type === item.value}
                     onChange={() => {
                       update('insurance_type', item.value);
-                      if (item.value === 'auto') update('address', '');
                     }}
                     className="h-5 w-5 accent-[#35543a]"
                   />
@@ -267,21 +275,44 @@ export default function InsuranceWizard({
                 </p>
               </div>
             ) : (
-              <label className="block text-sm font-medium">
-                Property address
-                <textarea
-                  required
-                  autoComplete="street-address"
-                  maxLength={500}
-                  rows={3}
-                  value={form.address}
-                  onChange={(e) => update('address', e.target.value)}
-                  className={inputClass}
-                />
-                <span className="block mt-2 text-xs font-normal text-[#57534e]">
-                  The home you’d like to review coverage for.
-                </span>
-              </label>
+              <div className="space-y-4">
+                <p className="text-xs text-[#57534e]">
+                  The U.S. property you’d like to review coverage for.
+                </p>
+                {PROPERTY_ADDRESS_FIELDS.map(([name, label, autoComplete, maxLength]) => (
+                  <label key={name} className="block text-sm font-medium">
+                    {label}
+                    {name === 'state' ? (
+                      <select
+                        required
+                        autoComplete={autoComplete}
+                        value={form.state}
+                        onChange={(e) => update('state', e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Choose a state</option>
+                        {US_STATES.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        required={name !== 'apt_unit'}
+                        type="text"
+                        autoComplete={autoComplete}
+                        maxLength={maxLength}
+                        inputMode={name === 'zip_code' ? 'numeric' : undefined}
+                        pattern={name === 'zip_code' ? '[0-9]{5}(-[0-9]{4})?' : undefined}
+                        value={form[name]}
+                        onChange={(e) => update(name, e.target.value)}
+                        className={inputClass}
+                      />
+                    )}
+                  </label>
+                ))}
+              </div>
             ))}
           {step === 2 && (
             <>
@@ -333,7 +364,12 @@ export default function InsuranceWizard({
                     'Coverage',
                     INSURANCE_TYPES.find((item) => item.value === form.insurance_type)?.label,
                   ],
-                  ...(form.insurance_type === 'auto' ? [] : [['Property address', form.address]]),
+                  ...(form.insurance_type === 'auto'
+                    ? []
+                    : PROPERTY_ADDRESS_FIELDS.map(([name, label]) => [
+                        label,
+                        form[name] || 'Not provided',
+                      ])),
                   ['Name', form.full_name],
                   ['Phone', form.phone],
                   ['Email', form.email],
@@ -362,8 +398,29 @@ export default function InsuranceWizard({
                 Your details are sent securely to the Close &amp; Relax team for this request. They
                 are not added to hub analytics or saved in this browser.
               </p>
+              {captchaIssue && (
+                <div role="alert" className="text-sm text-red-700">
+                  <p>
+                    {captchaIssue.message}
+                    {captchaIssue.code ? ` (Reference ${captchaIssue.code})` : ''}
+                  </p>
+                  {captchaIssue.retryable && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setToken('');
+                        setCaptchaIssue(null);
+                        setCaptchaAttempt((value) => value + 1);
+                      }}
+                      className="min-h-[44px] mt-2 underline"
+                    >
+                      Retry verification
+                    </button>
+                  )}
+                </div>
+              )}
               <div ref={container} className="min-h-[65px]" />
-              {!siteKey && (
+              {!publicSiteKey && (
                 <p role="status" className="text-sm text-[#57534e]">
                   The request form is temporarily unavailable. Please try again later.
                 </p>
@@ -404,7 +461,7 @@ export default function InsuranceWizard({
             )}
             <button
               type="submit"
-              disabled={!!referralError || saving || (step === 4 && (!siteKey || !token))}
+              disabled={!!referralError || saving || (step === 4 && (!publicSiteKey || !token))}
               className="min-h-[48px] flex-1 rounded-xl bg-[#35543a] px-6 py-3 text-sm font-semibold text-white hover:bg-[#29442d] disabled:opacity-50"
             >
               {saving ? 'Sending request…' : step === 4 ? 'Request my callback' : 'Continue'}

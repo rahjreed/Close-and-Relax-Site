@@ -1,7 +1,11 @@
 # Public Home & Auto Insurance funnel
 
-This revision is local only. Do not deploy the frontend until the new migration
-and matching Edge Function dependency have been approved and deployed.
+The initial funnel migration and function are deployed. The newer structured
+address and Turnstile cleanup is LOCAL ONLY; see [insurance-cleanup.md](insurance-cleanup.md)
+for the current validation and coordinated rollout requirements.
+
+This document records the original funnel. Its migration and function are now
+deployed. Follow the cleanup document above for the newer, unapplied revision.
 
 ## Routes and experience
 
@@ -71,8 +75,7 @@ No new secrets or email infrastructure are needed.
   submissions, compact cards and referral links. Mocked Edge tests retain
   anti-spam/error handling and exercise direct auto/combined submissions.
 
-After review and explicit approval: apply only the new funnel migration; deploy
-the updated `goosehead-lead` function with the revised shared validator; then
-build/deploy the frontend using the configured Production Site Key. Test direct
-and Realtor-referred traffic and confirm admin visibility. No production writes,
-deployments, commits, pushes or live test leads were made for this revision.
+Do not reapply the original funnel migration. Follow `insurance-cleanup.md` for
+the new structured-address migration, matching Edge dependency/frontend release,
+public-key correction, and approval requirements. No production changes were
+made while preparing that cleanup.

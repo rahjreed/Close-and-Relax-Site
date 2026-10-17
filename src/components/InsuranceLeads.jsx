@@ -137,7 +137,15 @@ export default function InsuranceLeads({ userId, accessToken }) {
                   INSURANCE_TYPES.find((item) => item.value === lead.insurance_type)?.label ||
                     'Home insurance',
                 ],
-                ['Property address', lead.address || 'Not provided (auto only)'],
+                ...(lead.street_address
+                  ? [
+                      ['Street address', lead.street_address],
+                      ['Apt/Unit', lead.apt_unit || 'Not provided'],
+                      ['City', lead.city],
+                      ['State', lead.state],
+                      ['ZIP code', lead.zip_code],
+                    ]
+                  : [['Property address', lead.address || 'Not provided (auto only)']]),
                 [
                   'Callback',
                   `${lead.callback_date} · ${lead.callback_window} (${lead.callback_timezone})`,
