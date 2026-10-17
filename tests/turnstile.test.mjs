@@ -25,7 +25,7 @@ function documentMock() {
     },
   };
 }
-test('Turnstile loader shares a script/promise and waits for API readiness', async () => {
+test('async/defer loader shares a promise and resolves on load without calling ready()', async () => {
   const win = {},
     doc = documentMock();
   const load = createTurnstileLoader(win, doc);
@@ -37,19 +37,39 @@ test('Turnstile loader shares a script/promise and waits for API readiness', asy
     doc.scripts[0].src,
     'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
   );
-  let finishReady;
+  assert.equal(doc.scripts[0].async, true);
+  assert.equal(doc.scripts[0].defer, true);
+  let readyCalls = 0;
   win.turnstile = {
     render() {},
-    ready: (fn) => {
-      finishReady = fn;
+    ready() {
+      readyCalls++;
+      // Cloudflare rejects ready() when api.js was loaded with async/defer.
+      throw Object.assign(new Error('Remove async/defer before using turnstile.ready().'), {
+        code: 3857,
+      });
     },
   };
   doc.scripts[0].fire('load');
-  assert.equal(typeof finishReady, 'function');
-  finishReady();
   assert.equal(await first, win.turnstile);
   assert.equal(await load(), win.turnstile);
+  assert.equal(readyCalls, 0);
+  assert(!doc.scripts[0].removed);
   assert.equal(doc.scripts.length, 1);
+});
+
+test('an already loaded API resolves without calling ready() or adding a script', async () => {
+  const win = {
+      turnstile: {
+        render() {},
+        ready() {
+          assert.fail('ready() must not be called for an async/defer-loaded API');
+        },
+      },
+    },
+    doc = documentMock();
+  assert.equal(await createTurnstileLoader(win, doc)(), win.turnstile);
+  assert.equal(doc.scripts.length, 0);
 });
 test('failed script loads clear the cache and allow a fresh retry', async () => {
   const win = {},
