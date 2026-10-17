@@ -1,4 +1,16 @@
 export const CALLBACK_WINDOWS = Object.freeze(['11am-3pm', '3pm-7pm', '7pm-11pm']);
+export const US_STATES = Object.freeze(
+  'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY AS GU MP PR VI AA AE AP'.split(
+    ' ',
+  ),
+);
+export const PROPERTY_ADDRESS_FIELDS = Object.freeze([
+  ['street_address', 'Street address', 'address-line1', 200],
+  ['apt_unit', 'Apt/Unit (optional)', 'address-line2', 50],
+  ['city', 'City', 'address-level2', 100],
+  ['state', 'State', 'address-level1', 2],
+  ['zip_code', 'ZIP code', 'postal-code', 10],
+]);
 
 export function localToday(timeZone, now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -24,6 +36,21 @@ const text = (input, name, max) => {
     throw new Error(`Enter a valid ${name.replaceAll('_', ' ')}.`);
   return value;
 };
+export function validatePropertyAddress(input, insuranceType) {
+  if (insuranceType === 'auto')
+    return Object.fromEntries(PROPERTY_ADDRESS_FIELDS.map(([name]) => [name, null]));
+  const street_address = text(input, 'street_address', 200);
+  const city = text(input, 'city', 100);
+  const state = text(input, 'state', 2).toUpperCase();
+  const zip_code = text(input, 'zip_code', 10);
+  const apt_unit =
+    input.apt_unit == null || (typeof input.apt_unit === 'string' && !input.apt_unit.trim())
+      ? null
+      : text(input, 'apt_unit', 50);
+  if (!US_STATES.includes(state)) throw new Error('Choose a valid state.');
+  if (!/^\d{5}(-\d{4})?$/.test(zip_code)) throw new Error('Enter a valid ZIP code.');
+  return { street_address, apt_unit, city, state, zip_code };
+}
 const coverage = (input) => {
   // Preserve compatibility with the previously deployed home-only form.
   const insurance_type = input.insurance_type === undefined ? 'home' : input.insurance_type;
@@ -73,7 +100,7 @@ export function validateInsuranceStep(input, step, now = new Date()) {
     return;
   }
   if (step === 1) {
-    if (coverage(input) !== 'auto') text(input, 'address', 500);
+    validatePropertyAddress(input, coverage(input));
     return;
   }
   if (step === 2) {
@@ -91,7 +118,7 @@ export function validateGooseheadLead(input, now = new Date()) {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     throw new Error('Check your request details.');
   const insurance_type = coverage(input);
-  const address = insurance_type === 'auto' ? null : text(input, 'address', 500);
+  const addressParts = validatePropertyAddress(input, insurance_type);
   const details = contact(input),
     timing = callback(input, now);
   if (input.contact_consent !== true)
@@ -107,7 +134,7 @@ export function validateGooseheadLead(input, now = new Date()) {
     request_id: input.request_id,
     profile_id,
     insurance_type,
-    address,
+    ...addressParts,
     ...details,
     ...timing,
     contact_consent: true,

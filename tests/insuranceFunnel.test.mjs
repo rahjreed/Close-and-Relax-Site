@@ -10,7 +10,11 @@ const base = {
   full_name: 'Test Person',
   phone: '317-555-0100',
   email: 'test@example.com',
-  address: '123 Example St',
+  street_address: '123 Example St',
+  apt_unit: '',
+  city: 'Indianapolis',
+  state: 'IN',
+  zip_code: '46201',
   callback_date: '2026-10-17',
   callback_window: '3pm-7pm',
   callback_timezone: 'America/Indianapolis',
@@ -36,12 +40,20 @@ test('all coverage types allow direct requests; only home coverage requires a pr
     const row = validateGooseheadLead({ ...base, insurance_type }, now);
     assert.equal(row.insurance_type, insurance_type);
     assert.equal(row.profile_id, null);
-    assert.throws(() => validateGooseheadLead({ ...base, insurance_type, address: '' }, now));
+    assert.throws(() =>
+      validateGooseheadLead({ ...base, insurance_type, street_address: '' }, now),
+    );
   }
-  const auto = validateGooseheadLead({ ...base, insurance_type: 'auto', address: undefined }, now);
-  assert.equal(auto.address, null);
+  const auto = validateGooseheadLead(
+    { ...base, insurance_type: 'auto', street_address: undefined },
+    now,
+  );
+  assert.equal(auto.street_address, null);
   assert.equal(auto.profile_id, null);
-  assert.equal(validateGooseheadLead({ ...base, insurance_type: 'auto' }, now).address, null);
+  assert.equal(
+    validateGooseheadLead({ ...base, insurance_type: 'auto' }, now).street_address,
+    null,
+  );
   assert.equal(validateGooseheadLead(base, now).insurance_type, 'home');
   for (const insurance_type of ['boat', null, ''])
     assert.throws(() => validateGooseheadLead({ ...base, insurance_type }, now));
@@ -63,9 +75,56 @@ test('wizard shares final validation for coverage, property, contact and callbac
       validateInsuranceStep({ ...base, insurance_type: 'home' }, step, now),
     );
   assert.throws(() => validateInsuranceStep({ insurance_type: '' }, 0, now));
-  assert.throws(() => validateInsuranceStep({ insurance_type: 'home', address: '' }, 1, now));
+  assert.throws(() =>
+    validateInsuranceStep({ insurance_type: 'home', street_address: '' }, 1, now),
+  );
   assert.doesNotThrow(() => validateInsuranceStep({ insurance_type: 'auto' }, 1, now));
   assert.throws(() => validateInsuranceStep({ ...base, phone: 'bad' }, 2, now));
   assert.throws(() => validateInsuranceStep({ ...base, callback_date: '2020-01-01' }, 3, now));
   assert.throws(() => validateInsuranceStep(base, 8, now));
+});
+
+test('structured address parts are required, normalized, and forwarded separately', () => {
+  const result = validateGooseheadLead(
+    {
+      ...base,
+      state: 'in',
+      zip_code: '01234-5678',
+      apt_unit: '  Apt 2  ',
+      address: 'Ignored client concatenation',
+    },
+    now,
+  );
+  assert.equal(result.state, 'IN');
+  assert.equal(result.zip_code, '01234-5678');
+  assert.equal(result.apt_unit, 'Apt 2');
+  assert.equal(result.street_address, base.street_address);
+  assert.equal(result.city, base.city);
+  assert.equal(result.address, undefined);
+  assert.equal(validateGooseheadLead({ ...base, apt_unit: '   ' }, now).apt_unit, null);
+  for (const change of [
+    { street_address: '' },
+    { city: '' },
+    { state: '' },
+    { state: 'ZZ' },
+    { zip_code: '' },
+    { zip_code: '1234' },
+    { zip_code: '123456' },
+    { apt_unit: 'x'.repeat(51) },
+  ])
+    assert.throws(() => validateGooseheadLead({ ...base, ...change }, now));
+  const auto = validateGooseheadLead(
+    {
+      ...base,
+      insurance_type: 'auto',
+      street_address: 'discard',
+      apt_unit: 'discard',
+      city: 'discard',
+      state: 'ZZ',
+      zip_code: 'bad',
+    },
+    now,
+  );
+  for (const name of ['street_address', 'apt_unit', 'city', 'state', 'zip_code'])
+    assert.equal(auto[name], null);
 });
