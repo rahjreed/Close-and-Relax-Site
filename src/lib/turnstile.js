@@ -27,12 +27,8 @@ export function createTurnstileLoader(win, doc, timeoutMs = 15000) {
           finish(null, true);
           return;
         }
-        try {
-          if (typeof api.ready === 'function') api.ready(() => finish(api, false));
-          else finish(api, false);
-        } catch {
-          finish(null, true);
-        }
+        // The script load event confirms readiness; ready() rejects async/defer loading.
+        finish(api, false);
       };
       const failed = () => finish(null, true);
       const timeout = setTimeout(failed, timeoutMs);
