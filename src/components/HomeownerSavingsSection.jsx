@@ -8,7 +8,7 @@ import {
   shouldShowHomeownerSavings,
 } from '../lib/homeownerSavings';
 
-export default function HomeownerSavingsSection({ profile, onOfferClick }) {
+export default function HomeownerSavingsSection({ profile, onOfferClick, preview = false }) {
   const visible = shouldShowHomeownerSavings(profile);
   const [data, setData] = useState({ offers: resolveHomeownerSavingsOffers(), error: null });
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,11 @@ export default function HomeownerSavingsSection({ profile, onOfferClick }) {
                 {offer.description}
               </p>
               <div className="mt-auto">
-                {offer.href ? (
+                {preview ? (
+                  <button disabled type="button" className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#35543a] px-4 py-3 text-xs font-semibold text-white opacity-50">
+                    {offer.ctaLabel}<ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  </button>
+                ) : offer.href ? (
                   <a
                     href={offer.code === 'goosehead' ? insuranceUrl(profile?.id) : offer.href}
                     target={offer.external ? '_blank' : undefined}

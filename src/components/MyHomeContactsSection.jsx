@@ -9,8 +9,28 @@ const EMPTY = { name: '', service: '', phone: '', note: '' };
 const buttonClass = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold';
 
 // Remount on a hub change, including when React reuses the surrounding public page.
-export default function MyHomeContactsSection({ profileId }) {
+export default function MyHomeContactsSection({ profileId, preview = false }) {
+  if (preview) return <ContactDemo />;
   return <ContactsForHub key={profileId || 'unavailable'} profileId={profileId} />;
+}
+
+function ContactDemo() {
+  const titleId = useId();
+  return (
+    <section className="mb-12" aria-labelledby={titleId}>
+      <h2 id={titleId} className="hub-font-serif text-2xl font-medium text-[#1c1917] sm:text-3xl">My Home Contacts</h2>
+      <p className="mt-2 mb-6 text-xs leading-relaxed text-[#57534e]">Homeowners get three personal contact slots, saved only on their own device. Editing is disabled in this preview.</p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {Array.from({ length: HOME_CONTACT_SLOTS }, (_, index) => (
+          <article key={index} className="min-w-0 rounded-2xl border border-[#dcd1be] bg-white p-5">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#9c7844]">Contact {index + 1} of 3</p>
+            <p className="text-sm leading-relaxed text-[#57534e]">Save someone you trust for home-related help.</p>
+            <button disabled type="button" className={`${buttonClass} mt-4 border border-[#dcd1be] text-[#292524] opacity-50`}><Plus className="h-4 w-4" aria-hidden="true" />Add contact</button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function ContactsForHub({ profileId }) {

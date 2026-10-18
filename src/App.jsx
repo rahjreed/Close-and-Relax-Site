@@ -40,6 +40,9 @@ import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
 import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
 import InsuranceLeads from './components/InsuranceLeads';
+import RealtorSetupChecklist from './components/RealtorSetupChecklist';
+import HubPreviewDialog from './components/HubPreviewDialog';
+import { readRealtorPreview } from './lib/realtorSetup';
 import { getVivintTextHref } from './lib/partnerContacts';
 
 const LIZ_VENDORS = [
@@ -733,6 +736,8 @@ function CloseRelaxApp() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileEditorError, setProfileEditorError] = useState(null);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [setupPreview, setSetupPreview] = useState({ profileId: null, at: null, error: '' });
+  const [hubPreviewOwner, setHubPreviewOwner] = useState(null);
   const [profileForm, setProfileForm] = useState({
     full_name: '',
     brokerage: '',
@@ -1273,6 +1278,17 @@ function CloseRelaxApp() {
     fetchRealtorBenefits();
     fetchHubActivity(profile.id);
   }, [user?.id, profile?.id, profile?.plan]);
+
+  useEffect(() => {
+    let current = true;
+    if (!user?.id || profile?.id !== user.id || currentView !== 'dashboard') return;
+    readRealtorPreview(supabase, user.id)
+      .then((at) => { if (current) setSetupPreview((previous) => ({ profileId: user.id, at: at || (previous.profileId === user.id ? previous.at : null), error: '' })); })
+      .catch(() => { if (current) setSetupPreview((previous) => ({ profileId: user.id, at: previous.profileId === user.id ? previous.at : null, error: 'Preview history could not be loaded. Opening a private preview will retry.' })); });
+    return () => { current = false; };
+  }, [user?.id, profile?.id, currentView]);
+
+  useEffect(() => { setHubPreviewOwner(null); }, [user?.id]);
 
 
   // Protect /dashboard and keep logged-in users out of the auth screens.
@@ -2505,17 +2521,11 @@ function CloseRelaxApp() {
   ).size;
 
   const handlePreviewMyHub = () => {
-    if (!profile?.slug) {
-      showToast('Your realtor subdomain has not been assigned yet.');
+    if (!user?.id || profile?.id !== user.id) {
+      showToast('Sign in to preview your own saved hub.');
       return;
     }
-
-    if (!profile?.is_published) {
-      showToast('Publish your hub before opening the live public link.');
-      return;
-    }
-
-    window.open(publicHubUrl, '_blank', 'noopener,noreferrer');
+    setHubPreviewOwner(user.id);
   };
 
   if (isRealtorSubdomain) {
@@ -2533,6 +2543,18 @@ function CloseRelaxApp() {
   return (
     <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
       <style>{customStyles}</style>
+
+      {currentView === 'dashboard' && hubPreviewOwner === user?.id && profile?.id === user?.id && hubPreviewOwner && (
+        <HubPreviewDialog
+          key={hubPreviewOwner}
+          userId={hubPreviewOwner}
+          getPlanConfig={getPlanConfig}
+          fallbackResources={STANDARD_HOME_RESOURCES}
+          onClose={() => setHubPreviewOwner(null)}
+          onHistorySaved={(ownerId, at) => setSetupPreview({ profileId: ownerId, at, error: '' })}
+          onHistoryError={(ownerId) => setSetupPreview((previous) => ({ profileId: ownerId, at: previous.profileId === ownerId ? previous.at : null, error: 'Preview history could not be saved. Reopen the preview to retry; publishing is still available.' }))}
+        />
+      )}
 
       {/* Floating Toast Notification */}
       {toastMessage && (
@@ -2884,6 +2906,33 @@ function CloseRelaxApp() {
               </div>
             </div>
 
+            {profile?.id === user.id && (
+              <RealtorSetupChecklist
+                key={profile.id}
+                profile={profile}
+                planConfig={getPlanConfig(profile.plan)}
+                vendors={vendors}
+                checklistItems={checklistItems}
+                customSections={customHubSections}
+                standardResourcesAvailable={STANDARD_HOME_RESOURCES.length > 0}
+                previewRequestedAt={setupPreview.profileId === profile.id ? setupPreview.at : null}
+                previewHistoryError={setupPreview.profileId === profile.id ? setupPreview.error : ''}
+                loading={vendorsLoading || checklistLoading || customHubSectionsLoading}
+                publishLoading={publishLoading}
+                onAction={(step) => {
+                  if (step === 'profile' || step === 'branding') handleOpenProfileEditor();
+                  else if (step === 'vendors') void handleOpenVendorManager();
+                  else if (step === 'resources') {
+                    if (allowsChecklist) void handleOpenChecklistManager();
+                    else if (allowsCustomSections) void handleOpenCustomHubSectionsManager();
+                  }
+                  else if (step === 'sections' && allowsCustomSections) void handleOpenCustomHubSectionsManager();
+                  else if (step === 'preview') handlePreviewMyHub();
+                  else if (step === 'publish' && !profile.is_published && !publishLoading) void handleTogglePublish();
+                }}
+              />
+            )}
+
             {/* Hub Status Overview Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 border-b border-[#D4CBC0]">
               <div className="bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
@@ -2940,108 +2989,6 @@ function CloseRelaxApp() {
                   {profile?.is_published ? 'Live and ready to share with clients' : 'Your link becomes public when the hub is published'}
                 </p>
               </div>
-            </div>
-
-            {/* Launch Checklist */}
-            <div className="pb-8 border-b border-[#D4CBC0]">
-              {(() => {
-                const launchItems = [
-                  {
-                    label: 'Complete your profile',
-                    complete: Boolean(profile?.full_name && profile?.city && profile?.phone),
-                    detail: 'Name, market and phone number',
-                  },
-                  {
-                    label: 'Choose your hub link',
-                    complete: Boolean(profile?.slug),
-                    detail: profile?.slug ? `${profile.slug}.closeandrelax.com` : 'Create your realtor subdomain',
-                  },
-                  {
-                    label: 'Add at least one resource',
-                    complete: vendors.length > 0,
-                    detail: vendors.length > 0 ? `${vendors.length} resource${vendors.length === 1 ? '' : 's'} added` : 'Add your first trusted resource',
-                  },
-                  {
-                    label: 'Publish your homeowner hub',
-                    complete: Boolean(profile?.is_published),
-                    detail: profile?.is_published ? 'Your hub is live' : 'Publish when you are ready to share',
-                  },
-                ];
-
-                const completedLaunchItems = launchItems.filter((item) => item.complete).length;
-                const launchPercent = Math.round((completedLaunchItems / launchItems.length) * 100);
-
-                return (
-                  <div className="bg-[#EEE8E0] rounded-2xl border border-[#D4CBC0] p-5 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <CheckCircle2 className="w-5 h-5 text-gold-accent" />
-                          <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Launch Checklist</h3>
-                        </div>
-                        <p className="text-xs text-charcoal-muted">
-                          The essentials to make your Close &amp; Relax hub ready to share.
-                        </p>
-                      </div>
-
-                      <div className="sm:text-right">
-                        <p className="text-[10px] uppercase tracking-wider font-semibold text-charcoal-muted">
-                          {completedLaunchItems} of {launchItems.length} complete
-                        </p>
-                        <p className="font-editorial text-xl font-bold text-charcoal-deep">{launchPercent}%</p>
-                      </div>
-                    </div>
-
-                    <div className="h-1.5 rounded-full bg-[#DDD6CB] overflow-hidden mb-5">
-                      <div
-                        className="h-full rounded-full bg-[#B89561] transition-all duration-300"
-                        style={{ width: `${launchPercent}%` }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {launchItems.map((item) => (
-                        <div
-                          key={item.label}
-                          className={`rounded-xl border p-4 flex items-start gap-3 ${
-                            item.complete
-                              ? 'bg-[#FCFAF6] border-[#D8C9B3]'
-                              : 'bg-[#F8F5EF] border-[#D4CBC0]'
-                          }`}
-                        >
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                              item.complete
-                                ? 'bg-[#2E2A26] text-[#D8BC8B]'
-                                : 'bg-[#E5DED5] text-charcoal-muted'
-                            }`}
-                          >
-                            {item.complete ? (
-                              <Check className="w-3.5 h-3.5" />
-                            ) : (
-                              <span className="w-2 h-2 rounded-full bg-current opacity-70" />
-                            )}
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-charcoal-deep">{item.label}</p>
-                            <p className="text-[10px] text-charcoal-muted mt-1 break-words">{item.detail}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {launchPercent === 100 && (
-                      <div className="mt-4 rounded-xl bg-[#2E2A26] border border-[#4B443D] px-4 py-3 flex items-center gap-3">
-                        <Sparkles className="w-4 h-4 text-[#D8BC8B] shrink-0" />
-                        <p className="text-[11px] text-[#E9E1D7]">
-                          Your hub has the essentials in place and is ready to share with homeowners.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </div>
 
             {/* Homeowner Hub Activity */}

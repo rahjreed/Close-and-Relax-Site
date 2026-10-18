@@ -305,7 +305,7 @@ const getVendorIcon = (category = '') => {
   return Home;
 };
 
-export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
+export default function PublicRealtorHub({ profile, fallbackResources = [], preview = false, onPreviewReady }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -420,6 +420,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     : 0;
 
   const persistChecklistProgress = (progress) => {
+    if (preview) return;
     try {
       window.localStorage.setItem(checklistStorageKey, JSON.stringify(progress));
       setChecklistStorageUnavailable(false);
@@ -430,6 +431,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const refreshChecklistProgress = () => {
+    if (preview) {
+      setChecklistProgressByItem((current) => normalizeStoredChecklistProgress(current, checklistItems));
+      return;
+    }
     if (checklistItems.length === 0) {
       setChecklistProgressByItem({});
       return;
@@ -448,6 +453,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
   useEffect(() => {
     refreshChecklistProgress();
+    if (preview) return;
 
     // If the hub is left open for a long time, recurring tasks still become due
     // without requiring the homeowner to manually clear anything.
@@ -461,7 +467,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [checklistStorageKey, checklistItems]);
+  }, [checklistStorageKey, checklistItems, preview]);
 
   const toggleChecklistItem = (itemId) => {
     setChecklistProgressByItem((current) => {
@@ -480,7 +486,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (preview || !profile?.id) return;
 
     const viewSessionKey = `closeandrelax-view-${profile.id}`;
     const standaloneSessionKey = `closeandrelax-standalone-${profile.id}`;
@@ -524,9 +530,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         });
       }
     }
-  }, [profile?.id]);
+  }, [profile?.id, preview]);
 
   useEffect(() => {
+    if (preview) return;
     const handleScroll = () => {
       setShowFloatingSave(window.scrollY > 260);
     };
@@ -535,9 +542,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
     const isStandalone =
       window.matchMedia?.('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
@@ -631,9 +639,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         appleTouchIconLink.parentNode.removeChild(appleTouchIconLink);
       }
     };
-  }, [realtorName, firstName, proAppIconInitials]);
+  }, [realtorName, firstName, proAppIconInitials, preview]);
 
   useEffect(() => {
+    if (preview) return;
     const revealItems = Array.from(document.querySelectorAll('.hub-reveal'));
 
     if (!('IntersectionObserver' in window)) {
@@ -656,7 +665,11 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
     revealItems.forEach((item) => observer.observe(item));
 
     return () => observer.disconnect();
-  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl, checklistItems.length, customHubSections.length]);
+  }, [resources.length, bio, headshotUrl, welcomeVideoEmbedUrl, checklistItems.length, customHubSections.length, preview]);
+
+  useEffect(() => {
+    if (preview && profile?.id) onPreviewReady?.();
+  }, [preview, profile?.id, onPreviewReady]);
 
   const triggerToast = (text) => {
     setToastMessage(text);
@@ -682,6 +695,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const copyText = (text, id) => {
+    if (preview) return;
     if (!text) return;
 
     if (navigator.clipboard?.writeText) {
@@ -699,6 +713,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const handleInstallClick = async (source = 'main_button') => {
+    if (preview) return;
     if (profile?.id) {
       recordHubActivity({
         profileId: profile.id,
@@ -812,6 +827,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const downloadVCard = () => {
+    if (preview) return;
     const vCardData = [
       'BEGIN:VCARD',
       'VERSION:3.0',
@@ -840,6 +856,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   const handleShareLink = () => {
+    if (preview) return;
     if (navigator.share) {
       navigator
         .share({
@@ -855,7 +872,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#1c1917] font-sans antialiased selection:bg-[#ecdcc5] selection:text-[#1c1917] pb-16">
+    <div className={`${preview ? 'hub-private-preview ' : ''}min-h-screen bg-[#faf8f5] text-[#1c1917] font-sans antialiased selection:bg-[#ecdcc5] selection:text-[#1c1917] pb-16`}
+      onClickCapture={preview ? (event) => {
+        if (event.target.closest?.('a')) { event.preventDefault(); event.stopPropagation(); }
+      } : undefined}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
@@ -933,6 +953,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         }
       `}</style>
 
+      {preview && <style>{`.hub-private-preview .hub-reveal { opacity: 1; transform: none; }`}</style>}
+
       {toastMessage && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1c1917] text-[#f7f3ec] px-4 py-2.5 rounded-full text-xs font-medium tracking-wide shadow-xl flex items-center gap-2">
           <Check className="w-3.5 h-3.5 text-[#d4af37]" />
@@ -947,6 +969,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </span>
           <button
             onClick={handleShareLink}
+            disabled={preview}
             className="text-[#78716c] hover:text-[#1c1917] p-1.5 rounded-full hover:bg-[#ede5d8] transition-colors"
             title="Share Guide"
             aria-label="Share Guide"
@@ -1021,6 +1044,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             )}
             <button
               onClick={downloadVCard}
+              disabled={preview}
               className="bg-white hover:bg-[#f5ede2] text-[#292524] border border-[#dfd2be] text-xs font-semibold p-2.5 rounded-xl flex items-center justify-center transition-transform active:scale-95 shadow-sm"
               title="Save Contact to Phone"
               aria-label="Save Contact to Phone"
@@ -1065,6 +1089,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
             </div>
             <button
               onClick={() => handleInstallClick('main_button')}
+              disabled={preview}
               className="hub-install-attention w-full sm:w-auto lg:w-full xl:w-auto bg-[#1c1917] hover:bg-black text-[#faf8f5] text-xs font-medium py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shrink-0 transition-transform active:scale-95 shadow-sm"
             >
               <Download className="w-3.5 h-3.5 text-[#d4af37]" />
@@ -1134,7 +1159,9 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                   A Few Things to Keep on Your Radar
                 </h2>
                 <p className="text-xs text-[#78716c] leading-relaxed mt-1.5 max-w-xl">
-                  Check items off as you handle them. Your progress stays saved on this device, and recurring tasks automatically become due again when their reset period arrives. Adjust a recurring task’s next due date if you are joining mid-cycle or setting up a new browser.
+                  {preview
+                    ? 'Try checking items off or adjusting a due date. Preview changes are temporary and never affect a homeowner’s saved checklist.'
+                    : 'Check items off as you handle them. Your progress stays saved on this device, and recurring tasks automatically become due again when their reset period arrives. Adjust a recurring task’s next due date if you are joining mid-cycle or setting up a new browser.'}
                 </p>
               </div>
 
@@ -1230,6 +1257,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
                     </button>
                     {item.recurrenceMonths && (
                       <ChecklistDueDateAdjustment
+                        preview={preview}
                         title={item.title}
                         nextDueDate={dueAgainAt}
                         onSave={(date) => saveAdjustedChecklistDueDate(itemId, date)}
@@ -1307,7 +1335,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
           </section>
         )}
 
-        <MyHomeContactsSection profileId={profile?.id} />
+        <MyHomeContactsSection profileId={profile?.id} preview={preview} />
 
         <section className="mb-12">
           <div className="hub-reveal text-center lg:text-left mb-6">
@@ -1405,7 +1433,9 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
 
         <HomeownerSavingsSection
           profile={profile}
+          preview={preview}
           onOfferClick={(code) => {
+            if (preview) return;
             const eventType = SAVINGS_CLICK_EVENTS[code];
             if (eventType) return recordHubActivity({
               profileId: profile.id,
@@ -1442,7 +1472,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </div>
       </main>
 
-      {showFloatingSave && !isInstalled && (
+      {!preview && showFloatingSave && !isInstalled && (
         <button
           type="button"
           onClick={() => handleInstallClick('floating_button')}
@@ -1457,7 +1487,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
         </button>
       )}
 
-      {showIOSModal && (
+      {!preview && showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-[#faf8f5] border border-[#ebdcc7] rounded-3xl p-6 max-w-sm w-full hub-editorial-shadow-lg text-center relative">
             <button
