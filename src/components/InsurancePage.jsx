@@ -48,9 +48,12 @@ export default function InsurancePage() {
           <h1 className="insurance-serif text-5xl leading-[1.05] sm:text-6xl">
             Home &amp; Auto Insurance
           </h1>
-          <p className="mt-5 max-w-lg text-sm leading-relaxed text-[#57534e]">
-            Explore insurance options with Goosehead through Close &amp; Relax. Tell us what you’d
-            like to review, then choose a time for a callback.
+          <p className="mt-4 text-xs font-medium leading-relaxed text-[#57534e]">
+            Insurance partner: Goosehead Insurance
+          </p>
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-[#57534e]">
+            Compare coverage options with help from our insurance partner, Goosehead Insurance.
+            Tell us what you’d like to review, then choose a time for a callback.
           </p>
           <p className="mt-4 text-xs leading-relaxed text-[#78716c]">
             No account needed. Start with a few details—coverage, pricing, eligibility and

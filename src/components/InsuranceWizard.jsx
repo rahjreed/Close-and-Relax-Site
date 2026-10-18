@@ -381,6 +381,10 @@ export default function InsuranceWizard({
                   </div>
                 ))}
               </dl>
+              <p className="text-xs leading-relaxed text-[#57534e]">
+                Insurance services are provided through Goosehead Insurance. Close &amp; Relax
+                helps connect you with the appropriate insurance professional.
+              </p>
               <label className="flex min-h-[44px] items-start gap-3 text-sm leading-relaxed text-[#57534e]">
                 <input
                   required
