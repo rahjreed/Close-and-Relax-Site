@@ -5,7 +5,7 @@ import {
   toLocalDateString,
 } from '../lib/checklistProgress';
 
-export default function ChecklistDueDateAdjustment({ title, nextDueDate, onSave }) {
+export default function ChecklistDueDateAdjustment({ title, nextDueDate, onSave, preview = false }) {
   const inputId = useId();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('days');
@@ -99,7 +99,7 @@ export default function ChecklistDueDateAdjustment({ title, nextDueDate, onSave 
             </label>
           )}
           <p className="text-[11px] text-[#78716c] leading-relaxed">
-            Saved only in this browser. This does not mark the task complete or change its usual
+            {preview ? 'Temporary preview change only.' : 'Saved only in this browser.'} This does not mark the task complete or change its usual
             recurrence interval. Past dates remain visible as overdue.
           </p>
           {error && (
