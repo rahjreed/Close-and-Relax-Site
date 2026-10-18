@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
-import EmergencyServicesSection from './EmergencyServicesSection';
+import MyHomeContactsSection from './MyHomeContactsSection';
 import ChecklistDueDateAdjustment from './ChecklistDueDateAdjustment';
 import HomeownerSavingsSection from './HomeownerSavingsSection';
 import { SAVINGS_CLICK_EVENTS } from '../lib/homeownerSavings';
@@ -305,7 +305,7 @@ const getVendorIcon = (category = '') => {
   return Home;
 };
 
-export default function PublicRealtorHub({ profile, fallbackResources = [], emergencyServices }) {
+export default function PublicRealtorHub({ profile, fallbackResources = [] }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -1307,14 +1307,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], emer
           </section>
         )}
 
-        <EmergencyServicesSection
-          categories={emergencyServices?.categories}
-          assignments={emergencyServices?.assignments}
-          loading={emergencyServices?.loading}
-          error={emergencyServices?.error}
-          realtorPhone={phone}
-          realtorEmail={email}
-        />
+        <MyHomeContactsSection profileId={profile?.id} />
 
         <section className="mb-12">
           <div className="hub-reveal text-center lg:text-left mb-6">
