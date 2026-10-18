@@ -36,13 +36,11 @@ import {
 
 import { supabase } from './lib/supabase';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
-import EmergencyServicesEditor from './components/EmergencyServicesEditor';
 import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
 import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
 import InsuranceLeads from './components/InsuranceLeads';
 import { getVivintTextHref } from './lib/partnerContacts';
-import { EMERGENCY_CATEGORIES, loadEmergencyServices } from './lib/emergencyServices';
 
 const LIZ_VENDORS = [
   {
@@ -816,7 +814,6 @@ function CloseRelaxApp() {
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(isRealtorSubdomain);
   const [publicProfileError, setPublicProfileError] = useState(null);
-  const [publicEmergencyServices, setPublicEmergencyServices] = useState({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: true, error: null });
 
   // Authentication State
   const [session, setSession] = useState(null);
@@ -1339,7 +1336,7 @@ function CloseRelaxApp() {
           instagram_url: '', facebook_url: '', linkedin_url: '',
         };
         // Render the profile immediately. Each content collection loads independently,
-        // so a vendor outage cannot delay or hide the fixed emergency section.
+        // so a vendor outage cannot delay the rest of the homeowner hub.
         setPublicProfile({
           ...premiumProfileData,
           welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
@@ -1388,16 +1385,6 @@ function CloseRelaxApp() {
       isMounted = false;
     };
   }, [isRealtorSubdomain, subdomainSlug]);
-
-  useEffect(() => {
-    let current = true;
-    setPublicEmergencyServices({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: true, error: null });
-    if (!isRealtorSubdomain || !publicProfile?.id) return () => { current = false; };
-    loadEmergencyServices(publicProfile.id)
-      .then((result) => { if (current) setPublicEmergencyServices({ ...result, loading: false }); })
-      .catch(() => { if (current) setPublicEmergencyServices({ categories: EMERGENCY_CATEGORIES, assignments: [], loading: false, error: 'Emergency contacts are temporarily unavailable. Please try again shortly.' }); });
-    return () => { current = false; };
-  }, [isRealtorSubdomain, publicProfile?.id]);
 
   useEffect(() => {
     return () => {
@@ -2540,7 +2527,7 @@ function CloseRelaxApp() {
       return <PublicHubStatusPage />;
     }
 
-    return <PublicRealtorHubDesign profile={publicProfile} fallbackResources={STANDARD_HOME_RESOURCES} emergencyServices={publicEmergencyServices} />;
+    return <PublicRealtorHubDesign profile={publicProfile} fallbackResources={STANDARD_HOME_RESOURCES} />;
   }
 
   return (
@@ -3167,7 +3154,7 @@ function CloseRelaxApp() {
                       <p>• Dedicated homeowner hub</p>
                       <p>• Add-to-phone experience</p>
                       <p>• Hub Activity</p>
-                      <p>• Fixed emergency categories with separate provider assignments</p>
+                      <p>• My Home Contacts: 3 private, device-only homeowner contacts</p>
                       <p>• Up to {vendorLimit} preferred vendors on your current plan</p>
                     </div>
                   </div>
@@ -3323,10 +3310,6 @@ function CloseRelaxApp() {
                   </button>
                 </div>
               </div>
-
-              {profile?.id && profile.id === user?.id && (
-                <EmergencyServicesEditor key={profile.id} profileId={profile.id} />
-              )}
 
               {/* Homeowner Savings visibility */}
               {user?.id && (
