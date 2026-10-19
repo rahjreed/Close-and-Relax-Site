@@ -12,6 +12,10 @@ function fixture({ user = { id: owner }, profile = { id: owner, plan: 'premier',
   const requests = []; let authReads = 0;
   const client = {
     auth: { getUser: async () => ({ data: { user: authReads++ && nextUser !== undefined ? nextUser : user }, error: null }) },
+    rpc: async (name,args) => {
+      requests.push({rpc:name,args});
+      return {data:rows.vendors || [],error:failedTable==='vendors'?new Error('Read failed'):null};
+    },
     from(table) {
       const request = { table, filters: [] }; requests.push(request);
       const query = {
@@ -31,7 +35,8 @@ test('unpublished owner preview loads saved content through owner-scoped authent
   assert.equal(result.is_published, false);
   assert.equal(result.vendors[0].id, 'v'); assert.equal(result.checklist_items[0].id, 'c'); assert.equal(result.custom_hub_sections[0].id, 's');
   assert.deepEqual(f.requests[0].filters, [['id', owner]]);
-  for (const query of f.requests.slice(1)) assert.deepEqual(query.filters, [['profile_id', owner], ['is_active', true]]);
+  for (const query of f.requests.slice(1).filter(query=>!query.rpc)) assert.deepEqual(query.filters, [['profile_id', owner], ['is_active', true]]);
+  assert.deepEqual(f.requests.find(query=>query.rpc),{rpc:'get_hub_vendors',args:{hub_profile_id:owner}});
   assert.equal(f.requests.length, 4);
 });
 

@@ -27,6 +27,7 @@ import {
 
 import { supabase } from '../lib/supabase';
 import { profileForHub } from '../lib/profileBranding';
+import { vendorsForHub } from '../lib/vendorVisibility';
 import MyHomeContactsSection from './MyHomeContactsSection';
 import ChecklistDueDateAdjustment from './ChecklistDueDateAdjustment';
 import HomeownerSavingsSection from './HomeownerSavingsSection';
@@ -357,14 +358,14 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
     { label: 'LinkedIn', url: normalizeUrl(profile?.linkedin_url || '') },
   ].filter((item) => item.url);
 
-  const storedVendors = Array.isArray(profile?.vendors)
+  const storedVendors = vendorsForHub(Array.isArray(profile?.vendors)
     ? profile.vendors
     : Array.isArray(profile?.preferred_vendors)
       ? profile.preferred_vendors
-      : [];
+      : [], internalPlan);
 
   const resources = useMemo(() => {
-    if (storedVendors.length > 0) {
+    if (Array.isArray(profile?.vendors) || storedVendors.length > 0) {
       return storedVendors.map((vendor, index) => ({
         id: vendor?.id || `${vendor?.name || 'vendor'}-${index}`,
         category: vendor?.category || 'Trusted Professional',

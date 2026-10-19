@@ -1,4 +1,5 @@
 import { profileForHub } from './profileBranding.js';
+import { loadHubVendors } from './vendorVisibility.js';
 
 export async function requirePreviewOwner(client, expectedUserId) {
   const { data, error } = await client.auth.getUser();
@@ -22,7 +23,7 @@ export async function loadOwnHubPreview(client, expectedUserId, getPlanConfig) {
     return (data || []).filter((row) => row.is_active !== false);
   };
   const [vendors, checklist, sections] = await Promise.all([
-    collection('vendors'),
+    loadHubVendors(client, user.id),
     plan.allowsChecklist ? collection('homeowner_checklist_items') : Promise.resolve([]),
     plan.allowsCustomSections ? collection('custom_hub_sections') : Promise.resolve([]),
   ]);

@@ -36,6 +36,7 @@ import {
 
 import { supabase } from './lib/supabase';
 import { loadPublicHubProfile, profileForHub } from './lib/profileBranding';
+import { loadHubVendors, vendorsForHub } from './lib/vendorVisibility';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
 import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
@@ -479,13 +480,13 @@ function PublicRealtorHub({ profile }) {
     { label: 'LinkedIn', url: normalizeWebsiteUrl(profile?.linkedin_url || '') },
   ].filter((item) => item.url);
 
-  const storedVendors = Array.isArray(profile?.vendors)
+  const storedVendors = vendorsForHub(Array.isArray(profile?.vendors)
     ? profile.vendors
     : Array.isArray(profile?.preferred_vendors)
       ? profile.preferred_vendors
-      : [];
+      : [], profile?.plan);
 
-  const hasStoredVendors = storedVendors.length > 0;
+  const hasStoredVendors = Array.isArray(profile?.vendors) || storedVendors.length > 0;
 
   return (
     <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
@@ -1372,9 +1373,15 @@ function CloseRelaxApp() {
             }
           }
         };
-        void loadCollection('vendors', 'vendors', (rows) => rows.map((vendor) => ({
-          ...vendor, recommendation: publicPlan.allowsVendorRecommendations ? vendor.recommendation : null,
-        })));
+        void loadHubVendors(supabase, data.id).then((rows) => {
+          if (isMounted) setPublicProfile((current) => current?.id === data.id ? {
+            ...current, vendors: rows, vendor_loading: false, vendor_load_error: false,
+          } : current);
+        }).catch(() => {
+          if (isMounted) setPublicProfile((current) => current?.id === data.id ? {
+            ...current, vendor_loading: false, vendor_load_error: true,
+          } : current);
+        });
         if (publicPlan.allowsChecklist) void loadCollection('homeowner_checklist_items', 'checklist_items');
         if (publicPlan.allowsCustomSections) void loadCollection('custom_hub_sections', 'custom_hub_sections');
       } catch (err) {
@@ -2052,7 +2059,7 @@ function CloseRelaxApp() {
         category,
         phone: phone || null,
         website: website ? normalizeWebsiteUrl(website) : null,
-        recommendation: allowsRecommendation ? (recommendation || null) : null,
+        recommendation: allowsRecommendation ? (recommendation || null) : (existingVendor?.recommendation ?? null),
       };
 
       let result;
@@ -2494,6 +2501,7 @@ function CloseRelaxApp() {
   const foundingPricingActive = isFoundingPricingActive();
   const customVendors = vendors.filter((vendor) => !vendor.is_default);
   const standardVendors = vendors.filter((vendor) => vendor.is_default);
+  const visibleCustomVendorIds = new Set(vendorsForHub(vendors, storedPlan).filter((vendor) => !vendor.is_default).map((vendor) => vendor.id));
   const publicHubUrl = profile?.slug ? `https://${profile.slug}.closeandrelax.com` : null;
 
   const hubViewEvents = hubActivityEvents.filter((event) => event.event_type === 'hub_view');
@@ -5669,12 +5677,13 @@ function CloseRelaxApp() {
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Live Vendor List</h4>
+                    <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Your Saved Vendor List</h4>
                     <p className="text-[11px] text-charcoal-muted mt-1">Drag a vendor and the other resources will move out of the way as you position it. The final order saves when you release.</p>
                   </div>
                   {vendorsLoading && <Loader2 className="w-4 h-4 animate-spin text-gold-accent" />}
                 </div>
 
+                <p className="text-[11px] text-charcoal-muted mb-4">Only your first {vendorLimit} active custom vendors appear on the hub, in saved order. Extra and inactive vendors stay private and saved. Reorder to choose which appear. New additions require fewer than {vendorLimit} saved custom vendors.{displayPlan !== 'premier' && ' The fixed Close & Relax resource is included separately; any saved Pro version is preserved.'}</p>
                 <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
                   {vendors.length === 0 && !vendorsLoading ? (
                     <div className="bg-cream-card border border-cream-border rounded-2xl p-5 text-xs text-charcoal-muted">No vendors are configured yet.</div>
@@ -5722,6 +5731,7 @@ function CloseRelaxApp() {
                             {vendor.is_default && (
                               <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#F4EBDD] border border-[#E4D5BE] text-[#8C6B38]">Standard</span>
                             )}
+                            {!vendor.is_default && <span className="text-[9px] uppercase tracking-wider font-semibold">{visibleCustomVendorIds.has(vendor.id) ? 'Within public allowance' : vendor.is_active === false ? 'Private · inactive' : 'Private · over plan limit'}</span>}
                           </div>
                           <h5 className="font-editorial text-lg font-semibold text-charcoal-deep">{vendor.name}</h5>
                           {vendor.recommendation && <p className="text-[11px] italic text-charcoal-muted leading-relaxed mt-2">“{vendor.recommendation}”</p>}
