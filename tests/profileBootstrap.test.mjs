@@ -53,6 +53,7 @@ async function fixture() {
   // Real active bootstrap/vendor regressions also run with the legacy path retired.
   await db.exec(read('./fixtures/legacy-realtor-profiles.sql'));
   await db.exec(read('../supabase/migrations/20261019175354_deprecate_legacy_realtor_profiles.sql'));
+  await db.exec(read('../supabase/migrations/20261019180243_enforce_realtor_slugs.sql'));
   return db;
 }
 async function addUser(db, userId = id, metadata = {}, confirmed = true) {

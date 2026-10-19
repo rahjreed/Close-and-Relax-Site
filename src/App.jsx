@@ -36,6 +36,7 @@ import {
 
 import { supabase } from './lib/supabase';
 import { createProfileBootstrap } from './lib/profileBootstrap';
+import { isValidRealtorSlug, realtorSlugError } from './lib/realtorSlugs';
 import { loadPublicHubProfile, profileForHub } from './lib/profileBranding';
 import { loadHubVendors, vendorsForHub } from './lib/vendorVisibility';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
@@ -414,19 +415,6 @@ const normalizeWebsiteUrl = (value = '') => {
   if (!value) return '';
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 };
-
-const normalizeRealtorSlug = (value = '') =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 63);
-
-const isValidRealtorSlug = (value = '') =>
-  /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value) &&
-  value !== 'www';
 
 const isValidOptionalUrl = (value = '') => {
   const trimmed = value.trim();
@@ -1638,7 +1626,7 @@ function CloseRelaxApp() {
     const city = profileForm.city.trim();
     const email = profileForm.email.trim();
     const phone = profileForm.phone.trim();
-    const slug = normalizeRealtorSlug(profileForm.slug);
+    const slug = profileForm.slug;
     const welcomeMessage = profileForm.welcome_message.trim();
     const bio = profileForm.bio.trim();
     const welcomeVideoUrl = profileForm.welcome_video_url.trim();
@@ -1653,8 +1641,8 @@ function CloseRelaxApp() {
       return;
     }
 
-    if (!slug || !isValidRealtorSlug(slug)) {
-      setProfileEditorError('Choose a valid subdomain using letters, numbers, and hyphens only. “www” cannot be used.');
+    if (!isValidRealtorSlug(slug)) {
+      setProfileEditorError(realtorSlugError(slug));
       return;
     }
 
@@ -1796,7 +1784,7 @@ function CloseRelaxApp() {
     }
 
     if (!profile.is_published) {
-      const currentSlug = normalizeRealtorSlug(profile.slug || '');
+      const currentSlug = profile.slug || '';
 
       if (!profile.full_name || !currentSlug || !isValidRealtorSlug(currentSlug)) {
         showToast('Finish your profile and choose a valid subdomain before publishing.');
@@ -5143,14 +5131,22 @@ function CloseRelaxApp() {
                       id="profileSlug"
                       required
                       value={profileForm.slug}
-                      onChange={(e) => setProfileForm({ ...profileForm, slug: normalizeRealtorSlug(e.target.value) })}
+                      onChange={(e) => setProfileForm({ ...profileForm, slug: e.target.value })}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      aria-describedby="profileSlugHelp profileSlugFeedback"
+                      aria-invalid={Boolean(profileForm.slug && realtorSlugError(profileForm.slug))}
                       placeholder="yourname"
                       className="min-w-0 flex-1 text-sm px-4 py-2.5 bg-transparent focus:outline-none text-charcoal-deep"
                     />
                     <span className="text-[11px] text-charcoal-muted pr-4 whitespace-nowrap">.closeandrelax.com</span>
                   </div>
-                  <p className="text-[10px] text-charcoal-muted mt-1.5">
-                    Letters, numbers, and hyphens only. If your hub is already published, changing this moves the live hub to the new address.
+                  <p id="profileSlugHelp" className="text-[10px] text-charcoal-muted mt-1.5">
+                    Use 1–63 lowercase letters, numbers, or hyphens; no hyphens at either end. Platform names are reserved. Changing this changes your public hub URL and can break saved links, installed shortcuts, and QR codes. Old URLs do not redirect automatically.
+                  </p>
+                  <p id="profileSlugFeedback" role="status" className="text-xs text-red-600 mt-1.5">
+                    {profileForm.slug ? realtorSlugError(profileForm.slug) : ''}
                   </p>
 
                   <div className="bg-cream-card border border-cream-border rounded-xl p-3 mt-3">

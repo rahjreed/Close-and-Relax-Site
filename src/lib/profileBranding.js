@@ -1,3 +1,5 @@
+import { isValidRealtorSlug } from './realtorSlugs.js';
+
 // Defense in depth for public rendering and private preview. Never mutate the
 // saved owner profile: paid content must remain available after re-upgrading.
 export const CORE_BRANDING_FIELDS = Object.freeze([
@@ -20,6 +22,7 @@ export function profileForHub(profile) {
 }
 
 export async function loadPublicHubProfile(client, slug) {
+  if (!isValidRealtorSlug(slug)) return null;
   // No fallback to SELECT *: the RPC is the server-side publication/branding boundary.
   const { data, error } = await client.rpc('get_public_realtor_profile', { hub_slug: slug });
   if (error) throw new Error('Unable to load this homeowner hub. Please try again.');
