@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { HISTORICAL_MAPPINGS } from '../tools/prepare-pre-stripe-release.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const migration = read('../supabase/migrations/20261019175354_deprecate_legacy_realtor_profiles.sql');
@@ -24,6 +25,54 @@ async function actor(db, role, run, user = owner) {
   try { return await run(); } finally { await db.exec('RESET ROLE'); }
 }
 const denied = (error) => error.code === '42501';
+
+test('a retained paid legacy row cannot become an alternate account profile after real bootstrap and lockdown', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(read('./fixtures/launch-production-baseline.sql'));
+    // Reconstruct only historical schema in the isolated local database, then
+    // the two migrations actually rehearsed on staging; no other launch fixes.
+    for (const [file] of HISTORICAL_MAPPINGS) await db.exec(read(`../supabase/migrations/${file}`));
+    await db.exec(read('../supabase/migrations/20261019172710_bootstrap_realtor_profile.sql'));
+    await db.query(`INSERT INTO auth.users(id,email,raw_user_meta_data,email_confirmed_at)
+      VALUES($1,'synthetic@example.invalid','{"full_name":"Synthetic active identity","plan":"premier"}',now())`, [owner]);
+    await db.query(`INSERT INTO public.realtor_profiles(user_id,slug,full_name,email,plan,page_data)
+      VALUES($1,'legacy-only','Synthetic legacy identity','legacy@example.invalid','premier','{"is_published":true}')`, [owner]);
+    const legacyBefore = (await db.query('SELECT to_jsonb(p) p FROM public.realtor_profiles p')).rows;
+    await db.exec(migration);
+    await db.query("SELECT set_config('request.jwt.claims',$1,false)", [JSON.stringify({ sub: owner, role: 'authenticated' })]);
+    await db.exec('SET ROLE authenticated');
+    const active = (await db.query('SELECT public.bootstrap_own_profile() p')).rows[0].p;
+    assert.equal(active.id, owner); assert.equal(active.plan, 'partner');
+    assert.equal(active.full_name, 'Synthetic active identity'); assert.equal(active.email, 'synthetic@example.invalid');
+    assert.equal(active.slug, null); assert.equal(active.is_published, false);
+    assert.equal((await db.query('SELECT public.bootstrap_own_profile() p')).rows[0].p.id, owner);
+    await db.query("UPDATE public.profiles SET phone='202-555-0101' WHERE id=$1", [owner]);
+    await assert.rejects(db.query('SELECT * FROM public.realtor_profiles WHERE user_id=$1', [owner]), denied);
+    await db.exec('RESET ROLE');
+    assert.deepEqual((await db.query('SELECT to_jsonb(p) p FROM public.realtor_profiles p')).rows, legacyBefore);
+    assert.equal((await db.query('SELECT count(*)::int n FROM public.profiles WHERE id=$1', [owner])).rows[0].n, 1);
+    assert.equal((await db.query('SELECT count(*)::int n FROM public.vendors WHERE profile_id=$1 AND is_default', [owner])).rows[0].n, 1);
+    await db.exec('SET ROLE anon');
+    assert.equal((await db.query('SELECT * FROM public.profiles')).rows.length, 0);
+    await assert.rejects(db.query('SELECT slug FROM public.realtor_profiles'), denied);
+    await db.exec('RESET ROLE');
+    // Validate the staging acceptance script locally before any hosted run.
+    await db.exec("SELECT set_config('request.jwt.claims','{}',false)");
+    const freeFixture = '00000000-0000-4000-8000-000000000083';
+    for (const [user, plan] of [[freeFixture, 'partner'], [other, 'pro']]) {
+      await db.query("INSERT INTO auth.users(id,email,email_confirmed_at,raw_user_meta_data) VALUES($1,$2,now(),'{}')", [user, `${plan}@example.invalid`]);
+      await db.query('INSERT INTO public.profiles(id,plan,full_name) VALUES($1,$2,$3)', [user, plan, 'Synthetic staging fixture']);
+    }
+    await db.exec(`CREATE SCHEMA staging_control;
+      CREATE TABLE staging_control.environment_guard(project_ref text);
+      INSERT INTO staging_control.environment_guard VALUES('amopxaadnvubvveqpkvu');
+      CREATE TABLE staging_control.fixture_identities(fixture text,user_id uuid);`);
+    await db.query("INSERT INTO staging_control.fixture_identities VALUES('free',$1),('core',$2)", [freeFixture, other]);
+    await db.exec(read('./fixtures/legacy-realtor-profiles-staging.sql'));
+    assert.deepEqual((await db.query('SELECT to_jsonb(p) p FROM public.realtor_profiles p')).rows, legacyBefore);
+  } finally { await db.close(); }
+});
 
 test('legacy exposure is reproduced, then API table/column reads and writes are denied without deleting data', async () => {
   const db = await fixture();
