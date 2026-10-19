@@ -96,8 +96,64 @@ multi-connection MVCC races rely on PostgreSQL's primary-key/ON CONFLICT guarant
    from signup metadata. An outage/trigger error must be resolved before retry
    can succeed; the UI does not silently bypass server protections.
 
-No migration, production backfill, deployment, Auth configuration, or deletion was
-performed during local implementation.
+Initial local implementation performed no production migration, backfill,
+deployment, Auth configuration, or deletion. The staging-only application and
+verification below do not authorize production rollout.
+
+## Staging-only verification — October 19, 2026
+
+Applied only `20261019172710_bootstrap_realtor_profile.sql` to the isolated
+`amopxaadnvubvveqpkvu` project as version `20261019222923`, name
+`bootstrap_realtor_profile`. The SQL source was not rewritten or duplicated.
+The production project `hphcejnvxyccmwmofdqc` was not accessed or changed in this
+verification task. None of the other nine pending security migrations was applied.
+
+The new local baseline regression proves this migration also works independently
+against the pre-hardening profile/vendor functions and policies. The existing
+full-chain regression still covers the intended coordinated release composition.
+
+`supabase/tests/profile_bootstrap_staging.sql` is an operator-only, rollback-only
+acceptance script. It requires the staging guard and synthetic fixtures. It tests
+confirmed new/older Auth accounts, metadata injection, existing Free/Core/Pro/draft
+preservation, retries, browser INSERT denial, plan-change denial, and a temporary
+vendor-trigger failure followed by successful retry. Its temporary users, profile
+changes, trigger/function, and confirmation timestamps are all rolled back.
+It must never be enumerated as a migration or run on production.
+
+Real PostgreSQL contention was additionally verified using the staging dashboard
+as writer session A and the connector as a separate session. A created a new
+profile and deliberately held its transaction for 25 seconds. A separate observer
+saw its granted advisory marker on backend 32595 from backend 32611. During that
+hold, B's bootstrap failed with `55P03` on the profiles unique-index insertion,
+as expected from the five-second lock timeout. After A committed, a B retry on
+backend 32624 returned the same Free draft. Exactly one profile and standard vendor
+existed. This proves actual contention/timeout/retry behavior; it is not merely
+Promise.all over one PGlite connection. An initial connector-only attempt did not
+observe overlapping sessions and is not counted as concurrency evidence.
+
+Two additional synthetic fixture accounts (`bootstrap-race` and
+`bootstrap-contended`) remain in staging for inspection, each with one Free draft
+and one synthetic standard vendor. Both have `.invalid` email identifiers, no
+password/identity/session credentials, and an infinite login ban. The original
+four Realtor fixtures and admin membership remain unchanged. Browser Auth and
+email acceptance still require separately provisioned controlled test accounts;
+these banned fixtures are for SQL/JWT-claim impersonation tests only.
+
+Final fingerprints confirm existing non-bootstrap functions/ACLs, triggers and
+policies are unchanged. Original saved profile/vendor data are unchanged. Browser
+profile INSERT grants are revoked; only authenticated users can execute the
+bootstrap API. Limits remain 5/15/30. Support, analytics hardening, other pending
+security migrations, Edge deployments, signup notifications, Cron and push
+activation remain outside this change. The three deferred push definitions remain
+deferred. No deletion/cascade behavior was introduced.
+
+Validation: 8 focused bootstrap tests and all 141 local tests passed; production
+build passed with the existing bundle-size warning. No frontend was deployed.
+
+Production still requires separate approval for the existing migration and the
+matching frontend rollout. Old frontend profile INSERT is incompatible after
+the grant revocation. Preserve the broader reviewed production release order;
+this independent staging test is not permission to reorder production rollout.
 
 ## Owner notification follow-up
 

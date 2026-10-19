@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { createProfileBootstrap, PROFILE_SETUP_ERROR } from '../src/lib/profileBootstrap.js';
+import { HISTORICAL_MAPPINGS } from '../tools/prepare-pre-stripe-release.mjs';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const migration = read('../supabase/migrations/20261019172710_bootstrap_realtor_profile.sql');
@@ -66,6 +67,38 @@ async function actor(db, userId, run, role = 'authenticated') {
   try { return await run(); } finally { await db.exec('RESET ROLE'); await db.exec("SELECT set_config('request.jwt.claims','{}',false)"); }
 }
 const bootstrap = async (db) => (await db.query('SELECT public.bootstrap_own_profile() AS profile')).rows[0].profile;
+
+test('bootstrap migration works independently on the pre-hardening production baseline', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(read('./fixtures/launch-production-baseline.sql'));
+    // Historical source is used only in this isolated empty test database. No
+    // other pending launch migration is required or applied in this regression.
+    for (const [file] of HISTORICAL_MAPPINGS) await db.exec(read(`../supabase/migrations/${file}`));
+    const fingerprint = async () => (await db.query(`SELECT n.nspname,p.proname,pg_get_functiondef(p.oid) body,p.proacl::text
+      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname IN ('public','close_relax_private') AND p.proname <> 'bootstrap_own_profile' ORDER BY 1,2`)).rows;
+    const before = await fingerprint();
+    await db.exec(migration);
+    assert.deepEqual(await fingerprint(), before);
+    assert.equal((await db.query("SELECT to_regprocedure('public.get_public_realtor_profile(text)') p")).rows[0].p, null);
+    await addUser(db, id, { plan: 'premier', admin: true, is_published: true, full_name: 'Synthetic signup' });
+    const created = await actor(db, id, () => bootstrap(db));
+    assert.equal(created.plan, 'partner'); assert.equal(created.is_published, false);
+    assert.equal((await actor(db, id, () => bootstrap(db))).id, id);
+    assert.equal((await db.query('SELECT count(*)::int n FROM public.profiles WHERE id=$1', [id])).rows[0].n, 1);
+    assert.equal((await db.query('SELECT count(*)::int n FROM public.vendors WHERE profile_id=$1 AND is_default', [id])).rows[0].n, 1);
+    for (const [owner, plan] of [[other, 'pro'], [third, 'premier']]) {
+      await addUser(db, owner, { plan: 'partner' });
+      await db.query('INSERT INTO public.profiles(id,plan,full_name,is_published) VALUES($1,$2,$3,true)', [owner, plan, 'Saved paid profile']);
+      const saved = (await db.query('SELECT to_jsonb(p) p FROM public.profiles p WHERE id=$1', [owner])).rows[0].p;
+      assert.deepEqual(await actor(db, owner, () => bootstrap(db)), saved);
+      await actor(db, owner, () => assert.rejects(db.query("UPDATE public.profiles SET plan='partner' WHERE id=$1", [owner]), /billing/));
+    }
+    await actor(db, id, () => assert.rejects(db.query('INSERT INTO public.profiles(id) VALUES($1)', [id]), /permission denied/));
+    assert.deepEqual(await fingerprint(), before);
+  } finally { await db.close(); }
+});
 
 test('new confirmed signup and existing missing-profile user bootstrap safely; repeated/concurrent callers create one profile and standard vendor', async () => {
   const db = await fixture();
