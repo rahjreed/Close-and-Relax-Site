@@ -1110,6 +1110,7 @@ function CloseRelaxApp() {
         .from('hub_activity_events')
         .select('event_type, source, device_id, created_at')
         .eq('profile_id', profileId)
+        .gte('created_at', new Date(Date.now() - 90 * 86400000).toISOString())
         .order('created_at', { ascending: false })
         .limit(5000);
 
@@ -2442,7 +2443,7 @@ function CloseRelaxApp() {
     hubViewEvents.map((event) => event.device_id).filter(Boolean)
   ).size;
 
-  const confirmedInstallDevices = new Set(
+  const saveSignalDevices = new Set(
     hubActivityEvents
       .filter((event) => event.event_type === 'install_accepted' || event.event_type === 'standalone_open')
       .map((event) => event.device_id)
@@ -2944,7 +2945,7 @@ function CloseRelaxApp() {
                       <h3 className="font-editorial text-xl font-bold text-charcoal-deep">Hub Activity</h3>
                     </div>
                     <p className="text-xs text-charcoal-muted leading-relaxed max-w-2xl">
-                      A simple look at whether homeowners are opening your hub and saving it to their phones.
+                      Approximate engagement signals from the last 90 days, up to 5,000 events. Browser IDs and save signals are not verified people or guaranteed app installs. Duplicate events and high-volume activity may be omitted.
                     </p>
                   </div>
 
@@ -2973,13 +2974,13 @@ function CloseRelaxApp() {
                           <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Hub Views</span>
                         </div>
                         <p className="font-editorial text-2xl font-bold text-charcoal-deep">{hubViewEvents.length}</p>
-                        <p className="text-[10px] text-charcoal-muted mt-1">Recorded browsing sessions</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Recorded views, with duplicates omitted</p>
                       </div>
 
                       <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <User className="w-4 h-4 text-gold-accent" />
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Unique Devices</span>
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Browser IDs</span>
                         </div>
                         <p className="font-editorial text-2xl font-bold text-charcoal-deep">{uniqueHubDevices}</p>
                         <p className="text-[10px] text-charcoal-muted mt-1">Approximate unique browsers</p>
@@ -2997,17 +2998,17 @@ function CloseRelaxApp() {
                       <div className="bg-[#FCFAF6] border border-[#D4CBC0] rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Check className="w-4 h-4 text-gold-accent" />
-                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Confirmed Saves</span>
+                          <span className="text-[9px] uppercase tracking-wider font-semibold text-charcoal-muted">Save Signals</span>
                         </div>
-                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{confirmedInstallDevices}</p>
-                        <p className="text-[10px] text-charcoal-muted mt-1">Unique devices with install confirmation or app launch</p>
+                        <p className="font-editorial text-2xl font-bold text-charcoal-deep">{saveSignalDevices}</p>
+                        <p className="text-[10px] text-charcoal-muted mt-1">Browser-reported install acceptance or standalone launch</p>
                       </div>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[10px] text-charcoal-muted">
                       <span>Installed-app opens: <strong className="text-charcoal-deep">{standaloneOpenEvents.length}</strong></span>
                       <span>iPhone save instructions viewed: <strong className="text-charcoal-deep">{iosInstructionEvents.length}</strong></span>
-                      <span>Tracking begins from the day Hub Activity was enabled.</span>
+                      <span>Approximate telemetry; clearing browser storage or changing devices affects counts.</span>
                     </div>
                   </>
                 )}

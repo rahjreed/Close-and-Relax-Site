@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
+import { getHubDeviceId, sendHubActivity } from '../lib/hubActivity';
 import { profileForHub } from '../lib/profileBranding';
 import { vendorsForHub } from '../lib/vendorVisibility';
 import MyHomeContactsSection from './MyHomeContactsSection';
@@ -92,47 +93,13 @@ const createFallbackUuid = () => {
   });
 };
 
-const getHubDeviceId = () => {
-  const storageKey = 'closeandrelax-device-id';
-
-  try {
-    const existing = window.localStorage.getItem(storageKey);
-    if (existing) return existing;
-
-    const created =
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : createFallbackUuid();
-
-    window.localStorage.setItem(storageKey, created);
-    return created;
-  } catch {
-    return createFallbackUuid();
-  }
-};
-
-const recordHubActivity = async ({ profileId, eventType, source = null }) => {
+const recordPublicHubActivity = async ({ profileId, eventType, source = null }) => {
   if (!profileId || typeof window === 'undefined') return;
-
-  try {
-    const { error } = await supabase
-      .from('hub_activity_events')
-      .insert([
-        {
-          profile_id: profileId,
-          event_type: eventType,
-          source,
-          device_id: getHubDeviceId(),
-        },
-      ]);
-
-    if (error) {
-      console.warn('Close & Relax hub activity was not recorded:', error.message);
-    }
-  } catch (error) {
-    // Tracking should never interrupt the homeowner experience.
-    console.warn('Close & Relax hub activity tracking error:', error?.message || error);
-  }
+  let storage;
+  try { storage=window.localStorage; } catch { /* Storage may be disabled. */ }
+  const deviceId=getHubDeviceId(profileId,storage,()=>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID==='function' ? crypto.randomUUID() : createFallbackUuid());
+  return sendHubActivity(supabase,{profileId,deviceId,eventType,source});
 };
 
 const createInitialsIconDataUrl = (initials, size) => {
@@ -309,6 +276,7 @@ const getVendorIcon = (category = '') => {
 
 export default function PublicRealtorHub({ profile, fallbackResources = [], preview = false, onPreviewReady }) {
   profile = profileForHub(profile);
+  const recordHubActivity = (event) => preview ? undefined : recordPublicHubActivity(event);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
