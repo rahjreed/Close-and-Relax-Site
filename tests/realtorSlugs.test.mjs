@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { RESERVED_REALTOR_SLUGS, realtorSlugError, isValidRealtorSlug } from '../src/lib/realtorSlugs.js';
 import { loadPublicHubProfile } from '../src/lib/profileBranding.js';
+import { HISTORICAL_MAPPINGS } from '../tools/prepare-pre-stripe-release.mjs';
 const read = (path) => readFileSync(new URL(path,import.meta.url),'utf8');
 const migration = read('../supabase/migrations/20261019180243_enforce_realtor_slugs.sql');
 const owner = '00000000-0000-4000-8000-000000000091';
@@ -37,6 +38,44 @@ async function actor(db,role,user,run) {
 }
 const state = async (db) => (await db.query('SELECT to_jsonb(p) p FROM public.profiles p ORDER BY id')).rows;
 const lookup = async (db,slug) => (await db.query('SELECT public.get_public_realtor_profile($1) p',[slug])).rows[0].p;
+
+test('reserved names cover all requested platform labels and explicit Vercel routes', () => {
+  const required = ['www','app','api','admin','dashboard','login','signup','reset-password','insurance',
+    'support','auth','static','assets','cdn','mail','help','billing','account','ns1','ns2','staging','preview'];
+  const routes = JSON.parse(read('../vercel.json')).rewrites.map(({ source }) => source.split('/').filter(Boolean)[0]);
+  for (const label of [...required,...routes]) assert.ok(RESERVED_REALTOR_SLUGS.includes(label), label);
+  const sqlReserved = [...migration.match(/candidate <> ALL \(ARRAY\[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual([...sqlReserved].sort(), [...RESERVED_REALTOR_SLUGS].sort());
+  assert.equal(isValidRealtorSlug('support-realty'), true);
+});
+
+test('slug migration composes with only the already-rehearsed bootstrap and legacy lockdown', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(read('./fixtures/launch-production-baseline.sql'));
+    await db.exec('ALTER TABLE auth.users ADD COLUMN banned_until timestamptz');
+    for (const [file] of HISTORICAL_MAPPINGS) await db.exec(read(`../supabase/migrations/${file}`));
+    await db.exec(read('../supabase/migrations/20261019172710_bootstrap_realtor_profile.sql'));
+    await db.exec(read('../supabase/migrations/20261019175354_deprecate_legacy_realtor_profiles.sql'));
+    const draft = '00000000-0000-4000-8000-000000000093';
+    for (const [id, plan, slug, published] of [[owner,'partner','fixture-free',true],[other,'pro','fixture-core',true],[draft,'partner','fixture-draft',false]]) {
+      await db.query("INSERT INTO auth.users(id,email,email_confirmed_at,raw_user_meta_data) VALUES($1,$2,now(),'{}')", [id, `${slug}@example.invalid`]);
+      await db.query('INSERT INTO public.profiles(id,plan,slug,is_published) VALUES($1,$2,$3,$4)', [id,plan,slug,published]);
+    }
+    await db.exec(`CREATE SCHEMA staging_control; CREATE TABLE staging_control.environment_guard(project_ref text);
+      INSERT INTO staging_control.environment_guard VALUES('amopxaadnvubvveqpkvu');
+      CREATE TABLE staging_control.fixture_identities(fixture text,user_id uuid);`);
+    await db.query("INSERT INTO staging_control.fixture_identities VALUES('free',$1),('core',$2),('draft',$3)", [owner,other,draft]);
+    const before = await state(db);
+    await db.exec(migration);
+    assert.deepEqual(await state(db), before);
+    // The hosted acceptance script must remain rollback-only and must not rely
+    // on applying branding, vendor, analytics or any other pending migration.
+    await db.exec(read('./fixtures/realtor-slugs-staging.sql'));
+    assert.deepEqual(await state(db), before);
+    assert.equal((await db.query("SELECT to_regprocedure('public.get_public_realtor_profile(text)') p")).rows[0].p, null);
+  } finally { await db.close(); }
+});
 
 test('frontend and PostgreSQL share exact canonical format and reserved-name rules', async () => {
   const db = await fixture();
