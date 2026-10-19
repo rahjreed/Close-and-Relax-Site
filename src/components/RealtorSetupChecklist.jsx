@@ -7,6 +7,7 @@ export default function RealtorSetupChecklist({ onAction, publishLoading = false
   const [reopened, setReopened] = useState(false);
   const headingId = useId(), listId = useId();
   const expanded = !allComplete || reopened;
+  const nextStep = steps.find(step => !step.complete);
   return (
     <section aria-labelledby={headingId} aria-busy={loading} className="my-8 rounded-2xl border border-[#D4CBC0] bg-[#EEE8E0] p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -15,7 +16,7 @@ export default function RealtorSetupChecklist({ onAction, publishLoading = false
             <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-gold-accent" aria-hidden="true" />
             <h2 id={headingId} className="font-editorial text-xl font-bold text-charcoal-deep">{allComplete ? 'Your hub is ready 🎉' : 'Finish setting up your hub'}</h2>
           </div>
-          <p className="mt-1 text-xs leading-relaxed text-charcoal-muted">{allComplete ? 'Your saved hub is ready to share. Reopen these steps whenever you need them.' : 'A few saved details make your hub feel like you. Progress updates automatically.'}</p>
+          <p className="mt-1 text-xs leading-relaxed text-charcoal-muted">{allComplete ? 'Your saved hub is ready to share. Reopen these steps whenever you need them.' : loading ? 'Checking your saved setup…' : `Next: ${nextStep.title}. Save your changes to update progress. Preview is private; publishing is a separate step.`}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
           <p className="text-xs font-semibold text-charcoal-deep" role="status">{completed} of {total} complete · {percent}%</p>

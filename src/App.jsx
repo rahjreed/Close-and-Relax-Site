@@ -47,6 +47,7 @@ import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
 import InsuranceLeads from './components/InsuranceLeads';
 import SupportInbox from './components/SupportInbox';
 import SupportContactDialog from './components/SupportContactDialog';
+import AccountSettingsDialog from './components/AccountSettingsDialog';
 import RealtorSetupChecklist from './components/RealtorSetupChecklist';
 import HubPreviewDialog from './components/HubPreviewDialog';
 import { readRealtorPreview } from './lib/realtorSetup';
@@ -722,6 +723,9 @@ function CloseRelaxApp() {
   const [signupModalOpen, _setSignupModalOpen] = useState(false);
   const [loginModalOpen, _setLoginModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [supportDraftContext, setSupportDraftContext] = useState({});
+  const [logoutError, setLogoutError] = useState('');
   const [selectedPlan, setSelectedPlan] = useState("partner");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -1369,6 +1373,16 @@ function CloseRelaxApp() {
     setForgotPasswordOpen(true);
   };
 
+  const closePasswordRequest = () => {
+    setForgotPasswordOpen(false);
+    setPasswordRecoveryError(null);
+    setForgotPasswordSent(false);
+    if (user?.id) {
+      _setLoginModalOpen(false);
+      setCurrentView('dashboard');
+    } else setLoginModalOpen(true);
+  };
+
   const handleForgotPasswordSubmit = async (event) => {
     event.preventDefault();
 
@@ -1427,7 +1441,14 @@ function CloseRelaxApp() {
         return;
       }
 
-      await supabase.auth.signOut();
+      try {
+        const { error: logoutFailure } = await supabase.auth.signOut();
+        if (logoutFailure) throw logoutFailure;
+      } catch {
+        setNewPasswordData({ password: '', confirmPassword: '' });
+        setPasswordRecoveryError('Your password was updated, but logout could not be confirmed. Use Log Out to retry before leaving this device.');
+        return;
+      }
       setNewPasswordData({ password: '', confirmPassword: '' });
       _setCurrentView('marketing');
       updateBrowserPath('/login', { replace: true });
@@ -1520,16 +1541,24 @@ function CloseRelaxApp() {
   };
 
   const handleLogout = async () => {
+    if (actionLoading) return;
     setActionLoading(true);
+    setLogoutError('');
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setAccountSettingsOpen(false);
+      setMobileMenuOpen(false);
       setSession(null);
       setUser(null);
       setProfile(null);
       setCurrentView('marketing');
       showToast('You have been logged out.');
     } catch (err) {
-      console.error('Logout error:', err);
+      // Auth may clear the local session before returning a server logout error.
+      // Keep the error visible even when the owner-only settings dialog disappears.
+      setAccountSettingsOpen(false);
+      setLogoutError('We could not confirm logout. You may still be signed in. Please retry Log Out.');
     } finally {
       setActionLoading(false);
     }
@@ -1537,6 +1566,23 @@ function CloseRelaxApp() {
 
   const toggleFaq = (index) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
+
+  const openAccountSupport = (closure = false) => {
+    setAccountSettingsOpen(false);
+    setSupportDraftContext({
+      initialName: profile?.full_name || '', initialEmail: user?.email || '',
+      initialMessage: closure ? 'Account closure / deletion request\n\nPlease help me close my Close & Relax account. Please contact me to verify ownership and explain the next steps before deleting anything.' : '',
+    });
+    setContactModalOpen(true);
+  };
+
+  const focusPublicationControl = () => {
+    setAccountSettingsOpen(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById('hub-publication')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('hub-publication-toggle')?.focus({ preventScroll: true });
+    });
   };
 
   const handleOpenProfileEditor = () => {
@@ -2473,6 +2519,18 @@ function CloseRelaxApp() {
   return (
     <div className="min-h-screen bg-cream-warm text-charcoal-body font-body antialiased selection:bg-[#E4D5BE] selection:text-[#191816]">
       <style>{customStyles}</style>
+      {logoutError && !accountSettingsOpen && <div role="alert" className="fixed bottom-5 left-4 right-4 z-[90] mx-auto max-w-lg rounded-xl border border-red-200 bg-white p-4 text-sm text-red-700 shadow-lg">
+        <p>{logoutError}</p><button type="button" onClick={handleLogout} disabled={actionLoading} className="mt-2 min-h-[44px] underline disabled:opacity-50">Retry Log Out</button>
+        <button type="button" onClick={() => setLogoutError('')} className="ml-4 min-h-[44px] underline">Dismiss</button>
+      </div>}
+      {accountSettingsOpen && user && profile?.id === user.id && <AccountSettingsDialog
+        key={user.id} user={user} profile={profile} planName={publicPlanName} vendorLimit={vendorLimit}
+        onClose={() => setAccountSettingsOpen(false)}
+        onEditProfile={() => { setAccountSettingsOpen(false); handleOpenProfileEditor(); }}
+        onResetPassword={() => { setAccountSettingsOpen(false); handleOpenForgotPassword(user.email); }}
+        onPublication={focusPublicationControl} onSupport={() => openAccountSupport()} onClosure={() => openAccountSupport(true)}
+        onLogout={handleLogout} logoutLoading={actionLoading} logoutError={logoutError}
+      />}
 
       {currentView === 'dashboard' && hubPreviewOwner === user?.id && profile?.id === user?.id && hubPreviewOwner && (
         <HubPreviewDialog
@@ -2565,6 +2623,7 @@ function CloseRelaxApp() {
                 )}
                 <button
                   onClick={handleLogout}
+                  disabled={actionLoading}
                   className="bg-cream-subtle hover:bg-cream-border text-charcoal-deep text-sm font-medium px-4 py-2 rounded-full border border-cream-border transition-all flex items-center gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5 text-charcoal-muted" />
@@ -2674,6 +2733,7 @@ function CloseRelaxApp() {
                       setMobileMenuOpen(false);
                       handleLogout();
                     }}
+                    disabled={actionLoading}
                     className="w-full py-2.5 text-sm font-medium text-charcoal-deep border border-cream-border rounded-full text-center"
                   >
                     Log Out
@@ -2841,11 +2901,11 @@ function CloseRelaxApp() {
                   <span>Preview My Hub</span>
                 </button>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setAccountSettingsOpen(true)}
                   className="px-5 py-2.5 text-xs font-semibold rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] flex items-center gap-2 transition-all"
                 >
-                  <LogOut className="w-3.5 h-3.5 text-[#B5966B]" />
-                  <span>Log Out</span>
+                  <Sliders className="w-3.5 h-3.5 text-[#B5966B]" />
+                  <span>Account &amp; Settings</span>
                 </button>
               </div>
             </div>
@@ -2872,7 +2932,7 @@ function CloseRelaxApp() {
                   }
                   else if (step === 'sections' && allowsCustomSections) void handleOpenCustomHubSectionsManager();
                   else if (step === 'preview') handlePreviewMyHub();
-                  else if (step === 'publish' && !profile.is_published && !publishLoading) void handleTogglePublish();
+                  else if (step === 'publish') focusPublicationControl();
                 }}
               />
             )}
@@ -2889,19 +2949,20 @@ function CloseRelaxApp() {
                 </p>
               </div>
 
-              <div className="bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Hub Status</span>
+              <div id="hub-publication" className="scroll-mt-24 bg-[#EEE8E0] p-5 rounded-2xl border border-[#D4CBC0]">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-charcoal-muted">Hub Visibility</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`w-2.5 h-2.5 rounded-full ${profile?.is_published ? 'bg-emerald-600' : 'bg-amber-600'}`}></span>
                   <p className="font-editorial text-2xl font-bold text-charcoal-deep">
-                    {profile?.is_published ? 'Published' : 'Draft / Ready'}
+                    {profile?.is_published ? 'Published' : 'Private draft'}
                   </p>
                 </div>
                 <p className="text-xs text-charcoal-muted mt-0.5">
-                  {profile?.is_published ? 'Your concierge is live and accessible' : 'Configure fields and publish your hub'}
+                  {profile?.is_published ? 'Public visitors can open your hub. Unpublish to hide it.' : 'Only you can preview this draft. Publish when you are ready to share.'}
                 </p>
                 <button
                   type="button"
+                  id="hub-publication-toggle"
                   onClick={handleTogglePublish}
                   disabled={publishLoading || !profile}
                   className={`mt-4 w-full py-2 text-[11px] font-semibold rounded-xl border transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 ${
@@ -3176,7 +3237,7 @@ function CloseRelaxApp() {
                   </div>
 
                   <p className="text-xs text-charcoal-muted leading-relaxed mb-4">
-                    Your hub includes the standard Close &amp; Relax smart-home resource, and your <span className="font-semibold text-charcoal-deep">{publicPlanName}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals.
+                    Your <span className="font-semibold text-charcoal-deep">{publicPlanName}</span> plan lets you add up to {vendorLimit} of your own trusted local professionals. Add one to complete this setup step; filling your limit is optional.
                   </p>
 
                   <div className="bg-[#FCFAF6] p-3 rounded-xl border border-[#D4CBC0] text-[11px] text-charcoal-muted space-y-2">
@@ -4263,7 +4324,7 @@ function CloseRelaxApp() {
                             : 'bg-[#191816] hover:bg-[#262421] text-[#FAF7F2]'
                         }`}
                       >
-                        {user ? 'Select In Dashboard' : tier.ctaText}
+                        {user ? 'View My Dashboard' : tier.ctaText}
                       </button>
                     </div>
                   </div>
@@ -4273,7 +4334,7 @@ function CloseRelaxApp() {
               {/* Self-Service Empowering Note */}
               <div className="mt-12 text-center max-w-2xl mx-auto bg-cream-subtle/60 rounded-2xl p-5 border border-cream-border">
                 <p className="text-xs text-charcoal-muted leading-relaxed">
-                  <strong className="text-charcoal-deep">Instant Self-Service:</strong> All plans include immediate dashboard access upon sign up. Upgrade, downgrade, or update your concierge fields at any time with instant live publishing.
+                  <strong className="text-charcoal-deep">Your account, clearly:</strong> New accounts start on Free after email confirmation. Edit and publish the features included with your current plan from your dashboard. Paid-plan activation is managed by Close &amp; Relax; online billing and self-service subscription changes are not available yet.
                 </p>
               </div>
 
@@ -4914,11 +4975,13 @@ function CloseRelaxApp() {
                       <input
                         type="email"
                         id="profileEmail"
+                        aria-describedby="public-email-help"
                         value={profileForm.email}
                         onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                         placeholder="you@brokerage.com"
                         className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                       />
+                      <p id="public-email-help" className="mt-1.5 text-[11px] leading-relaxed text-charcoal-muted">Shown on your published hub. This does not change your account login email.</p>
                     </div>
 
                     <div>
@@ -5844,12 +5907,7 @@ function CloseRelaxApp() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setForgotPasswordOpen(false);
-                  setPasswordRecoveryError(null);
-                  setForgotPasswordSent(false);
-                  setLoginModalOpen(true);
-                }}
+                onClick={closePasswordRequest}
                 className="w-8 h-8 rounded-full border border-cream-border bg-cream-card hover:bg-cream-subtle flex items-center justify-center text-charcoal-muted"
                 aria-label="Close password reset"
               >
@@ -5869,14 +5927,10 @@ function CloseRelaxApp() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setForgotPasswordOpen(false);
-                      setForgotPasswordSent(false);
-                      setLoginModalOpen(true);
-                    }}
+                    onClick={closePasswordRequest}
                     className="mt-6 w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold"
                   >
-                    Back to Log In
+                    {user ? 'Back to Dashboard' : 'Back to Log In'}
                   </button>
                 </div>
               ) : (
@@ -6039,7 +6093,7 @@ function CloseRelaxApp() {
       )}
 
       {}
-      {contactModalOpen && <SupportContactDialog onClose={() => setContactModalOpen(false)} />}
+      {contactModalOpen && <SupportContactDialog {...supportDraftContext} onClose={() => { setContactModalOpen(false); setSupportDraftContext({}); }} />}
 
     </div>
   );

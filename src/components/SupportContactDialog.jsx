@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase';
 import { loadTurnstile, normalizeTurnstileSiteKey, turnstileFailure } from '../lib/turnstile';
 import { sendSupportMessage, supportFallbackUrl, validateSupportContact } from '../lib/supportContact';
 
-export default function SupportContactDialog({ onClose }) {
-  const [draft, setDraft] = useState({ name: '', email: '', message: '', company_website: '' });
+export default function SupportContactDialog({ onClose, initialName = '', initialEmail = '', initialMessage = '' }) {
+  const [draft, setDraft] = useState({ name: initialName, email: initialEmail, message: initialMessage, company_website: '' });
   const [token, setToken] = useState(''), [error, setError] = useState('');
   const [verificationError, setVerificationError] = useState(''), [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false), [reference, setReference] = useState('');
