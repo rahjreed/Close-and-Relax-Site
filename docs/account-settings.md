@@ -1,5 +1,9 @@
 # Realtor Account & Settings
 
+Staff processing of closure requests is documented in
+[launch-legal-and-support.md](launch-legal-and-support.md). The new legal pages
+are informational launch drafts; they do not implement deletion or billing.
+
 The dashboard header opens Account & Settings on mobile and desktop. Public
 Realtor contact information is separated from the Auth login email. Editing the
 public profile never changes Auth email; there is no login-email-change control.

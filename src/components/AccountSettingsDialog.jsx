@@ -59,6 +59,7 @@ export default function AccountSettingsDialog({ user, profile, planName, vendorL
           <div className="flex flex-wrap gap-3"><button type="button" className={button} onClick={onSupport}>Contact Support</button><button type="button" className={button} onClick={onClosure}>Request account closure / deletion</button></div>
         </section>
         <div className="mt-5 border-t border-[#D4CBC0] pt-5">
+          <nav aria-label="Legal" className="mb-3 flex flex-wrap gap-x-5 text-xs"><a className="min-h-[44px] inline-flex items-center underline" href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a><a className="min-h-[44px] inline-flex items-center underline" href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a></nav>
           {logoutError && <p role="alert" className="mb-3 text-sm text-red-700">{logoutError}</p>}
           <button type="button" disabled={logoutLoading} onClick={onLogout} className={button}>{logoutLoading ? 'Logging out…' : 'Log Out'}</button>
         </div>

@@ -97,6 +97,7 @@ export default function SupportContactDialog({ onClose, initialName = '', initia
               <div className="hidden" aria-hidden="true"><label>Company website<input tabIndex={-1} autoComplete="off" value={draft.company_website} onChange={(e) => update('company_website', e.target.value)} /></label></div>
             </fieldset>
             <p className="text-xs text-charcoal-muted">By sending, you ask Close &amp; Relax to review your message and contact you about this request.</p>
+            <nav aria-label="Support privacy and terms" className="flex flex-wrap gap-x-5 text-xs text-charcoal-muted"><a className="inline-flex min-h-[44px] items-center underline" href="https://www.closeandrelax.com/privacy#section-5" target="_blank" rel="noopener noreferrer">Privacy Policy</a><a className="inline-flex min-h-[44px] items-center underline" href="https://www.closeandrelax.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a></nav>
             <div ref={container} />
             {(!siteKey || verificationError) && <p role="alert" className="text-sm text-red-700">{verificationError || 'Verification is unavailable. Please try again later.'}</p>}
             {siteKey && verificationError && <button type="button" disabled={saving} onClick={() => setAttempt((old) => old + 1)} className="min-h-[44px] text-sm underline">Retry verification</button>}

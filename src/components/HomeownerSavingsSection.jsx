@@ -122,8 +122,12 @@ export default function HomeownerSavingsSection({ profile, onOfferClick, preview
         })}
       </div>
       <p className="text-[10px] text-[#57534e] leading-relaxed mt-4">
-        Options, pricing, coverage, terms, and availability are confirmed directly with each
-        provider.
+        Options are managed by Close &amp; Relax, separate from your Realtor’s Preferred Vendors;
+        display does not mean your Realtor personally selected or endorsed each offer.
+        Confirm pricing, coverage, terms, and availability directly with the provider.
+        Insurance services are provided through Goosehead Insurance; Close &amp; Relax helps
+        connect you with an insurance professional.{' '}
+        <a href="https://www.closeandrelax.com/privacy" target="_blank" rel="noopener noreferrer" className="underline inline-flex min-h-[44px] items-center">Privacy Policy</a>
       </p>
     </section>
   );

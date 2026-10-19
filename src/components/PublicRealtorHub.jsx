@@ -1438,6 +1438,7 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
         <footer className="hub-reveal text-center lg:text-left pt-2 pb-6">
           <p className="text-[11px] hub-font-serif text-[#78716c] mb-1">{realtorName} • Realtor®</p>
           <p className="text-[10px] tracking-wider uppercase text-[#a8a29e]">Powered by Close &amp; Relax</p>
+          <nav aria-label="Legal" className="flex flex-wrap justify-center lg:justify-start gap-x-5 text-[11px] text-[#78716c]"><a className="inline-flex min-h-[44px] items-center underline" href="https://www.closeandrelax.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a><a className="inline-flex min-h-[44px] items-center underline" href="https://www.closeandrelax.com/terms" target="_blank" rel="noopener noreferrer">Terms</a></nav>
         </footer>
           </div>
         </div>

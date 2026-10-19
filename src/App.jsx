@@ -48,6 +48,8 @@ import InsuranceLeads from './components/InsuranceLeads';
 import SupportInbox from './components/SupportInbox';
 import SupportContactDialog from './components/SupportContactDialog';
 import AccountSettingsDialog from './components/AccountSettingsDialog';
+import LegalPage from './components/LegalPage';
+import { legalPageForPath } from './lib/legalPages';
 import RealtorSetupChecklist from './components/RealtorSetupChecklist';
 import HubPreviewDialog from './components/HubPreviewDialog';
 import { readRealtorPreview } from './lib/realtorSetup';
@@ -702,6 +704,8 @@ export default function App() {
     window.addEventListener('popstate', onBackOrForward);
     return () => window.removeEventListener('popstate', onBackOrForward);
   }, []);
+  const legalPage = legalPageForPath(location.pathname);
+  if (legalPage) return <LegalPage key={legalPage} page={legalPage} />;
   return isInsurancePath(location.pathname) ? <InsurancePage key={location.search} /> : <CloseRelaxApp />;
 }
 
@@ -4441,7 +4445,9 @@ function CloseRelaxApp() {
                 <span className="text-xs text-charcoal-muted">The closing gift they’ll actually keep</span>
               </div>
 
-              <div className="flex items-center gap-6 text-xs text-charcoal-muted">
+              <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-charcoal-muted">
+                <a href="/privacy" className="min-h-[44px] inline-flex items-center underline">Privacy Policy</a>
+                <a href="/terms" className="min-h-[44px] inline-flex items-center underline">Terms of Service</a>
                 <a href="#how-it-works" className="hover:text-charcoal-deep transition-colors">How It Works</a>
                 <a href="#features" className="hover:text-charcoal-deep transition-colors">Features</a>
                 <a href="#pricing" className="hover:text-charcoal-deep transition-colors">Pricing</a>
@@ -4816,6 +4822,7 @@ function CloseRelaxApp() {
                       </button>
                     </div>
 
+                    <nav aria-label="Signup legal information" className="flex flex-wrap justify-center gap-x-5 text-xs text-charcoal-muted"><a href="/privacy" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline">Privacy Policy</a><a href="/terms" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center underline">Terms of Service</a></nav>
                     <div className="text-center pt-2">
                       <button
                         type="button"

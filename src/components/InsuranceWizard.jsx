@@ -400,7 +400,11 @@ export default function InsuranceWizard({
               </label>
               <p className="text-xs leading-relaxed text-[#57534e]">
                 Your details are sent securely to the Close &amp; Relax team for this request. They
-                are not added to hub analytics or saved in this browser.
+                are not added to hub analytics or saved in browser storage. The current form
+                requests contact from Close &amp; Relax; it does not automatically send your
+                details to Goosehead. Read our{' '}
+                <a href="/privacy#section-4" target="_blank" rel="noopener noreferrer" className="underline inline-flex min-h-[44px] items-center">Privacy Policy</a>{' '}
+                and{' '}<a href="/terms" target="_blank" rel="noopener noreferrer" className="underline inline-flex min-h-[44px] items-center">Terms of Service</a>.
               </p>
               {captchaIssue && (
                 <div role="alert" className="text-sm text-red-700">

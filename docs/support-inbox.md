@@ -1,5 +1,8 @@
 # Support Inbox: local launch preparation
 
+Staff triage, manual replies, closure verification, retention decisions and the
+legal launch checklist are in [launch-legal-and-support.md](launch-legal-and-support.md).
+
 The public support form saves to the private Close & Relax Support Inbox. The
 owner agreed to monitor this inbox. There are no automatic email alerts, email
 delivery service, queues, or paid dependencies. The administrator can use

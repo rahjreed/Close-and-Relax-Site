@@ -67,6 +67,7 @@ export default function InsurancePage() {
         <br />
         Submitting a request does not bind coverage or guarantee a quote, savings or a callback
         time.
+        <nav aria-label="Legal" className="mt-3 flex flex-wrap justify-center gap-x-5"><a className="inline-flex min-h-[44px] items-center underline" href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a><a className="inline-flex min-h-[44px] items-center underline" href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a></nav>
       </footer>
     </main>
   );

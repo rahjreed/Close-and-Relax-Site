@@ -41,6 +41,16 @@ export default function SupportInbox({ userId, accessToken }) {
       <button type="button" disabled={busy} onClick={() => load(0)} className="min-h-[44px] text-sm underline disabled:opacity-50">Refresh newest</button>
     </div>
     <p className="text-xs text-charcoal-muted mt-2">Platform administrators only · Newest first · Check this inbox regularly. No email alerts are sent.</p>
+    <details className="mt-3 text-xs text-charcoal-muted">
+      <summary className="min-h-[44px] inline-flex cursor-pointer items-center underline">Staff handling guide</summary>
+      <ul className="list-disc pl-5 space-y-2 leading-relaxed">
+        <li>Refresh newest and review all pages. New = unreviewed; In progress = being handled; Closed = resolved or disposition recorded outside this inbox.</li>
+        <li>Reply in email app opens a draft only. Send manually from the approved monitored support mailbox; a status change does not send email.</li>
+        <li>Prioritize access and closure requests. Never request passwords or recovery links, and verify ownership independently before account changes.</li>
+        <li>Do not delete an account from a claimed email alone. Follow the manual closure runbook; this inbox has no deletion action.</li>
+        <li>The temporary hello@callistadigital.com fallback receives only emails a visitor sends themselves. Monitor it separately; no automatic alerts are sent there.</li>
+      </ul>
+    </details>
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
     {busy && <p role="status" className="mt-4 text-sm">Loading / saving…</p>}
     {!busy && !error && !rows.length && <p className="mt-4 text-sm text-charcoal-muted">No support messages on this page.</p>}
