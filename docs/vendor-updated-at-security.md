@@ -48,3 +48,37 @@ warning remains in production until the migration is applied.
 
 Advisor remediation reference:
 https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable
+
+## Staging verification — October 19, 2026
+
+This follow-up used only staging `amopxaadnvubvveqpkvu`. Production was not
+accessed or modified. Fresh staging inspection confirmed the same function body,
+postgres owner, invoker execution and sole BEFORE UPDATE vendors trigger. No
+other application function body referenced it.
+
+Reused the SQL source unchanged; staging recorded version `20261019233803`, name
+`harden_vendor_updated_at_search_path`. The only function difference is proconfig
+changing from NULL to `search_path=""`. Function OID 17841, body, owner, ACL,
+security mode, trigger OID 17988/definition/enabled state, other functions, all
+policies and saved vendor rows are unchanged. No new grants were introduced.
+
+`tests/fixtures/vendor-updated-at-staging.sql` is an operator-only, guarded,
+rollback-only acceptance script. It temporarily defines public.now(), supplies
+an untrusted caller search_path, and checks explicit INSERT timestamps, normal
+edits, supplied old/NULL timestamps, no-op/multi-row UPDATE and direct trigger-call
+rejection. All four hosted assertion groups passed, all changes rolled back,
+and a new local regression checks the script leaves saved rows unchanged and its
+shadow function absent. The pre-existing regressions also verify retry safety,
+metadata preservation and before/after behavior.
+
+Fresh staging Security Advisor output no longer reports the mutable-search_path
+warning. The leaked-password-protection warning remains; see
+`auth-leaked-password-protection.md` for the verified Free-plan limitation. No
+Auth setting was changed. Production still needs separate approval to apply this
+one-line migration and verify its catalog/Advisor result in the reviewed release.
+There is no frontend, Edge Function or secret dependency for this ALTER.
+
+Final validation: all 145 local tests passed, including all 3 focused timestamp
+tests. Production build passed with the existing bundle-size warning. Offline
+release manifest validation passed with unchanged application/Edge/migration
+hashes. No runtime source, historical migration or Auth setting was changed.

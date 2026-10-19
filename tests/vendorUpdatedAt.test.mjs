@@ -29,6 +29,23 @@ const functions = async (db) => (await db.query(`SELECT p.oid,p.proname,p.prosrc
   FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' ORDER BY p.oid`)).rows;
 const triggers = async (db) => (await db.query("SELECT oid,tgfoid,tgenabled,pg_get_triggerdef(oid) definition FROM pg_trigger WHERE tgrelid='public.vendors'::regclass AND NOT tgisinternal")).rows;
 
+test('rollback-only staging acceptance preserves saved vendors and removes its shadow function', async () => {
+  const db = await fixture();
+  try {
+    await db.exec(migration);
+    await db.exec(`ALTER TABLE public.vendors ADD COLUMN category text, ADD COLUMN phone text, ADD COLUMN is_default boolean DEFAULT false;
+      CREATE SCHEMA staging_control; CREATE TABLE staging_control.environment_guard(project_ref text);
+      INSERT INTO staging_control.environment_guard VALUES('amopxaadnvubvveqpkvu');
+      CREATE TABLE staging_control.fixture_identities(fixture text,user_id uuid);`);
+    await db.query("INSERT INTO staging_control.fixture_identities VALUES('core',$1)", [owner]);
+    await db.query("INSERT INTO public.vendors(profile_id,name) VALUES($1,'Saved first'),($1,'Saved second')", [owner]);
+    const before = (await db.query('SELECT to_jsonb(v) v FROM public.vendors v ORDER BY id')).rows;
+    await db.exec(read('./fixtures/vendor-updated-at-staging.sql'));
+    assert.deepEqual((await db.query('SELECT to_jsonb(v) v FROM public.vendors v ORDER BY id')).rows, before);
+    assert.equal((await db.query("SELECT to_regprocedure('public.now()') p")).rows[0].p, null);
+  } finally { await db.close(); }
+});
+
 test('search_path-only ALTER preserves function identity/body/owner/grants and all trigger/policy metadata; caller paths cannot shadow now()', async () => {
   const db = await fixture();
   try {
