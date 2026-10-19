@@ -36,6 +36,7 @@ import {
 
 import { supabase } from './lib/supabase';
 import { createProfileBootstrap } from './lib/profileBootstrap';
+import { MIN_PASSWORD_LENGTH, PASSWORD_LENGTH_HINT, newPasswordError } from './lib/passwordPolicy';
 import { isValidRealtorSlug, realtorSlugError } from './lib/realtorSlugs';
 import { loadPublicHubProfile, profileForHub } from './lib/profileBranding';
 import { loadHubVendors, vendorsForHub } from './lib/vendorVisibility';
@@ -1403,8 +1404,9 @@ function CloseRelaxApp() {
     const password = newPasswordData.password;
     const confirmPassword = newPasswordData.confirmPassword;
 
-    if (password.length < 8) {
-      setPasswordRecoveryError('Your new password must be at least 8 characters.');
+    const passwordError = newPasswordError(password);
+    if (passwordError) {
+      setPasswordRecoveryError(passwordError);
       return;
     }
 
@@ -1439,6 +1441,11 @@ function CloseRelaxApp() {
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
+    const passwordError = newPasswordError(signupData.password);
+    if (passwordError) {
+      setAuthError(passwordError);
+      return;
+    }
     setActionLoading(true);
     setAuthError(null);
     setEmailConfirmationRequired(false);
@@ -2735,10 +2742,10 @@ function CloseRelaxApp() {
                     type="password"
                     autoComplete="new-password"
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
                     value={newPasswordData.password}
                     onChange={(e) => setNewPasswordData({ ...newPasswordData, password: e.target.value })}
-                    placeholder="At least 8 characters"
+                    placeholder={PASSWORD_LENGTH_HINT}
                     className="w-full text-sm px-4 py-3 rounded-xl bg-[#FCFAF6] border border-[#D4CBC0] focus:outline-none focus:border-gold-accent text-charcoal-deep"
                   />
                 </div>
@@ -2752,7 +2759,7 @@ function CloseRelaxApp() {
                     type="password"
                     autoComplete="new-password"
                     required
-                    minLength={8}
+                    minLength={MIN_PASSWORD_LENGTH}
                     value={newPasswordData.confirmPassword}
                     onChange={(e) => setNewPasswordData({ ...newPasswordData, confirmPassword: e.target.value })}
                     placeholder="Type it again"
@@ -4722,10 +4729,10 @@ function CloseRelaxApp() {
                         type="password"
                         id="signupPassword"
                         required
-                        minLength={6}
+                        minLength={MIN_PASSWORD_LENGTH}
                         value={signupData.password}
                         onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                        placeholder="Minimum 6 characters"
+                        placeholder={PASSWORD_LENGTH_HINT}
                         className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                       />
                     </div>
