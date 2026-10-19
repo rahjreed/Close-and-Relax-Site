@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "release": "pre-stripe-security",
+  "project_ref": "hphcejnvxyccmwmofdqc",
+  "mode": "explicit_allowlist",
+  "hash_algorithm": "sha256 after CRLF-to-LF normalization; UTF-8 text",
+  "frontend": {
+    "source_revision": "1a1bba663a922e06e32ecf79bc07b901bfb15bb0",
+    "files": [
+      {
+        "file": "index.html",
+        "sha256_lf": "441171837fee7dfbc95dc71de3b9dea538f5ec41573c680a9935643e4c569dc5"
+      },
+      {
+        "file": "package.json",
+        "sha256_lf": "ab70d4e0effac5068791495f265428dfed97b8f2ea9840d0ffc323014a47b66c"
+      },
+      {
+        "file": "pnpm-lock.yaml",
+        "sha256_lf": "385130ec7ee15bb2441213a54fbc0f99c626b8fcd57317817703e797a821325c"
+      },
+      {
+        "file": "postcss.config.js",
+        "sha256_lf": "e32657baf631d7c5f4dc67b4b2ee0ec8e7d5b3c41860e09cddce7c0377cd80bc"
+      },
+      {
+        "file": "public/vite.svg",
+        "sha256_lf": "4a748afd443918bb16591c834c401dae33e87861ab5dbad0811c3a3b4a9214fb"
+      },
+      {
+        "file": "src/App.jsx",
+        "sha256_lf": "fd80192b5881f1355d4151f372943fac4d1608068529ada3ba6eeafb8bfe20f4"
+      },
+      {
+        "file": "src/components/AccountSettingsDialog.jsx",
+        "sha256_lf": "56d973fb4a614ad709d9b9e13164ff9ccbad96d81d9aa68fb1fff1b600d9ad3b"
+      },
+      {
+        "file": "src/components/ChecklistDueDateAdjustment.jsx",
+        "sha256_lf": "00a1a0f9375a24652a64efeaa8feebb37410ec483f96dd0276abe831135b3a4d"
+      },
+      {
+        "file": "src/components/HomeownerSavingsSection.jsx",
+        "sha256_lf": "69775b97e1f1ffc0116030ecacd68489b590631ec0cdf791d083574b511565de"
+      },
+      {
+        "file": "src/components/HomeownerSavingsSettings.jsx",
+        "sha256_lf": "73ec5d58590185426f4c1188ea828ca06a4284eb80ea6a77bad48caea53172a9"
+      },
+      {
+        "file": "src/components/HubPreviewDialog.jsx",
+        "sha256_lf": "bede5cc1c81ac5ed963e3534fd196e63662ca4b634224231796bbd729d44a0fa"
+      },
+      {
+        "file": "src/components/InsuranceLeads.jsx",
+        "sha256_lf": "03deada57231b32b0ebf0e46490e9b1fdf0e82a4bad909e244b15a3259d8919d"
+      },
+      {
+        "file": "src/components/InsurancePage.jsx",
+        "sha256_lf": "a8ccb8679c882e73490332041f71370d753a796d5f1d41e13cb23e336cbb8d30"
+      },
+      {
+        "file": "src/components/InsuranceWizard.jsx",
+        "sha256_lf": "c876afafe20bc9ca509c9acedef5ace58b0d4cf1a2b9724a1dadf522689eb99b"
+      },
+      {
+        "file": "src/components/LegalPage.jsx",
+        "sha256_lf": "8f56f034885ffd70c156534d01abbed41cedd8c6bc5c7165792374ac3baf2406"
+      },
+      {
+        "file": "src/components/MyHomeContactsSection.jsx",
+        "sha256_lf": "55f75570174b180f38d96d214824a769a04fd01ae98ebbdd1ae5515ed4b2cf10"
+      },
+      {
+        "file": "src/components/PublicRealtorHub.jsx",
+        "sha256_lf": "a5f6aed6cf395f17f8947b4bdcf5462c666c8198232060aed2b696b7254e86e5"
+      },
+      {
+        "file": "src/components/RealtorSetupChecklist.jsx",
+        "sha256_lf": "d5406324e06609d5bf02023839ea167b06c2df0874145a4319b3566fb5cb427e"
+      },
+      {
+        "file": "src/components/SupportContactDialog.jsx",
+        "sha256_lf": "44ad55f424590a8807187c958571717fddd2532fe0779b872e5a452e95c4c2ae"
+      },
+      {
+        "file": "src/components/SupportInbox.jsx",
+        "sha256_lf": "ff904f557fab71de9f90af26004d713decb3ae80db599f6415f76edcb944cc08"
+      },
+      {
+        "file": "src/counter.js",
+        "sha256_lf": "54889d2272060b1af76601561c91a76a7a025b27fdbcc1ad05aadce17f1ed43e"
+      },
+      {
+        "file": "src/index.css",
+        "sha256_lf": "cc1a7ad0d019ddb1d32d0ecb588ba0ac26ce41d8625dd6c366348b25f83a28ec"
+      },
+      {
+        "file": "src/javascript.svg",
+        "sha256_lf": "8dac53799104214c30769aa44c25a16b3c8c86f7c6c6e46fb1996e63ab5d828e"
+      },
+      {
+        "file": "src/lib/checklistProgress.js",
+        "sha256_lf": "c8149b5c244e40287995c20fac23fcddc6dc51be8c46fc91b9f85bf7319fb20d"
+      },
+      {
+        "file": "src/lib/gooseheadLeads.js",
+        "sha256_lf": "efb55756515a0d708a9efb5809fb926e0f149d51bf8364aad2b0c6e333abe7cb"
+      },
+      {
+        "file": "src/lib/homeContacts.js",
+        "sha256_lf": "7ea1394e8a0aca58cd9579b306d87a754342ed8bd8c0450f63dc0be90fd2fdb6"
+      },
+      {
+        "file": "src/lib/homeownerSavings.js",
+        "sha256_lf": "39fb3296e32ab991425ce52a6e7d696aadb365cb94c58e7219e7e56e30eb7d5b"
+      },
+      {
+        "file": "src/lib/hubActivity.js",
+        "sha256_lf": "c6070387a3a8ecad18be3ea690763f4d4b2b844435656905b7a431fc95b1182f"
+      },
+      {
+        "file": "src/lib/hubPreview.js",
+        "sha256_lf": "2f7f3d087668589478b358ea62733fef5a2f283f1fdad561a4dbf6c958d631b1"
+      },
+      {
+        "file": "src/lib/insuranceFunnel.js",
+        "sha256_lf": "de9943e388ca7078f5ae905c4c3600a0d8636de5de554508210b4babf84e072b"
+      },
+      {
+        "file": "src/lib/insuranceLeads.js",
+        "sha256_lf": "f33723e1552dbc736fd1309377de72d1db756e6347c58ad2005221d140380922"
+      },
+      {
+        "file": "src/lib/legalPages.js",
+        "sha256_lf": "2ffc0a19cc00145b66b626dea1d81c995fee7b91a9a6d89f84af153019c6e4e3"
+      },
+      {
+        "file": "src/lib/partnerContacts.js",
+        "sha256_lf": "c2d60dfc8a8e63da3885dc0ea846e4ea39f01fa974f5476d25ae68d0a1f3dd0f"
+      },
+      {
+        "file": "src/lib/passwordPolicy.js",
+        "sha256_lf": "57e9ac1eb7a888274f189e4062f99ce77a6026e1bedcb89902f18001affdbe5a"
+      },
+      {
+        "file": "src/lib/profileBootstrap.js",
+        "sha256_lf": "ca255f67a1e6865b7f46c114e1325ec58c72bf1e56bb67bee20fcb31c516eeb3"
+      },
+      {
+        "file": "src/lib/profileBranding.js",
+        "sha256_lf": "d3d18a225a5f42ae89847e8ec8fabf928312de7ab1aca57610a687bc819dbf2d"
+      },
+      {
+        "file": "src/lib/realtorSetup.js",
+        "sha256_lf": "f6933d16c9b16e8174562301399a027719e2d27c15508ce818df7858dc950ea8"
+      },
+      {
+        "file": "src/lib/realtorSlugs.js",
+        "sha256_lf": "3e14bf1cb414125c1449c1fda0586347ca89eae04dd07bc0554d85c72426caa1"
+      },
+      {
+        "file": "src/lib/supabase.js",
+        "sha256_lf": "e53743e4b7e6be048f9ba0160a7c8ce42bd484336f383357426d8b21a45a6e74"
+      },
+      {
+        "file": "src/lib/supportContact.js",
+        "sha256_lf": "e449d8d04e238b7f3af1ae96410bdb019c43f5601871b7c487b71e3a274eb3d5"
+      },
+      {
+        "file": "src/lib/turnstile.js",
+        "sha256_lf": "70afd0ea1d6c828625050bcfafe4e8f43f17d503988d5cea167553f57769007c"
+      },
+      {
+        "file": "src/lib/vendorVisibility.js",
+        "sha256_lf": "75f739bdfafd4bc6d558f2fc73eec687a0b52d558ae7943fcb4af9892c2ee3d9"
+      },
+      {
+        "file": "src/main.jsx",
+        "sha256_lf": "314a11339bc10e0fe7d442bd4eb2d928e9bc74131354be5052398e6cc013b4f4"
+      },
+      {
+        "file": "src/style.css",
+        "sha256_lf": "0500bfd3c82e7d4bdb6bbed5c92e3c6776da36ea9a351e110781f98d3c5ed754"
+      },
+      {
+        "file": "src/tailwind.config.js",
+        "sha256_lf": "ddf27e4d88e936163fece76db9214c505e0c3a4ca502fe49f74e8310a37166c7"
+      },
+      {
+        "file": "tailwind.config.js",
+        "sha256_lf": "ddf27e4d88e936163fece76db9214c505e0c3a4ca502fe49f74e8310a37166c7"
+      },
+      {
+        "file": "vercel.json",
+        "sha256_lf": "2e8afbf10b418c39b88ba2c575212de7ce579d7eee88e44256511a55c6a37686"
+      },
+      {
+        "file": "vite.config.js",
+        "sha256_lf": "eca485c281977125366d4800553256e419f364984e615f75a2d2bae54f7857fd"
+      }
+    ]
+  },
+  "historical": [
+    {
+      "file": "20261012000000_update_preferred_vendor_limits.sql",
+      "production_version": "20261015163221",
+      "name": "update_preferred_vendor_limits",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "4758a59ea770ae1e23bdcdd16e98d48315254672244aec78f58cfcc8e33c0c71"
+    },
+    {
+      "file": "20261016021806_emergency_services.sql",
+      "production_version": "20261016023454",
+      "name": "emergency_services",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "f8588fc6b6f243244c826d23f71a316b9056f3a9914d08a9faeb002158732438"
+    },
+    {
+      "file": "20261016033634_homeowner_savings.sql",
+      "production_version": "20261016043104",
+      "name": "homeowner_savings",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "46fadf8f07ee2b87e8db129dab675f872f013453d8d60eb1542e53928751caf6"
+    },
+    {
+      "file": "20261016054605_insurance_funnel.sql",
+      "production_version": "20261016060341",
+      "name": "insurance_funnel",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "27717a89e798f567d1a153c1820c954f587e6a880d22a6c68f8cf4fa8cb2193d"
+    },
+    {
+      "file": "20261017025446_insurance_structured_address.sql",
+      "production_version": "20261017034234",
+      "name": "insurance_structured_address",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "05a9ea6d6eb9a785b44e0d18cc2e093b63f7b90f056cbcd2b9eeb0e617007bc2"
+    },
+    {
+      "file": "20261018171924_homeowner_push.sql",
+      "production_version": "20261018212856",
+      "name": "homeowner_push",
+      "action": "already_applied_do_not_execute",
+      "sha256_lf": "0b8571d53a8926c076fb200281c9534b2c6ec530a45d801f0468d4bd2d550e3e"
+    }
+  ],
+  "selected": [
+    {
+      "file": "20261019025425_restrict_standard_vendor_helper.sql",
+      "source_version": "20261019025425",
+      "name": "restrict_standard_vendor_helper",
+      "sha256_lf": "80acb10d4828550430e00143983727e241e69fcb6c58543fc0b9c484117b8c3a",
+      "depends_on": []
+    },
+    {
+      "file": "20261019032658_enforce_profile_branding.sql",
+      "source_version": "20261019032658",
+      "name": "enforce_profile_branding",
+      "sha256_lf": "7b805e9f56ee2646ad1223da50c8c166f407010beda99efdaebb03d73917935a",
+      "depends_on": []
+    },
+    {
+      "file": "20261019034056_enforce_vendor_downgrade_visibility.sql",
+      "source_version": "20261019034056",
+      "name": "enforce_vendor_downgrade_visibility",
+      "sha256_lf": "c06c42335ddc27b083f6f8db482b1f77972f78604655008a9d57bf0379c1eecd",
+      "depends_on": [
+        "20261019025425_restrict_standard_vendor_helper.sql",
+        "20261019032658_enforce_profile_branding.sql"
+      ]
+    },
+    {
+      "file": "20261019035914_support_inbox.sql",
+      "source_version": "20261019035914",
+      "name": "support_inbox",
+      "sha256_lf": "8978d3a488e52f397c38a89844a37f743511be5f951786a4ad50105a90c20dcd",
+      "depends_on": []
+    },
+    {
+      "file": "20261019172710_bootstrap_realtor_profile.sql",
+      "source_version": "20261019172710",
+      "name": "bootstrap_realtor_profile",
+      "sha256_lf": "0bde456bb29b8bb84eb00f6d2881e244dec854d911ed7523599a6b928900b3f2",
+      "depends_on": [
+        "20261019025425_restrict_standard_vendor_helper.sql",
+        "20261019032658_enforce_profile_branding.sql",
+        "20261019034056_enforce_vendor_downgrade_visibility.sql"
+      ]
+    },
+    {
+      "file": "20261019175354_deprecate_legacy_realtor_profiles.sql",
+      "source_version": "20261019175354",
+      "name": "deprecate_legacy_realtor_profiles",
+      "sha256_lf": "2f553994a7bec6e0999e0d24e650aa0b38c0dd07d0201de69c713fbde979a1b7",
+      "depends_on": []
+    },
+    {
+      "file": "20261019180243_enforce_realtor_slugs.sql",
+      "source_version": "20261019180243",
+      "name": "enforce_realtor_slugs",
+      "sha256_lf": "50327aa2d68a02d59bf61116b503f8c5d692e3e1a96dc66fa85347d7fd06ed52",
+      "depends_on": []
+    },
+    {
+      "file": "20261019181529_harden_vendor_updated_at_search_path.sql",
+      "source_version": "20261019181529",
+      "name": "harden_vendor_updated_at_search_path",
+      "sha256_lf": "b587f7780022920fe76c7b8a1edca89cb8d30da4d70761bbd2bb7937cce569d0",
+      "depends_on": []
+    },
+    {
+      "file": "20261019183523_restrict_hub_activity_ingestion.sql",
+      "source_version": "20261019183523",
+      "name": "restrict_hub_activity_ingestion",
+      "sha256_lf": "06c446bfb071452e4437ec7875d819f7b6d27c09096070eda00c326974d16275",
+      "depends_on": [
+        "20261019032658_enforce_profile_branding.sql",
+        "20261019180243_enforce_realtor_slugs.sql"
+      ]
+    },
+    {
+      "file": "20261019200249_realtor_signup_owner_notifications.sql",
+      "source_version": "20261019200249",
+      "name": "realtor_signup_owner_notifications",
+      "sha256_lf": "53c0dcb84b0db1b8da591a3a889590b125955108ab06125d16801e820b70a142",
+      "depends_on": [
+        "20261019172710_bootstrap_realtor_profile.sql"
+      ]
+    }
+  ],
+  "excluded": [
+    "20261018151224_retire_emergency_services.sql"
+  ],
+  "edge_files": [
+    {
+      "file": "supabase/config.toml",
+      "sha256_lf": "c14fbe51bf29f36dcef1c5845b9722d460c185a645178a19f877499eb600e3a0"
+    },
+    {
+      "file": "supabase/functions/_shared/supportContact.js",
+      "sha256_lf": "023818cdb631e4ac3c796b749843588b2d79430840b8d7da10895ac3d2da405d"
+    },
+    {
+      "file": "supabase/functions/support-contact/index.ts",
+      "sha256_lf": "61cad97cba6cd64a651f1c34a61290c7c96ce62e566226f9bf0482611c26eb6d"
+    },
+    {
+      "file": "supabase/functions/_shared/signupNotifications.js",
+      "sha256_lf": "e2e40ac0025de81018ef0d951a29debb2c6c7df6ab920aff674524499bef2c0d"
+    },
+    {
+      "file": "supabase/functions/signup-notifications/index.ts",
+      "sha256_lf": "aa02c690b84dc2dfb34886a5b713c6ff012e6e0176fef4e3749e101b278793a1"
+    },
+    {
+      "file": "supabase/functions/_shared/gooseheadLead.js",
+      "sha256_lf": "b181fb842e1a5fff5b19587ccaa3e574bf9b6feeca32523233117425a111b5de"
+    },
+    {
+      "file": "supabase/functions/goosehead-lead/index.ts",
+      "sha256_lf": "1536c7a26727bfb7d5cfbc0e6515f59679a77b1f67e55b44376b8a5799fea325"
+    },
+    {
+      "file": "supabase/operations/schedule_signup_notifications.sql",
+      "sha256_lf": "59eef79c215db456ee433a1cc7bb016bc54cc5d3b5f3213ab735db1c4ed27047"
+    }
+  ],
+  "scheduler_activation": "separate explicit approval after verification; not part of migration package",
+  "history_strategy": "Read-only version alias map; no repair, replay, db push, or automatic history write. Record actual assigned versions/checkpoints per migration during an approved rollout."
+}

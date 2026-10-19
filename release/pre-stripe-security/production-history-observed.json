@@ -1,0 +1,31 @@
+{
+  "project_ref": "hphcejnvxyccmwmofdqc",
+  "observed_date": "2026-10-19",
+  "purpose": "Read-only initial baseline metadata, not a live readiness guarantee",
+  "migrations": [
+    {
+      "version": "20261015163221",
+      "name": "update_preferred_vendor_limits"
+    },
+    {
+      "version": "20261016023454",
+      "name": "emergency_services"
+    },
+    {
+      "version": "20261016043104",
+      "name": "homeowner_savings"
+    },
+    {
+      "version": "20261016060341",
+      "name": "insurance_funnel"
+    },
+    {
+      "version": "20261017034234",
+      "name": "insurance_structured_address"
+    },
+    {
+      "version": "20261018212856",
+      "name": "homeowner_push"
+    }
+  ]
+}
