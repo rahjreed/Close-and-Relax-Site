@@ -50,6 +50,9 @@ async function fixture() {
     CREATE TRIGGER enforce_vendor_plan_rules_before_insert BEFORE INSERT ON public.vendors FOR EACH ROW EXECUTE FUNCTION public.enforce_vendor_plan_rules();`);
   await db.exec(read('../supabase/migrations/20261019025425_restrict_standard_vendor_helper.sql'));
   await db.exec(migration);
+  // Real active bootstrap/vendor regressions also run with the legacy path retired.
+  await db.exec(read('./fixtures/legacy-realtor-profiles.sql'));
+  await db.exec(read('../supabase/migrations/20261019175354_deprecate_legacy_realtor_profiles.sql'));
   return db;
 }
 async function addUser(db, userId = id, metadata = {}, confirmed = true) {
