@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Phone,
   MessageSquare,
@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
+import { createProfileBootstrap } from './lib/profileBootstrap';
 import { loadPublicHubProfile, profileForHub } from './lib/profileBranding';
 import { loadHubVendors, vendorsForHub } from './lib/vendorVisibility';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
@@ -829,6 +830,13 @@ function CloseRelaxApp() {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileStatus, setProfileStatus] = useState('idle');
+  const [profileError, setProfileError] = useState('');
+  const profileBootstrap = useMemo(() => createProfileBootstrap(supabase, (state) => {
+    setProfile(state.profile);
+    setProfileStatus(state.status);
+    setProfileError(state.error);
+  }), []);
   const [authLoading, setAuthLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
@@ -962,67 +970,6 @@ function CloseRelaxApp() {
     email: "",
     password: "",
   });
-
-  const fetchOrCreateProfile = async (authUser) => {
-    if (!authUser) {
-      setProfile(null);
-      return null;
-    }
-
-    try {
-      // Query profile strictly by authenticated Supabase UUID (id = user.id)
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error querying profile:', fetchError);
-        setAuthError(fetchError.message);
-        setProfile(null);
-        return null;
-      }
-
-      if (existingProfile) {
-        setProfile(existingProfile);
-        return existingProfile;
-      }
-
-      // Profile row does not exist yet: insert using user metadata
-      const meta = authUser.user_metadata || {};
-      const newProfile = {
-        id: authUser.id,
-        full_name: meta.full_name || '',
-        email: authUser.email || '',
-        brokerage: meta.brokerage || '',
-        city: meta.market_city || '',
-        plan: meta.plan || 'partner',
-        is_published: false,
-      };
-
-      const { data: insertedProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert([newProfile])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error inserting initial profile into database:', insertError);
-        setAuthError(insertError.message || 'Unable to create user profile row.');
-        setProfile(null);
-        return null;
-      }
-
-      setProfile(insertedProfile || newProfile);
-      return insertedProfile || newProfile;
-    } catch (err) {
-      console.error('Unexpected profile handling error:', err);
-      setAuthError(err.message || 'Failed to sync user profile.');
-      setProfile(null);
-      return null;
-    }
-  };
 
   const fetchUserVendors = async (profileId = user?.id) => {
     if (!profileId) {
@@ -1252,13 +1199,9 @@ function CloseRelaxApp() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
-
-    fetchOrCreateProfile(user);
-  }, [user?.id]);
+    void profileBootstrap.load(isRealtorSubdomain ? null : user?.id);
+    return () => profileBootstrap.cancel();
+  }, [user?.id, isRealtorSubdomain, profileBootstrap]);
 
   useEffect(() => {
     if (!user?.id || !profile?.id) {
@@ -1542,7 +1485,7 @@ function CloseRelaxApp() {
       if (data?.session && data?.user) {
         setSignupModalOpen(false);
         setCurrentView('dashboard');
-        showToast(`Welcome, ${signupData.name || 'Realtor'}! Your hub is ready to customize.`);
+        showToast(`Welcome, ${signupData.name || 'Realtor'}! Let's finish setting up your account.`);
       }
     } catch (err) {
       setAuthError(err.message || 'An unexpected error occurred during signup.');
@@ -2850,6 +2793,20 @@ function CloseRelaxApp() {
               </p>
             </div>
           </div>
+        </main>
+      ) : currentView === 'dashboard' && user && (profile?.id !== user.id || profileStatus !== 'ready') ? (
+        <main className="min-h-[calc(100vh-80px)] bg-[#24211E] px-6 py-14 flex items-start justify-center">
+          <section aria-labelledby="profile-setup-title" className="w-full max-w-md bg-[#F8F5EF] rounded-3xl border border-[#4B443D] p-7 sm:p-8">
+            <h1 id="profile-setup-title" className="font-editorial text-2xl font-bold text-charcoal-deep">Setting up your account</h1>
+            {profileStatus === 'error' ? (
+              <>
+                <p role="alert" className="mt-4 text-sm text-charcoal-muted leading-relaxed">{profileError}</p>
+                <button type="button" onClick={() => void profileBootstrap.load(user.id)} className="mt-5 w-full min-h-[44px] px-5 py-3 rounded-full bg-[#191816] text-[#FAF7F2] text-sm font-semibold">Retry setup</button>
+                <button type="button" onClick={() => setContactModalOpen(true)} className="mt-2 w-full min-h-[44px] text-sm underline">Contact Support</button>
+              </>
+            ) : <p role="status" className="mt-4 text-sm text-charcoal-muted">Loading your Close &amp; Relax profile…</p>}
+            <button type="button" onClick={handleLogout} disabled={actionLoading} className="mt-3 w-full min-h-[44px] text-sm underline disabled:opacity-50">Log Out</button>
+          </section>
         </main>
       ) : currentView === 'dashboard' && user ? (
         <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-6 sm:px-8 py-12 md:py-16 border-t border-[#3A3530]">
