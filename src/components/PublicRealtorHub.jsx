@@ -1,3 +1,5 @@
+import HomeownerReminderSettings from './HomeownerReminderSettings.jsx';
+import { saveHubManifest } from '../lib/pwa.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ShieldCheck,
@@ -593,7 +595,9 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
     const manifestJson = {
       name: `${realtorName}'s Homeowner Resource Hub`,
       short_name: `${firstName}'s Home Hub`,
-      start_url: window.location.href,
+      id: '/',
+      start_url: '/',
+      scope: '/',
       display: 'standalone',
       background_color: '#faf8f5',
       theme_color: '#faf8f5',
@@ -601,9 +605,8 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
       ...(manifestIcons.length > 0 ? { icons: manifestIcons } : {}),
     };
 
-    const stringManifest = JSON.stringify(manifestJson);
-    const blob = new Blob([stringManifest], { type: 'application/json' });
-    const manifestURL = URL.createObjectURL(blob);
+    // Stable URL/identity; worker serves public Realtor branding from IndexedDB.
+    const manifestURL = '/manifest.webmanifest';
     let manifestLink = document.querySelector('link[rel="manifest"]');
 
     if (!manifestLink) {
@@ -612,7 +615,11 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
       document.head.appendChild(manifestLink);
     }
 
-    manifestLink.href = manifestURL;
+    // On first visit wait for the worker to control this page, so the first
+    // install sees the Realtor's branding rather than the generic fallback.
+    let manifestCancelled = false;
+    const attachManifest = () => { if (!manifestCancelled) manifestLink.href = manifestURL; };
+    saveHubManifest(manifestJson, { preview }).then(attachManifest).catch(attachManifest);
 
     // iPhone/iPad use apple-touch-icon rather than the manifest icon.
     // Keep the same tier rule there too: Pro gets personalized initials;
@@ -631,9 +638,9 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
     }
 
     return () => {
+      manifestCancelled = true;
       window.removeEventListener('closeandrelax-installprompt-ready', handlePromptReady);
       window.removeEventListener('closeandrelax-app-installed', handleAppInstalled);
-      URL.revokeObjectURL(manifestURL);
 
       if (createdAppleTouchIconLink && appleTouchIconLink?.parentNode) {
         appleTouchIconLink.parentNode.removeChild(appleTouchIconLink);
@@ -1148,8 +1155,10 @@ export default function PublicRealtorHub({ profile, fallbackResources = [], prev
           </section>
         )}
 
+        <HomeownerReminderSettings profileId={profile?.id} preview={preview} />
+
         {checklistItems.length > 0 && (
-          <section className="hub-reveal bg-white rounded-2xl p-5 sm:p-6 border border-[#ebdcc7] hub-editorial-shadow mb-10">
+          <section id="homeowner-checklist" className="hub-reveal bg-white rounded-2xl p-5 sm:p-6 border border-[#ebdcc7] hub-editorial-shadow mb-10">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
               <div>
                 <span className="text-[10px] uppercase tracking-[0.22em] font-semibold text-[#9c7844]">

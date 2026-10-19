@@ -2,3 +2,11 @@
 # enforces origin, Turnstile, validation, rate limits, and service-only storage.
 [functions.goosehead-lead]
 verify_jwt = false
+
+# Anonymous capability-based management; handler validates every operation.
+[functions.homeowner-push-manage]
+verify_jwt = false
+
+# Private scheduler authenticates with its dedicated Vault-backed secret.
+[functions.homeowner-push-dispatch]
+verify_jwt = false
