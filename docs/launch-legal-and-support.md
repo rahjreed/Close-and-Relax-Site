@@ -160,6 +160,13 @@ retention policy or a promise of deletion on day 90.
    necessary disposition details and send a manual outcome response before closing
    the support ticket.
 
+Owner signup notifications, when enabled, add a private delivery outbox and a
+limited account email in the owner's mailbox/Resend records. Review those under
+the retention policy too; they are not automatically removed by profile/Auth
+deletion. Retain a minimal dedupe UUID where appropriate to prevent a recreated
+profile from sending duplicate alerts; handle names/email payloads separately.
+See `signup-owner-notifications.md`. Insurance/support notifications remain off.
+
 No deletion SQL, account-deletion RPC, scheduler, email alert or consent acceptance
 mechanism was added. Finalize and dry-run this runbook with disposable staging
 accounts and reviewed rollback/recovery options before the first real closure.

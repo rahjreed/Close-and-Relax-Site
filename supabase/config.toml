@@ -6,3 +6,8 @@ verify_jwt = false
 # Public support is creation-only; CAPTCHA and rate limits are checked server-side.
 [functions.support-contact]
 verify_jwt = false
+
+# Server-only worker: custom high-entropy bearer secret, no browser/CORS access.
+# No scheduler is installed by the migration. Enabled only after approved setup.
+[functions.signup-notifications]
+verify_jwt = false

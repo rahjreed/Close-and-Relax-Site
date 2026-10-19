@@ -98,3 +98,10 @@ multi-connection MVCC races rely on PostgreSQL's primary-key/ON CONFLICT guarant
 
 No migration, production backfill, deployment, Auth configuration, or deletion was
 performed during local implementation.
+
+## Owner notification follow-up
+
+`signup-owner-notifications.md` describes a separate local, best-effort AFTER INSERT
+outbox trigger for the first confirmed profile. It changes no bootstrap logic and
+does no email/network delivery in this transaction. Existing profiles/repeated
+bootstrap calls do not send alerts. It requires separate production approval.
