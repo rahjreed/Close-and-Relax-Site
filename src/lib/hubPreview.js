@@ -1,3 +1,5 @@
+import { profileForHub } from './profileBranding.js';
+
 export async function requirePreviewOwner(client, expectedUserId) {
   const { data, error } = await client.auth.getUser();
   if (error || !expectedUserId || data?.user?.id !== expectedUserId)
@@ -26,11 +28,7 @@ export async function loadOwnHubPreview(client, expectedUserId, getPlanConfig) {
   ]);
   await requirePreviewOwner(client, user.id);
   return {
-    ...profile,
-    ...(!plan.allowsPremiumProfile ? {
-      headshot_url: '', photo_url: '', welcome_message: '', bio: '', website_url: '',
-      instagram_url: '', facebook_url: '', linkedin_url: '',
-    } : {}),
+    ...profileForHub(profile),
     welcome_video_url: plan.allowsWelcomeVideo ? (profile.welcome_video_url || '') : '',
     vendors: vendors.map((vendor) => ({ ...vendor, recommendation: plan.allowsVendorRecommendations ? vendor.recommendation : null })),
     vendor_loading: false, vendor_load_error: false,

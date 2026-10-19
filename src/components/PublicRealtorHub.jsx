@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../lib/supabase';
+import { profileForHub } from '../lib/profileBranding';
 import MyHomeContactsSection from './MyHomeContactsSection';
 import ChecklistDueDateAdjustment from './ChecklistDueDateAdjustment';
 import HomeownerSavingsSection from './HomeownerSavingsSection';
@@ -306,6 +307,7 @@ const getVendorIcon = (category = '') => {
 };
 
 export default function PublicRealtorHub({ profile, fallbackResources = [], preview = false, onPreviewReady }) {
+  profile = profileForHub(profile);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);

@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
+import { loadPublicHubProfile, profileForHub } from './lib/profileBranding';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
 import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
@@ -451,6 +452,7 @@ const getProfileImageStoragePath = (url = '') => {
 };
 
 function PublicRealtorHub({ profile }) {
+  profile = profileForHub(profile);
   const [showSaveTip, setShowSaveTip] = useState(false);
 
   const realtorName = profile?.full_name || 'Your Realtor';
@@ -1332,29 +1334,19 @@ function CloseRelaxApp() {
       setPublicProfileError(null);
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('slug', subdomainSlug)
-          .eq('is_published', true)
-          .maybeSingle();
+        const data = await loadPublicHubProfile(supabase, subdomainSlug);
 
         if (!isMounted) return;
-        if (error) throw error;
         if (!data) {
           setPublicProfile(null);
           return;
         }
 
         const publicPlan = getPlanConfig(data.plan);
-        const premiumProfileData = publicPlan.allowsPremiumProfile ? data : {
-          ...data, headshot_url: '', welcome_message: '', bio: '', website_url: '',
-          instagram_url: '', facebook_url: '', linkedin_url: '',
-        };
         // Render the profile immediately. Each content collection loads independently,
         // so a vendor outage cannot delay the rest of the homeowner hub.
         setPublicProfile({
-          ...premiumProfileData,
+          ...profileForHub(data),
           welcome_video_url: publicPlan.allowsWelcomeVideo ? (data.welcome_video_url || '') : '',
           vendors: [], vendor_loading: true, vendor_load_error: false,
           checklist_items: [], custom_hub_sections: [],
