@@ -1427,10 +1427,11 @@ function CloseRelaxApp() {
     setLoginModalOpen(true);
   };
 
-  const handleOpenForgotPassword = () => {
+  const handleOpenForgotPassword = (email = loginData.email) => {
     setPasswordRecoveryError(null);
     setForgotPasswordSent(false);
-    setForgotPasswordEmail(loginData.email.trim());
+    setForgotPasswordEmail((typeof email === 'string' ? email : loginData.email).trim());
+    setSignupModalOpen(false);
     _setLoginModalOpen(false);
     setForgotPasswordOpen(true);
   };
@@ -1531,7 +1532,7 @@ function CloseRelaxApp() {
         return;
       }
 
-      // Check if email confirmation is required before an active session is generated
+      // A no-session response can also obscure a repeated signup; keep the acknowledgment neutral.
       if (data?.user && !data?.session) {
         setEmailConfirmationRequired(true);
         setActionLoading(false);
@@ -4625,25 +4626,33 @@ function CloseRelaxApp() {
 
             <div className="p-6 sm:p-8">
               {emailConfirmationRequired ? (
-                /* Email Confirmation Screen */
+                /* Neutral signup acknowledgment for both new and repeated signup requests. */
                 <div className="text-center py-6">
                   <div className="w-14 h-14 rounded-full bg-gold-accent/15 text-gold-accent border border-gold-accent/40 flex items-center justify-center mx-auto mb-4 font-editorial text-2xl">
                     <Mail className="w-7 h-7" />
                   </div>
                   <h4 className="font-editorial text-2xl font-bold text-charcoal-deep mb-2">
-                    Check Your Email
+                    Next steps
                   </h4>
                   <p className="text-sm text-charcoal-muted leading-relaxed max-w-sm mx-auto mb-6">
-                    We sent a secure confirmation link to <strong className="text-charcoal-deep">{signupData.email}</strong>. Please click the link to activate your Realtor account and open your dashboard.
+                    If this is a new account, check your email for a confirmation link. If you already have an account, you can log in or reset your password.
                   </p>
                   <button
+                    type="button"
                     onClick={() => {
-                      setSignupModalOpen(false);
+                      setLoginData((current) => ({ ...current, email: signupData.email.trim(), password: '' }));
                       handleOpenLogin();
                     }}
-                    className="px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-xs font-medium hover:bg-[#262421]"
+                    className="w-full min-h-[44px] px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-sm font-medium hover:bg-[#262421]"
                   >
-                    Proceed to Log In
+                    Log In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenForgotPassword(signupData.email)}
+                    className="mt-3 w-full min-h-[44px] px-6 py-2.5 rounded-full border border-cream-border text-charcoal-deep text-sm font-medium hover:bg-cream-subtle"
+                  >
+                    Forgot Password
                   </button>
                 </div>
               ) : (
