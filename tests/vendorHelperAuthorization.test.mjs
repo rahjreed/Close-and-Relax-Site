@@ -29,6 +29,8 @@ async function fixture(secured = true) {
       created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
   `);
   await db.exec(functions);
+  await db.exec(readFileSync(new URL('./fixtures/vendor-updated-at.sql', import.meta.url), 'utf8'));
+  await db.exec(readFileSync(new URL('../supabase/migrations/20261019181529_harden_vendor_updated_at_search_path.sql', import.meta.url), 'utf8'));
   await db.exec(`
     GRANT EXECUTE ON FUNCTION public.add_standard_close_relax_vendor(uuid) TO PUBLIC,anon,authenticated,service_role;
     REVOKE EXECUTE ON FUNCTION public.restore_close_relax_standard_vendor() FROM PUBLIC;
