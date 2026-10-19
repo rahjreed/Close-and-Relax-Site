@@ -2,3 +2,7 @@
 # enforces origin, Turnstile, validation, rate limits, and service-only storage.
 [functions.goosehead-lead]
 verify_jwt = false
+
+# Public support is creation-only; CAPTCHA and rate limits are checked server-side.
+[functions.support-contact]
+verify_jwt = false

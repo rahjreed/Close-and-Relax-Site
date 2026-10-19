@@ -42,6 +42,8 @@ import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
 import HomeownerSavingsSettings from './components/HomeownerSavingsSettings';
 import InsuranceLeads from './components/InsuranceLeads';
+import SupportInbox from './components/SupportInbox';
+import SupportContactDialog from './components/SupportContactDialog';
 import RealtorSetupChecklist from './components/RealtorSetupChecklist';
 import HubPreviewDialog from './components/HubPreviewDialog';
 import { readRealtorPreview } from './lib/realtorSetup';
@@ -961,13 +963,6 @@ function CloseRelaxApp() {
     password: "",
   });
 
-  const [contactSubmitted, setContactSubmitted] = useState(false);
-  const [contactData, setContactData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-
   const fetchOrCreateProfile = async (authUser) => {
     if (!authUser) {
       setProfile(null);
@@ -1598,11 +1593,6 @@ function CloseRelaxApp() {
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    setContactSubmitted(true);
   };
 
   const toggleFaq = (index) => {
@@ -3260,7 +3250,10 @@ function CloseRelaxApp() {
 
               {/* Homeowner Savings visibility */}
               {user?.id && (
-                <InsuranceLeads key={user.id} userId={user.id} accessToken={session?.access_token} />
+                  <>
+                    <InsuranceLeads key={user.id} userId={user.id} accessToken={session?.access_token} />
+                    <SupportInbox key={`support-${user.id}`} userId={user.id} accessToken={session?.access_token} />
+                  </>
               )}
               {profile?.id && profile.id === user?.id && (
                 <HomeownerSavingsSettings
@@ -6076,111 +6069,7 @@ function CloseRelaxApp() {
       )}
 
       {}
-      {contactModalOpen && (
-        <div className="fixed inset-0 z-50 bg-[#191816]/65 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-cream-warm rounded-3xl max-w-md w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
-            
-            <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
-              <div>
-                <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">
-                  Assistance
-                </span>
-                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">
-                  Contact Support
-                </h3>
-              </div>
-              <button
-                onClick={() => setContactModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-cream-subtle text-charcoal-deep hover:bg-cream-border flex items-center justify-center transition-colors"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 sm:p-8">
-              {!contactSubmitted ? (
-                <form onSubmit={handleContactSubmit} className="space-y-4 text-left">
-                  <div>
-                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactName">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      id="contactName"
-                      required
-                      value={contactData.name}
-                      onChange={(e) => setContactData({ ...contactData, name: e.target.value })}
-                      placeholder="Your full name"
-                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactEmail">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="contactEmail"
-                      required
-                      value={contactData.email}
-                      onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
-                      placeholder="your@email.com"
-                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-charcoal-deep mb-1" htmlFor="contactMessage">
-                      How can we assist?
-                    </label>
-                    <textarea
-                      id="contactMessage"
-                      required
-                      rows={3}
-                      value={contactData.message}
-                      onChange={(e) => setContactData({ ...contactData, message: e.target.value })}
-                      placeholder="Ask a question about setup, plans, or features..."
-                      className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      className="w-full py-3 px-6 rounded-full bg-[#191816] hover:bg-[#262421] text-[#FAF7F2] text-sm font-semibold transition-all shadow-md"
-                    >
-                      Send Message
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 rounded-full bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] flex items-center justify-center mx-auto mb-4 font-editorial text-2xl font-bold">
-                    ✓
-                  </div>
-                  <h4 className="font-editorial text-2xl font-bold text-charcoal-deep mb-2">
-                    Message Received
-                  </h4>
-                  <p className="text-sm text-charcoal-muted leading-relaxed max-w-sm mx-auto mb-6">
-                    Thank you for reaching out. Our support desk will respond to your inquiry via email shortly.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setContactModalOpen(false);
-                      setContactSubmitted(false);
-                    }}
-                    className="px-6 py-2.5 rounded-full bg-[#191816] text-[#FAF7F2] text-xs font-medium hover:bg-[#262421]"
-                  >
-                    Done
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
+      {contactModalOpen && <SupportContactDialog onClose={() => setContactModalOpen(false)} />}
 
     </div>
   );
