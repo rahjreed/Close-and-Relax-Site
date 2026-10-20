@@ -31,14 +31,25 @@ test('logout clears account state only after a confirmed successful signOut; ret
 });
 test('closure request opens existing Support with login email, manual request text and no deletion operation',()=>{
   let draft,opened=false,settings=true;
-  const context={profile:{full_name:'Public Realtor',email:'public@example.invalid'},user:{email:'login@example.invalid'},
+  const context={profile:{full_name:'Public Realtor',email:'public@example.invalid'},user:{id:'account-fixture',email:'login@example.invalid'},
     setAccountSettingsOpen:v=>{settings=v;},setSupportDraftContext:v=>{draft=v;},setContactModalOpen:v=>{opened=v;}};
   const open=realHandler('openAccountSupport','focusPublicationControl',context);
   open(true);assert.equal(opened,true);assert.equal(settings,false);
   assert.equal(draft.initialEmail,'login@example.invalid');assert.equal(draft.initialName,'Public Realtor');
   assert.match(draft.initialMessage,/verify ownership.*before deleting anything/s);
+  assert.equal(draft.requestType,'account_closure');
   open();assert.equal(draft.initialMessage,'');
+  assert.equal(draft.requestType,'general');
   assert.doesNotMatch(app,/auth\.admin\.deleteUser|rpc\(['"]delete|from\(['"]profiles['"]\)\s*\.delete/);
+});
+
+test('unauthenticated closure attempt never opens a form or mutates publication/account data',()=>{
+  const messages=[];
+  const context={user:null,showToast:value=>messages.push(value),
+    setAccountSettingsOpen:()=>assert.fail('Must not open account UI'),
+    setSupportDraftContext:()=>assert.fail('Must not prepare closure'),setContactModalOpen:()=>assert.fail('Must not open closure')};
+  realHandler('openAccountSupport','focusPublicationControl',context)(true);
+  assert.deepEqual(messages,['Log in before requesting account closure.']);
 });
 test('password update followed by failed logout reports the successful password change honestly without claiming signout',async()=>{
   for(const failure of ['returned','thrown']) {

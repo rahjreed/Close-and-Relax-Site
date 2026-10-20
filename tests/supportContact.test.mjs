@@ -2,12 +2,42 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { createRequire } from 'node:module';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { transformWithEsbuild } from 'vite';
+import * as supportClient from '../src/lib/supportContact.js';
 import { createSupportHandler, supportOriginAllowed, validateSupportContact } from '../supabase/functions/_shared/supportContact.js';
 import { DEFAULT_SUPPORT_FALLBACK_URL, sendSupportMessage, supportFallbackUrl } from '../src/lib/supportContact.js';
 
 const id = '00000000-0000-4000-8000-000000000001';
 const draft = { request_id: id, name: 'Test Realtor', email: 'test@example.com', message: 'Please help with setup.' };
 const migration = readFileSync(new URL('../supabase/migrations/20261019035914_support_inbox.sql', import.meta.url), 'utf8');
+
+test('support dialog renders explicit manual closure consent and failure-only fallback, never fake deletion success',async()=>{
+  const source=readFileSync(new URL('../src/components/SupportContactDialog.jsx',import.meta.url),'utf8');
+  const compiled=await transformWithEsbuild(source.replaceAll('import.meta.env','({})'),'SupportContactDialog.jsx',{loader:'jsx',format:'cjs',jsx:'transform'});
+  const require=createRequire(import.meta.url);
+  const render=(closure,failed,receipt='')=>{
+    let state=0;
+    const module={exports:{}};
+    // Render the real component's initial, failed-delivery and confirmed-receipt branches.
+    const react={...React,useState:initial=>{
+      const index=state++;
+      return React.useState(index===8?failed:index===7?receipt:initial);
+    }};
+    new Function('require','module','exports',compiled.code)(name=>name==='react'?react:name==='../lib/supabase'?{supabase:{}}:name==='../lib/turnstile'?{normalizeTurnstileSiteKey:()=>'',loadTurnstile:()=>{},turnstileFailure:()=>{}}:name==='../lib/supportContact'?supportClient:require(name),module,module.exports);
+    return renderToStaticMarkup(React.createElement(module.exports.default,{requestType:closure?'account_closure':'general',initialEmail:draft.email,onClose(){}}));
+  };
+  const closure=render(true,false);
+  for(const copy of ['Request account closure','type="checkbox"','request for review, not immediate deletion','Unpublishing only hides','Send closure request','readonly=""'])assert.ok(closure.includes(copy),copy);
+  assert.doesNotMatch(closure,/hello@callistadigital.com/);
+  assert.match(render(false,true),/href="mailto:hello@callistadigital.com"/);
+  assert.doesNotMatch(render(false,true,id),/href="mailto:hello@callistadigital.com"/);
+  assert.match(render(true,false,id),/Nothing has been unpublished or deleted/);
+  assert.match(source,/closure && !closureConfirmed/);
+  assert.doesNotMatch(source,/localStorage|sessionStorage|auth\.admin|\.delete\(/);
+});
 
 test('support validates bounded fields and only forwards expected data', () => {
   assert.deepEqual(validateSupportContact({ ...draft, name: ' Test Realtor ', admin: true }), draft);
@@ -44,6 +74,51 @@ test('support endpoint saves only after CAPTCHA and returns the confirmed receip
   assert.deepEqual(calls[0].message, draft);
   assert.match(calls[0].hash, /^[a-f0-9]{64}$/);
   assert.equal(response.headers.get('cache-control'), 'no-store');
+});
+
+test('closure requires verified non-anonymous Auth identity and ignores supplied account/email authority', async () => {
+  const body={request_type:'account_closure',email:'someone-else@example.com',profile_id:'another-profile'};
+  const withBearer=x=>x.request(body,{headers:{origin:'https://closeandrelax.com','x-forwarded-for':'192.0.2.1',authorization:'Bearer test-session'}});
+  for(const identity of [null,{id,email:draft.email,is_anonymous:true},{id}]) {
+    const x=setup({authenticate:async()=>identity});
+    assert.equal((await x.handler(withBearer(x))).status,401);assert.equal(x.calls.length,0);
+  }
+  const x=setup({authenticate:async token=>{assert.equal(token,'test-session');return {id,email:'owner@example.com'};}});
+  assert.equal((await x.handler(x.request(body))).status,401);
+  assert.equal((await x.handler(withBearer(x))).status,201);
+  assert.equal(x.calls[0].message.email,'owner@example.com');
+  assert.match(x.calls[0].message.message,new RegExp(`Authenticated account: ${id}`));
+  assert.match(x.calls[0].message.message,/no deletion or unpublish performed/);
+  assert.equal('profile_id' in x.calls[0].message,false);
+  // Identity stamping is deterministic for retry/idempotency; still one existing support write path.
+  await x.handler(withBearer(x));assert.deepEqual(x.calls[1].message,x.calls[0].message);
+  const bad=setup({authenticate:async()=>{throw Error('private auth details');}});
+  assert.equal((await bad.handler(withBearer(bad))).status,401);assert.equal(bad.calls.length,0);
+});
+
+test('closure retains CAPTCHA and rate limiting and rejects unsupported request types',async()=>{
+  const authenticate=async()=>({id,email:draft.email});
+  for(const [overrides,status] of [
+    [{fetcher:async()=>Response.json({success:false})},400],
+    [{save:async()=>({error:{code:'P0429'}})},429],
+  ]) {
+    const x=setup({authenticate,...overrides});
+    const response=await x.handler(x.request({request_type:'account_closure'},{headers:{origin:'https://closeandrelax.com','x-forwarded-for':'192.0.2.1',authorization:'Bearer test-session'}}));
+    assert.equal(response.status,status);
+  }
+  const x=setup();assert.equal((await x.handler(x.request({request_type:'delete_account'}))).status,400);assert.equal(x.calls.length,0);
+});
+
+test('closure frontend rechecks Auth before submission; expired or anonymous sessions never invoke endpoint',async()=>{
+  for(const user of [null,{id,email:draft.email,is_anonymous:true},{id}]) {
+    const client={auth:{getUser:async()=>({data:{user}})},functions:{invoke:async()=>assert.fail('No submission')}};
+    await assert.rejects(sendSupportMessage(client,draft,'token','','account_closure'),/Log in again/);
+  }
+  let sent;
+  const client={auth:{getUser:async()=>({data:{user:{id,email:draft.email}}})},functions:{invoke:async(_name,options)=>{sent=options.body;return {data:{accepted:true,reference:id}};}}};
+  assert.equal(await sendSupportMessage(client,draft,'token','','account_closure'),id);
+  assert.equal(sent.request_type,'account_closure');
+  assert.equal('profile_id' in sent,false);
 });
 
 test('wrong CAPTCHA action/hostname, blocked origins, honeypot, bad input and missing config never save', async () => {

@@ -6,6 +6,13 @@ and `/terms` are explicitly marked launch drafts, not attorney-reviewed document
 Draft status and placeholders must be resolved before broad paid launch. Do not simply
 remove the marker without reviewing the underlying decisions.
 
+Account Settings now includes an authenticated, confirmed manual closure request.
+The Edge Function verifies the session and records the Auth UUID/login email in the
+existing private support message. General public Support remains available for
+access problems. Neither path deletes data, unpublishes a hub or cancels billing.
+Requests received outside the verified mode require independent account verification;
+typed names/emails or apparent identity labels in free-form text are not proof.
+
 ## Founder and professional review gate
 
 - Confirm the legal operating entity, business/contact details, launch markets,

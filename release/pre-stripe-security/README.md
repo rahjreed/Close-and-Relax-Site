@@ -8,11 +8,18 @@ activation are excluded. Do not use `supabase db push` on the repository directo
 
 ## Exact source and offline package
 
-Application/Edge revision: `1a1bba663a922e06e32ecf79bc07b901bfb15bb0` on
-`codex-development`. This includes the account, legal and owner-notification commits.
-Package-only documentation/tests/tools may be committed later without changing that
-application revision. A later app/backend modification requires a newly reviewed
-manifest, hashes, rehearsal and build; do not silently update hashes to pass a gate.
+Application/Edge base revision: `c029ccc57ccab6f683336ffebe242d779834db26` on
+`codex-development`, plus the explicitly listed **uncommitted closure overlay** in
+`manifest.frontend.working_tree_overlay`. The hashes describe this local working
+tree, not an already committed or deployed revision. This review adds authenticated
+manual closure requests and the corresponding privacy explanation; the ten SQL
+migrations and six historical sources are unchanged. Commit/review this exact
+frontend and updated `support-contact` source together before release. Deploy the
+updated Edge Function before its matching frontend: the previous endpoint would
+ignore the new closure request type instead of enforcing account identity.
+Staging closure acceptance remains a release gate; offline tests do not replace it.
+A later app/backend modification requires a newly reviewed manifest, hashes,
+rehearsal and build; do not silently update hashes to pass a gate.
 `manifest.json` pins every frontend file and the matching Edge source/configuration
 using UTF-8 SHA-256 after CRLF→LF normalization. It is not a signature or a claim
 that these sources are already deployed. Protect/review the manifest like source.

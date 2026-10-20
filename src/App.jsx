@@ -1573,10 +1573,15 @@ function CloseRelaxApp() {
   };
 
   const openAccountSupport = (closure = false) => {
+    if (closure && !user?.id) {
+      showToast('Log in before requesting account closure.');
+      return;
+    }
     setAccountSettingsOpen(false);
     setSupportDraftContext({
       initialName: profile?.full_name || '', initialEmail: user?.email || '',
       initialMessage: closure ? 'Account closure / deletion request\n\nPlease help me close my Close & Relax account. Please contact me to verify ownership and explain the next steps before deleting anything.' : '',
+      requestType: closure ? 'account_closure' : 'general',
     });
     setContactModalOpen(true);
   };

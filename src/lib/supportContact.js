@@ -14,12 +14,18 @@ export function supportFallbackUrl(value = DEFAULT_SUPPORT_FALLBACK_URL) {
   } catch { return ''; }
 }
 
-export async function sendSupportMessage(client, message, token, honeypot = '') {
+export async function sendSupportMessage(client, message, token, honeypot = '', requestType = 'general') {
   if (!token) throw new Error('Complete verification before sending.');
+  if (!['general', 'account_closure'].includes(requestType)) throw new Error('Invalid support request.');
+  if (requestType === 'account_closure') {
+    const { data, error } = await client.auth.getUser();
+    if (error || !data?.user?.id || data.user.is_anonymous || !data.user.email)
+      throw new Error('Log in again before requesting account closure. Your draft is still here.');
+  }
   let rateLimited = false;
   try {
     const { data, error } = await client.functions.invoke('support-contact', {
-      body: { ...message, captcha_token: token, company_website: honeypot },
+      body: { ...message, request_type: requestType, captcha_token: token, company_website: honeypot },
       timeout: 20000,
     });
     rateLimited = error?.context?.status === 429;

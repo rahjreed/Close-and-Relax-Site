@@ -16,6 +16,20 @@ This address does not receive automatic notifications or copies of inbox message
 
 ## Security and behavior
 
+- Account Settings opens a dedicated **authenticated closure request** mode with
+  an explicit manual-processing confirmation. The frontend refreshes Auth identity
+  before sending; the Edge Function independently validates the bearer token using
+  Supabase Auth `getUser(token)`. Missing/expired/anonymous sessions are denied.
+  The server stamps the verified Auth UUID into the private message and uses the
+  verified login email, ignoring typed email/profile IDs as account authority.
+  General Support remains public. Closure uses the same private table, creation RPC,
+  CAPTCHA, receipt, idempotency and hourly cap; no new database objects are needed.
+  No account, content, publication or billing state changes on submission.
+- Staff must still verify ownership before acting. Free-form public support text
+  can imitate labels; message wording alone is never proof of identity. Auth-stamped
+  requests aid triage and do not authorize automatic deletion. Expired-login failures
+  preserve the draft and may show the same temporary fallback email.
+
 - `support-contact` accepts POST creation only, with exact-origin CORS for HTTPS
   Close & Relax hosts, Turnstile action `support_contact`, and an exact CAPTCHA
   hostname match. The existing insurance action and function are unchanged.
@@ -58,7 +72,10 @@ This address does not receive automatic notifications or copies of inbox message
    the actual public hostnames and validates the new `support_contact` action.
 4. Deploy only the new `support-contact` function with `verify_jwt=false` (public
    visitors have no account). Server CAPTCHA, origin checks, and service-only
-   storage remain mandatory. Deploy the reviewed frontend afterward.
+   storage remain mandatory. The new closure mode validates its own bearer token
+   even with gateway `verify_jwt=false`. Deploy this updated function before the
+   matching closure frontend, then test signed-in and signed-out closure requests.
+   Deploy the reviewed frontend afterward.
 5. With explicit approval, make one end-to-end test submission, confirm it appears
    in the owner's inbox, test a manual reply, and test the independent fallback.
    Confirm a regular Realtor cannot read/update messages.

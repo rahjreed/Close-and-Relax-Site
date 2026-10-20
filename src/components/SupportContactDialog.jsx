@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabase';
 import { loadTurnstile, normalizeTurnstileSiteKey, turnstileFailure } from '../lib/turnstile';
 import { sendSupportMessage, supportFallbackUrl, validateSupportContact } from '../lib/supportContact';
 
-export default function SupportContactDialog({ onClose, initialName = '', initialEmail = '', initialMessage = '' }) {
+export default function SupportContactDialog({ onClose, initialName = '', initialEmail = '', initialMessage = '', requestType = 'general' }) {
+  const closure = requestType === 'account_closure';
+  const [closureConfirmed, setClosureConfirmed] = useState(false);
   const [draft, setDraft] = useState({ name: initialName, email: initialEmail, message: initialMessage, company_website: '' });
   const [token, setToken] = useState(''), [error, setError] = useState('');
   const [verificationError, setVerificationError] = useState(''), [attempt, setAttempt] = useState(0);
@@ -49,11 +51,12 @@ export default function SupportContactDialog({ onClose, initialName = '', initia
     setSubmissionFailed(false);
     let attemptedDelivery = false;
     try {
+      if (closure && !closureConfirmed) throw new Error('Confirm that you want to request manual account closure.');
       const message = validateSupportContact({ ...draft, request_id: requestId.current });
       submitting.current = true;
       setSaving(true);
       attemptedDelivery = true;
-      const receipt = await sendSupportMessage(supabase, message, token, draft.company_website);
+      const receipt = await sendSupportMessage(supabase, message, token, draft.company_website, requestType);
       setReference(receipt);
       setDraft({ name: '', email: '', message: '', company_website: '' });
     } catch (failure) {
@@ -76,24 +79,29 @@ export default function SupportContactDialog({ onClose, initialName = '', initia
         className="bg-cream-warm rounded-3xl max-w-md w-full border border-cream-border shadow-2xl overflow-hidden relative my-auto animate-fade-in">
         <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
           <div><span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Assistance</span>
-            <h3 id="support-title" className="font-editorial text-2xl font-bold text-charcoal-deep">Contact Support</h3></div>
+            <h3 id="support-title" className="font-editorial text-2xl font-bold text-charcoal-deep">{closure ? 'Request account closure' : 'Contact Support'}</h3></div>
           <button type="button" aria-label="Close support" disabled={saving} onClick={onClose} className="min-w-[44px] min-h-[44px] rounded-full bg-cream-subtle flex items-center justify-center disabled:opacity-50"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 sm:p-8">
           {reference ? <div className="space-y-4">
             <h4 ref={successHeading} tabIndex={-1} className="font-editorial text-2xl font-bold text-charcoal-deep">Message saved</h4>
             <p role="status" className="text-sm text-charcoal-muted">Your message is in the Close &amp; Relax Support Inbox for review. We can reply using the email address you provided. No automatic email confirmation is sent.</p>
+            {closure && <p className="text-sm text-charcoal-muted">Your account remains open. Staff will contact your login email to verify ownership and discuss next steps. Nothing has been unpublished or deleted.</p>}
             <p className="text-xs text-charcoal-muted break-all">Reference: {reference}</p>
             <button type="button" onClick={onClose} className="min-h-[44px] px-6 rounded-full bg-[#191816] text-[#FAF7F2]">Done</button>
           </div> : <form onSubmit={submit} className="space-y-4 text-left">
-            <p className="text-sm text-charcoal-muted">Send a question about your Close &amp; Relax account, setup, or features. Messages go to our private Support Inbox. Please do not include passwords or sensitive homeowner information.</p>
+            <p className="text-sm text-charcoal-muted">{closure ? 'Request manual closure through our private Support Inbox. We will use your authenticated login email, verify ownership, and review what can be removed before making changes. This does not immediately delete your account or cancel a subscription. Unpublishing only hides your public hub and is a separate dashboard action.' : 'Send a question about your Close & Relax account, setup, or features. Messages go to our private Support Inbox. Please do not include passwords or sensitive homeowner information.'}</p>
             <fieldset disabled={saving} className="space-y-4 disabled:opacity-60">
               {[['name', 'Name', 'text', 160], ['email', 'Email', 'email', 254]].map(([key, label, type, max]) => <div key={key}>
                 <label htmlFor={`support-${key}`} className="block text-xs font-semibold mb-1">{label}</label>
-                <input id={`support-${key}`} type={type} autoComplete={key} required maxLength={max} value={draft[key]} onChange={(e) => update(key, e.target.value)} className="w-full min-h-[44px] text-base px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border" />
+                <input id={`support-${key}`} type={type} autoComplete={key} readOnly={closure && key === 'email'} required maxLength={max} value={draft[key]} onChange={(e) => update(key, e.target.value)} className="w-full min-h-[44px] text-base px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border" />
               </div>)}
               <div><label htmlFor="support-message" className="block text-xs font-semibold mb-1">How can we assist?</label>
-                <textarea id="support-message" required maxLength={4000} rows={4} value={draft.message} onChange={(e) => update('message', e.target.value)} className="w-full text-base px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border" /></div>
+                <textarea id="support-message" required maxLength={closure ? 3500 : 4000} rows={4} value={draft.message} onChange={(e) => update('message', e.target.value)} className="w-full text-base px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border" /></div>
+              {closure && <label className="flex items-start gap-3 text-sm text-charcoal-muted min-h-[44px] py-2">
+                <input type="checkbox" required checked={closureConfirmed} onChange={(e) => setClosureConfirmed(e.target.checked)} className="mt-1 shrink-0" />
+                <span>I request manual account closure. I understand this is a request for review, not immediate deletion, unpublishing, or billing cancellation.</span>
+              </label>}
               <div className="hidden" aria-hidden="true"><label>Company website<input tabIndex={-1} autoComplete="off" value={draft.company_website} onChange={(e) => update('company_website', e.target.value)} /></label></div>
             </fieldset>
             <p className="text-xs text-charcoal-muted">By sending, you ask Close &amp; Relax to review your message and contact you about this request.</p>
@@ -102,7 +110,7 @@ export default function SupportContactDialog({ onClose, initialName = '', initia
             {(!siteKey || verificationError) && <p role="alert" className="text-sm text-red-700">{verificationError || 'Verification is unavailable. Please try again later.'}</p>}
             {siteKey && verificationError && <button type="button" disabled={saving} onClick={() => setAttempt((old) => old + 1)} className="min-h-[44px] text-sm underline">Retry verification</button>}
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-            <button type="submit" disabled={saving || !token} className="w-full min-h-[44px] py-3 px-6 rounded-full bg-[#191816] text-[#FAF7F2] text-sm font-semibold disabled:opacity-50">{saving ? 'Sending…' : 'Send message'}</button>
+            <button type="submit" disabled={saving || !token || (closure && !closureConfirmed)} className="w-full min-h-[44px] py-3 px-6 rounded-full bg-[#191816] text-[#FAF7F2] text-sm font-semibold disabled:opacity-50">{saving ? 'Sending…' : closure ? 'Send closure request' : 'Send message'}</button>
           </form>}
           {submissionFailed && !reference && !saving && fallback && <p className="mt-4 text-sm text-charcoal-muted">Unable to send through the form? <a href={fallback} className="underline inline-flex items-center min-h-[44px]" rel="noopener noreferrer">Use our alternative contact</a></p>}
         </div>

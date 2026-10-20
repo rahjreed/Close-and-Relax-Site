@@ -5,7 +5,7 @@
   "mode": "explicit_allowlist",
   "hash_algorithm": "sha256 after CRLF-to-LF normalization; UTF-8 text",
   "frontend": {
-    "source_revision": "1a1bba663a922e06e32ecf79bc07b901bfb15bb0",
+    "source_revision": "c029ccc57ccab6f683336ffebe242d779834db26",
     "files": [
       {
         "file": "index.html",
@@ -29,7 +29,7 @@
       },
       {
         "file": "src/App.jsx",
-        "sha256_lf": "fd80192b5881f1355d4151f372943fac4d1608068529ada3ba6eeafb8bfe20f4"
+        "sha256_lf": "2ef856ec0c2604ed7273bd76e3bc2e844f3d70058b09eb771f8fa038e97a24df"
       },
       {
         "file": "src/components/AccountSettingsDialog.jsx",
@@ -81,7 +81,7 @@
       },
       {
         "file": "src/components/SupportContactDialog.jsx",
-        "sha256_lf": "44ad55f424590a8807187c958571717fddd2532fe0779b872e5a452e95c4c2ae"
+        "sha256_lf": "be880165801454b8f9b1fae1df1d450b3bda9bfac1e28cc5a5fd4a5b7f5116dd"
       },
       {
         "file": "src/components/SupportInbox.jsx",
@@ -133,7 +133,7 @@
       },
       {
         "file": "src/lib/legalPages.js",
-        "sha256_lf": "2ffc0a19cc00145b66b626dea1d81c995fee7b91a9a6d89f84af153019c6e4e3"
+        "sha256_lf": "6d78c78d05101703413d8d3411e1cef4bef973906e79dcdd95dd1e98ef030dd8"
       },
       {
         "file": "src/lib/partnerContacts.js",
@@ -165,7 +165,7 @@
       },
       {
         "file": "src/lib/supportContact.js",
-        "sha256_lf": "e449d8d04e238b7f3af1ae96410bdb019c43f5601871b7c487b71e3a274eb3d5"
+        "sha256_lf": "fbec280eade7fe4ecaeba430529d6640f628a32e369a0e312de8374b01cb2329"
       },
       {
         "file": "src/lib/turnstile.js",
@@ -199,7 +199,20 @@
         "file": "vite.config.js",
         "sha256_lf": "eca485c281977125366d4800553256e419f364984e615f75a2d2bae54f7857fd"
       }
-    ]
+    ],
+    "working_tree_overlay": {
+      "status": "local uncommitted; not deployment approval",
+      "purpose": "Authenticated manual account-closure request mode and privacy disclosure; no migration changes",
+      "files": [
+        "src/App.jsx",
+        "src/components/SupportContactDialog.jsx",
+        "src/lib/supportContact.js",
+        "src/lib/legalPages.js",
+        "supabase/functions/_shared/supportContact.js",
+        "supabase/functions/support-contact/index.ts"
+      ],
+      "release_gate": "Commit and review the exact matching frontend and support-contact revision before any deployment. Rehearse authenticated and unauthenticated closure acceptance on staging."
+    }
   },
   "historical": [
     {
@@ -339,11 +352,11 @@
     },
     {
       "file": "supabase/functions/_shared/supportContact.js",
-      "sha256_lf": "023818cdb631e4ac3c796b749843588b2d79430840b8d7da10895ac3d2da405d"
+      "sha256_lf": "e23b07bf88741752d7912ce6c4bfc610d4731b7dc240e512183fe3ee73551550"
     },
     {
       "file": "supabase/functions/support-contact/index.ts",
-      "sha256_lf": "61cad97cba6cd64a651f1c34a61290c7c96ce62e566226f9bf0482611c26eb6d"
+      "sha256_lf": "5d04ca9bd4f24fe596689b75d4f5fd65fea22a1d3f78edd9c21d5dafa265afa7"
     },
     {
       "file": "supabase/functions/_shared/signupNotifications.js",

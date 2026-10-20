@@ -22,7 +22,7 @@ export function supportOriginAllowed(origin) {
   } catch { return false; }
 }
 
-export function createSupportHandler({ env, fetcher = fetch, save, cryptoApi = crypto }) {
+export function createSupportHandler({ env, fetcher = fetch, save, authenticate = async () => null, cryptoApi = crypto }) {
   return async (request) => {
     const origin = request.headers.get('origin') || '';
     const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', Vary: 'Origin' };
@@ -47,6 +47,20 @@ export function createSupportHandler({ env, fetcher = fetch, save, cryptoApi = c
         if (input.company_website) throw new Error();
         message = validateSupportContact(input);
       } catch { return reply(400, { error: 'Check your name, email, and message.' }); }
+      const requestType = input.request_type ?? 'general';
+      if (!['general', 'account_closure'].includes(requestType)) return reply(400, { error: 'Invalid support request.' });
+      if (requestType === 'account_closure') {
+        const bearer = request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
+        let user;
+        try { user = bearer ? await authenticate(bearer) : null; } catch { user = null; }
+        if (!user?.id || user.is_anonymous || !user.email || !/^[0-9a-f-]{36}$/i.test(user.id))
+          return reply(401, { error: 'Log in again before requesting account closure.' });
+        // Identity comes from Auth, never from typed email, metadata or a client profile ID.
+        // This records a request only; staff must verify ownership before taking action.
+        if (message.message.length > 3500) return reply(400, { error: 'Keep closure requests within 3500 characters.' });
+        message = validateSupportContact({ ...message, email: user.email,
+          message: `Account closure request\nAuthenticated account: ${user.id}\nManual review required; no deletion or unpublish performed.\n\n${message.message}` });
+      }
       if (typeof input.captcha_token !== 'string' || !input.captcha_token || input.captcha_token.length > 2048)
         return reply(400, { error: 'Complete verification before sending.' });
       const response = await fetcher('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
