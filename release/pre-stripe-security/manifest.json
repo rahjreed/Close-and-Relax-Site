@@ -5,7 +5,7 @@
   "mode": "explicit_allowlist",
   "hash_algorithm": "sha256 after CRLF-to-LF normalization; UTF-8 text",
   "frontend": {
-    "source_revision": "c029ccc57ccab6f683336ffebe242d779834db26",
+    "source_revision": "7773543e58be88ddfba20ccb6e5a42c66608b380",
     "files": [
       {
         "file": "index.html",
@@ -29,7 +29,7 @@
       },
       {
         "file": "src/App.jsx",
-        "sha256_lf": "2ef856ec0c2604ed7273bd76e3bc2e844f3d70058b09eb771f8fa038e97a24df"
+        "sha256_lf": "c92bfd59ab26c89399b27e3ca01b5cceeeceb3096821e83ab8254737cae2960c"
       },
       {
         "file": "src/components/AccountSettingsDialog.jsx",
@@ -104,6 +104,10 @@
         "sha256_lf": "c8149b5c244e40287995c20fac23fcddc6dc51be8c46fc91b9f85bf7319fb20d"
       },
       {
+        "file": "src/lib/deploymentConfig.js",
+        "sha256_lf": "297b9e22dbb16af8be38adc786d0abf873c33ef8b23f009fb05835fa4f400a11"
+      },
+      {
         "file": "src/lib/gooseheadLeads.js",
         "sha256_lf": "efb55756515a0d708a9efb5809fb926e0f149d51bf8364aad2b0c6e333abe7cb"
       },
@@ -125,7 +129,7 @@
       },
       {
         "file": "src/lib/insuranceFunnel.js",
-        "sha256_lf": "de9943e388ca7078f5ae905c4c3600a0d8636de5de554508210b4babf84e072b"
+        "sha256_lf": "b43b4665dd78e4ec00c6bc5ff9c1ef0b8848f6a9e781c8f2e4d6e23c68b99404"
       },
       {
         "file": "src/lib/insuranceLeads.js",
@@ -161,7 +165,7 @@
       },
       {
         "file": "src/lib/supabase.js",
-        "sha256_lf": "e53743e4b7e6be048f9ba0160a7c8ce42bd484336f383357426d8b21a45a6e74"
+        "sha256_lf": "1fc62736bb1e6c6a64f3d6c497181cd9c729e2f7069a666867f423eec8d0803f"
       },
       {
         "file": "src/lib/supportContact.js",
@@ -202,16 +206,14 @@
     ],
     "working_tree_overlay": {
       "status": "local uncommitted; not deployment approval",
-      "purpose": "Authenticated manual account-closure request mode and privacy disclosure; no migration changes",
+      "purpose": "Staging root routing, isolated Supabase environment guard, recovery redirects and insurance navigation; no migration or Edge changes",
       "files": [
         "src/App.jsx",
-        "src/components/SupportContactDialog.jsx",
-        "src/lib/supportContact.js",
-        "src/lib/legalPages.js",
-        "supabase/functions/_shared/supportContact.js",
-        "supabase/functions/support-contact/index.ts"
+        "src/lib/deploymentConfig.js",
+        "src/lib/insuranceFunnel.js",
+        "src/lib/supabase.js"
       ],
-      "release_gate": "Commit and review the exact matching frontend and support-contact revision before any deployment. Rehearse authenticated and unauthenticated closure acceptance on staging."
+      "release_gate": "Review and commit the exact staging preparation before pushing. Preview variables must target staging. Hosted acceptance and separate production rollout approval remain required."
     }
   },
   "historical": [

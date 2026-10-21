@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
+import { deployment } from './lib/deploymentConfig';
 import { createProfileBootstrap } from './lib/profileBootstrap';
 import { MIN_PASSWORD_LENGTH, PASSWORD_LENGTH_HINT, newPasswordError } from './lib/passwordPolicy';
 import { isValidRealtorSlug, realtorSlugError } from './lib/realtorSlugs';
@@ -718,6 +719,7 @@ function CloseRelaxApp() {
   const isRealtorSubdomain = Boolean(
     subdomainCandidate &&
     subdomainCandidate !== 'www' &&
+    hostname !== deployment.rootHostname &&
     !subdomainCandidate.includes('.')
   );
   const subdomainSlug = isRealtorSubdomain ? subdomainCandidate : null;
@@ -1401,7 +1403,7 @@ function CloseRelaxApp() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://closeandrelax.com/reset-password',
+        redirectTo: `${deployment.rootOrigin}/reset-password`,
       });
 
       if (error) {

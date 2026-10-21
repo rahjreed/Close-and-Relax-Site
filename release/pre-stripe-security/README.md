@@ -8,12 +8,14 @@ activation are excluded. Do not use `supabase db push` on the repository directo
 
 ## Exact source and offline package
 
-Application/Edge base revision: `c029ccc57ccab6f683336ffebe242d779834db26` on
-`codex-development`, plus the explicitly listed **uncommitted closure overlay** in
+Application/Edge base revision: `7773543e58be88ddfba20ccb6e5a42c66608b380` on
+`codex-development`, plus the explicitly listed **uncommitted staging overlay** in
 `manifest.frontend.working_tree_overlay`. The hashes describe this local working
-tree, not an already committed or deployed revision. This review adds authenticated
-manual closure requests and the corresponding privacy explanation; the ten SQL
-migrations and six historical sources are unchanged. Commit/review this exact
+tree, not an already committed or deployed revision. The base includes authenticated
+manual closure requests. The staging overlay adds root-host routing, recovery and
+insurance destinations, and a staging Supabase URL guard. Default production
+destinations are unchanged; the ten SQL migrations, six historical sources and
+Edge sources are unchanged. Commit/review this exact
 frontend and updated `support-contact` source together before release. Deploy the
 updated Edge Function before its matching frontend: the previous endpoint would
 ignore the new closure request type instead of enforcing account identity.

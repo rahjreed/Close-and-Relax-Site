@@ -1,3 +1,5 @@
+import { deployment } from './deploymentConfig.js';
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const isInsurancePath = (pathname) => /^\/insurance\/?$/.test(pathname || '');
@@ -15,7 +17,7 @@ export function insuranceReferral(search = '') {
 }
 
 export function insuranceUrl(profileId) {
-  const base = 'https://closeandrelax.com/insurance';
+  const base = `${deployment.rootOrigin}/insurance`;
   return typeof profileId === 'string' && UUID.test(profileId)
     ? `${base}?ref=${encodeURIComponent(profileId)}`
     : base;
