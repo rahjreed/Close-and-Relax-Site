@@ -165,7 +165,7 @@
       },
       {
         "file": "src/lib/supabase.js",
-        "sha256_lf": "1fc62736bb1e6c6a64f3d6c497181cd9c729e2f7069a666867f423eec8d0803f"
+        "sha256_lf": "5f5cd845fdaafcfb9cb320153f63185b0fb446609ef1fbedd4556d0670ab5d11"
       },
       {
         "file": "src/lib/supportContact.js",
@@ -181,7 +181,7 @@
       },
       {
         "file": "src/main.jsx",
-        "sha256_lf": "314a11339bc10e0fe7d442bd4eb2d928e9bc74131354be5052398e6cc013b4f4"
+        "sha256_lf": "79cbb82fef9b3497979cf788e73a1b94aa87f5967cfc655e0b1217686d472b36"
       },
       {
         "file": "src/style.css",
@@ -206,12 +206,13 @@
     ],
     "working_tree_overlay": {
       "status": "local uncommitted; not deployment approval",
-      "purpose": "Staging root routing, isolated Supabase environment guard, recovery redirects and insurance navigation; no migration or Edge changes",
+      "purpose": "Staging root routing, isolated Supabase environment guard, recovery redirects and insurance navigation; no migration or Edge changes; temporary opt-in staging endpoint diagnostic (no credentials)",
       "files": [
         "src/App.jsx",
         "src/lib/deploymentConfig.js",
         "src/lib/insuranceFunnel.js",
-        "src/lib/supabase.js"
+        "src/lib/supabase.js",
+        "src/main.jsx"
       ],
       "release_gate": "Review and commit the exact staging preparation before pushing. Preview variables must target staging. Hosted acceptance and separate production rollout approval remain required."
     }
