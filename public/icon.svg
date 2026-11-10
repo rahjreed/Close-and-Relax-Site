@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Close &amp; Relax</title>
+  <rect width="512" height="512" rx="104" fill="#191816"/>
+  <circle cx="256" cy="256" r="188" fill="none" stroke="#B5966B" stroke-width="12"/>
+  <path d="M 354.99 157.01 A 140 140 0 1 0 354.99 354.99 L 313.98 313.98 A 82 82 0 1 1 313.98 198.02 Z" fill="#FAF7F2"/>
+</svg>
