@@ -8,7 +8,7 @@ export default function RealtorSetupChecklist({ onAction, publishLoading = false
   const headingId = useId(), listId = useId();
   const expanded = !allComplete || reopened;
   return (
-    <section aria-labelledby={headingId} aria-busy={loading} className="my-8 rounded-2xl border border-[#D4CBC0] bg-[#EEE8E0] p-5 sm:p-6">
+    <section aria-labelledby={headingId} aria-busy={loading} className="my-8 rounded-2xl border border-[#D4CBC0] bg-[#EEE8E0] p-4 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-start gap-2">
