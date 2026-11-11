@@ -3369,7 +3369,7 @@ function CloseRelaxApp() {
                                   className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 mt-2 text-xs font-semibold rounded-xl bg-[#EEE8E0] hover:bg-[#E5DED5] border border-[#D4CBC0] text-charcoal-deep transition-colors"
                                 >
                                   <MessageSquare className="w-3.5 h-3.5 text-gold-accent" />
-                                  <span>Prefer to text? Text Roger</span>
+                                  <span>Prefer to text? Contact Vivint</span>
                                 </a>
 
                                 <p className="text-[10px] text-charcoal-muted text-center mt-2">
