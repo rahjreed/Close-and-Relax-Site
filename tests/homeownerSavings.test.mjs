@@ -30,29 +30,26 @@ test('only internal premier may hide; all profiles default to shown', () => {
   assert.equal(shouldShowHomeownerSavings(null), true);
 });
 
-test('launch offers are fixed Vivint and Goosehead; missing configuration cannot remove cards', () => {
+test('customer-facing savings show only Vivint Smart Home, even when destination config is absent', () => {
   assert.deepEqual(
     HOMEOWNER_SAVINGS_OFFERS.map((o) => o.code),
-    ['vivint', 'goosehead'],
+    ['vivint'],
   );
   for (const rows of [[], [{ code: 'unapproved', cta_url: 'https://example.com' }]]) {
     const offers = resolveHomeownerSavingsOffers(rows);
-    assert.equal(offers.length, 2);
+    assert.equal(offers.length, 1);
     assert(offers[0].href.startsWith(`sms:${VIVINT_CONTACT_PHONE}`));
-    assert.equal(offers[1].href, 'https://closeandrelax.com/insurance');
-    assert.equal(offers[1].requestForm, undefined);
+    assert.equal(offers[0].title, 'Vivint Smart Home');
   }
 });
 
-test('Vivint configuration overrides its fallback; Goosehead always uses the private request form', () => {
+test('Vivint configuration overrides its fallback and old insurance destinations stay hidden', () => {
   const offers = resolveHomeownerSavingsOffers([
     { code: 'vivint', cta_url: 'https://example.com/security' },
     { code: 'goosehead', cta_url: 'https://example.com/insurance' },
   ]);
   assert.equal(offers[0].href, 'https://example.com/security');
-  assert.equal(offers[1].href, 'https://closeandrelax.com/insurance');
-  assert.equal(offers[1].requestForm, undefined);
-  assert.equal(offers[1].external, false);
+  assert.equal(offers.length, 1);
   assert.equal(offers[0].external, true);
   for (const invalid of [
     '',
@@ -91,9 +88,8 @@ test('configuration failures produce safe default cards without blocking the hub
   };
   const result = await loadHomeownerSavingsDestinations(client);
   assert(result.error);
-  assert.equal(result.offers.length, 2);
+  assert.equal(result.offers.length, 1);
   assert(result.offers[0].href.startsWith('sms:'));
-  assert.equal(result.offers[1].href, 'https://closeandrelax.com/insurance');
 });
 
 test('visibility writes use only the current profile flag and reject non-Pro callers', async () => {
