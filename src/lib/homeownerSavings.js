@@ -1,4 +1,3 @@
-import { insuranceUrl } from './insuranceFunnel.js';
 import { getVivintTextHref } from './partnerContacts.js';
 
 export const SAVINGS_CLICK_EVENTS = Object.freeze({
@@ -9,19 +8,11 @@ export const SAVINGS_CLICK_EVENTS = Object.freeze({
 export const HOMEOWNER_SAVINGS_OFFERS = Object.freeze([
   {
     code: 'vivint',
-    title: 'Vivint Home Security',
+    title: 'Vivint Smart Home',
     eyebrow: 'Home security & smart home',
     description:
       'Explore home security and smart-home options through your Realtor’s Close & Relax hub. Connect with a Vivint contact to discuss your home and available services.',
-    ctaLabel: 'Explore Vivint home security',
-  },
-  {
-    code: 'goosehead',
-    title: 'Home & Auto Insurance',
-    eyebrow: 'Home, auto, or both',
-    description:
-      'Explore home and auto insurance options with Goosehead. Request a callback to discuss coverage and pricing with an insurance professional.',
-    ctaLabel: 'Explore insurance options',
+    ctaLabel: 'Explore Vivint Smart Home',
   },
 ]);
 
@@ -51,14 +42,13 @@ export function normalizeSavingsUrl(value) {
 export function resolveHomeownerSavingsOffers(destinations = []) {
   return HOMEOWNER_SAVINGS_OFFERS.map((offer) => {
     const destination = destinations.find(({ code }) => code === offer.code);
-    // Insurance requests always use the private, validated submission flow.
-    const webUrl = offer.code === 'vivint' ? normalizeSavingsUrl(destination?.cta_url) : '';
+    const webUrl = normalizeSavingsUrl(destination?.cta_url);
     return {
       ...offer,
-      href: webUrl || (offer.code === 'vivint' ? getVivintTextHref('homeowner') : insuranceUrl()),
+      href: webUrl || getVivintTextHref('homeowner'),
       external: Boolean(webUrl),
       ctaLabel:
-        !webUrl && offer.code === 'vivint' ? 'Ask about Vivint home security' : offer.ctaLabel,
+        !webUrl ? 'Ask about Vivint smart-home options' : offer.ctaLabel,
     };
   });
 }
@@ -72,7 +62,7 @@ export async function loadHomeownerSavingsDestinations(client) {
     return {
       offers: resolveHomeownerSavingsOffers(),
       error:
-        'Some provider links are currently unavailable. You can still contact the Close & Relax Vivint team below.',
+        'The Vivint booking link is temporarily unavailable. You can still reach a Vivint contact below.',
     };
   }
 }
