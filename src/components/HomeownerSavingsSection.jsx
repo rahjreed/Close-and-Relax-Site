@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Gift, ShieldCheck, Home, ArrowRight } from 'lucide-react';
+import { Gift, ShieldCheck, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { insuranceUrl } from '../lib/insuranceFunnel';
 import {
   loadHomeownerSavingsDestinations,
   resolveHomeownerSavingsOffers,
@@ -51,8 +50,8 @@ export default function HomeownerSavingsSection({ profile, onOfferClick, preview
             Homeowner Savings
           </h2>
           <p className="text-xs text-[#57534e] leading-relaxed mt-2 max-w-xl">
-            Helpful options for protecting your home and reviewing everyday homeownership costs,
-            available through your Realtor’s Close &amp; Relax hub.
+            Explore an optional Vivint smart-home security resource through your Realtor’s
+            Close &amp; Relax hub.
           </p>
         </div>
       </div>
@@ -61,15 +60,14 @@ export default function HomeownerSavingsSection({ profile, onOfferClick, preview
           {data.error}
         </p>
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {data.offers.map((offer) => {
-          const Icon = offer.code === 'vivint' ? ShieldCheck : Home;
           return (
             <article
               key={offer.code}
               className="flex flex-col rounded-2xl border border-[#dce5d8] bg-white p-5"
             >
-              <Icon className="h-5 w-5 text-[#55704f] mb-3" aria-hidden="true" />
+              <ShieldCheck className="h-5 w-5 text-[#55704f] mb-3" aria-hidden="true" />
               <p className="text-[10px] uppercase tracking-wider font-semibold text-[#55704f]">
                 {offer.eyebrow}
               </p>
@@ -86,29 +84,15 @@ export default function HomeownerSavingsSection({ profile, onOfferClick, preview
                   </button>
                 ) : offer.href ? (
                   <a
-                    href={offer.code === 'goosehead' ? insuranceUrl(profile?.id) : offer.href}
+                    href={offer.href}
                     target={offer.external ? '_blank' : undefined}
                     rel={offer.external ? 'noopener noreferrer' : undefined}
-                    onClick={async (event) => {
-                      const navigate =
-                        offer.code === 'goosehead' &&
-                        event?.button === 0 &&
-                        !event.metaKey &&
-                        !event.ctrlKey &&
-                        !event.shiftKey &&
-                        !event.altKey;
-                      if (navigate) event.preventDefault();
+                    onClick={() => {
                       try {
-                        const tracking = onOfferClick?.(offer.code);
-                        if (navigate)
-                          await Promise.race([
-                            Promise.resolve(tracking),
-                            new Promise((resolve) => setTimeout(resolve, 500)),
-                          ]);
+                        void Promise.resolve(onOfferClick?.(offer.code)).catch(() => {});
                       } catch {
                         /* Tracking never blocks navigation. */
                       }
-                      if (navigate) window.location.assign(insuranceUrl(profile?.id));
                     }}
                     className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#35543a] px-4 py-3 text-xs font-semibold text-white hover:bg-[#29442d]"
                   >
