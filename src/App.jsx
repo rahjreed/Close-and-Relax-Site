@@ -45,11 +45,11 @@ import HubPreviewDialog from './components/HubPreviewDialog';
 import { readRealtorPreview } from './lib/realtorSetup';
 import { getVivintTextHref } from './lib/partnerContacts';
 
-const LIZ_VENDORS = [
+const EBONY_VENDORS = [
   {
     category: "Locksmith & Security",
     name: "Apex Key & Secure Solutions",
-    note: "Liz's Note: Re-keyed over 14 client properties for my buyers. Ask for Marco for priority next-day service.",
+    note: "Ebony's Note: Re-keyed over 14 client properties for my buyers. Ask for Marco for priority next-day service.",
     phone: "(480) 555-0192",
     tag: "Priority Service",
     icon: Lock,
@@ -57,7 +57,7 @@ const LIZ_VENDORS = [
   {
     category: "HVAC & Climate Systems",
     name: "Highland Air & Heating",
-    note: "Liz's Note: Honest diagnostics, 24/7 winter emergency response, and punctual seasonal tune-ups.",
+    note: "Ebony's Note: Honest diagnostics, 24/7 winter emergency response, and punctual seasonal tune-ups.",
     phone: "(480) 555-0144",
     tag: "Available 24/7",
     icon: Wrench,
@@ -65,7 +65,7 @@ const LIZ_VENDORS = [
   {
     category: "White-Glove Moving",
     name: "Vanguard Relocations",
-    note: "Liz's Note: Experienced with fragile art, piano moves, and historic millwork. Respectful and meticulous crew.",
+    note: "Ebony's Note: Experienced with fragile art, piano moves, and historic millwork. Respectful and meticulous crew.",
     phone: "(480) 555-0188",
     tag: "Trusted Crew",
     icon: Truck,
@@ -2861,9 +2861,9 @@ function CloseRelaxApp() {
           </div>
         </main>
       ) : currentView === 'dashboard' && user ? (
-        <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-6 sm:px-8 py-12 md:py-16 border-t border-[#3A3530]">
-          <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-8 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
-              <div className="-mx-8 sm:-mx-12 -mt-8 sm:-mt-12 mb-8 sm:mb-10 px-8 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
+        <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-3 sm:px-8 py-6 sm:py-10 md:py-16 border-t border-[#3A3530]">
+          <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-4 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
+              <div className="-mx-4 sm:-mx-12 -mt-4 sm:-mt-12 mb-6 sm:mb-10 px-4 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#C8A873]">Close &amp; Relax</p>
@@ -2874,13 +2874,13 @@ function CloseRelaxApp() {
               </div>
             
             {/* Header / Welcome Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#D4CBC0]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 pb-6 md:pb-8 border-b border-[#D4CBC0]">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E5DED5] border border-[#D4CBC0] text-xs font-medium text-charcoal-muted mb-3">
                   <span className="w-2 h-2 rounded-full bg-gold-accent"></span>
                   <span>Realtor Dashboard</span>
                 </div>
-                <h1 className="font-editorial text-3xl sm:text-4xl font-semibold text-charcoal-deep">
+                <h1 className="font-editorial text-2xl sm:text-4xl font-semibold text-charcoal-deep">
                   Welcome, {displayName}
                 </h1>
                 <p className="text-sm text-charcoal-muted mt-1">
@@ -3592,25 +3592,25 @@ function CloseRelaxApp() {
                       <div className="flex items-center gap-2.5">
                         <div className="w-11 h-11 rounded-full overflow-hidden border border-gold-accent/80 bg-cream-subtle shrink-0">
                           <img
-                            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
-                            alt="Liz Marks-Strauss"
+                            src="/images/ebony-yahshael.webp"
+                            alt="Ebony Yahsha'el"
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div>
-                          <h4 className="text-xs font-editorial font-bold text-charcoal-deep leading-tight">Liz Marks-Strauss</h4>
-                          <p className="text-[10px] text-charcoal-muted">Associate Broker • Sotheby's</p>
+                          <h4 className="text-xs font-editorial font-bold text-charcoal-deep leading-tight">Ebony Yahsha'el</h4>
+                          <p className="text-[10px] text-charcoal-muted">Associate Broker • Sample Realty</p>
                         </div>
                       </div>
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => showToast("Simulating call to Liz...")}
+                          onClick={() => showToast("Simulating call to Ebony...")}
                           className="text-[10px] bg-[#191816] text-[#FAF7F2] px-2.5 py-1 rounded-full font-medium"
                         >
                           Call
                         </button>
                         <button
-                          onClick={() => showToast("Simulating text to Liz...")}
+                          onClick={() => showToast("Simulating text to Ebony...")}
                           className="text-[10px] bg-cream-card border border-cream-border text-charcoal-deep px-2.5 py-1 rounded-full font-medium"
                         >
                           Text
@@ -3633,7 +3633,7 @@ function CloseRelaxApp() {
                         </div>
                         <div className="text-left">
                           <p className="text-[10px] font-bold text-charcoal-deep leading-tight">Save to Home Screen</p>
-                          <p className="text-[9px] text-charcoal-muted">One tap to access Liz anytime</p>
+                          <p className="text-[9px] text-charcoal-muted">One tap to access Ebony anytime</p>
                         </div>
                       </div>
                       <button
@@ -3646,7 +3646,7 @@ function CloseRelaxApp() {
 
                     {/* Mini Cards Container */}
                     <div className="space-y-2 flex-1 text-left">
-                      {LIZ_VENDORS.slice(0, 2).map((vendor, idx) => (
+                      {EBONY_VENDORS.slice(0, 2).map((vendor, idx) => (
                         <div key={idx} className="bg-cream-card rounded-xl p-2.5 border border-cream-border">
                           <div className="flex items-start justify-between mb-1">
                             <div>
@@ -4095,7 +4095,7 @@ function CloseRelaxApp() {
                       C&amp;R
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-charcoal-deep">Liz Marks-Strauss</p>
+                      <p className="text-xs font-bold text-charcoal-deep">Ebony Yahsha'el</p>
                       <p className="text-[10px] text-charcoal-muted">Home Concierge App</p>
                       <span className="inline-block mt-0.5 text-[9px] bg-[#FAF6EF] text-gold-accent border border-[#E4D5BE] px-1.5 py-0.5 rounded font-medium">
                         On Home Screen
@@ -4111,25 +4111,25 @@ function CloseRelaxApp() {
                       <div className="pt-3 pb-2">
                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gold-accent mx-auto mb-3 shadow-sm">
                           <img
-                            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
-                            alt="Realtor Avatar"
+                            src="/images/ebony-yahshael.webp"
+                            alt="Ebony Yahsha'el, demo realtor"
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Liz Marks-Strauss</h4>
+                        <h4 className="font-editorial text-xl font-bold text-charcoal-deep">Ebony Yahsha'el</h4>
                         <p className="text-xs text-charcoal-muted font-medium">Your Trusted Advisor</p>
                         <div className="mt-3 flex justify-center gap-2">
                           <button
-                            onClick={() => showToast("Calling Liz Marks-Strauss...")}
+                            onClick={() => showToast("Calling Ebony Yahsha'el...")}
                             className="text-xs bg-[#191816] text-[#FAF7F2] px-4 py-1.5 rounded-full font-medium"
                           >
-                            Call Liz
+                            Call Ebony
                           </button>
                           <button
-                            onClick={() => showToast("Messaging Liz Marks-Strauss...")}
+                            onClick={() => showToast("Messaging Ebony Yahsha'el...")}
                             className="text-xs bg-cream-card border border-cream-border text-charcoal-deep px-4 py-1.5 rounded-full font-medium"
                           >
-                            Text Liz
+                            Text Ebony
                           </button>
                         </div>
                       </div>
@@ -4141,7 +4141,7 @@ function CloseRelaxApp() {
                           <span className="text-xs font-bold text-charcoal-deep">Add to Home Screen</span>
                         </div>
                         <p className="text-xs text-charcoal-muted leading-snug">
-                          Keep Liz’s concierge on your phone just like a native app. No App Store account or updates needed.
+                          Keep Ebony’s concierge on your phone just like a native app. No App Store account or updates needed.
                         </p>
                         <button
                           onClick={() => showToast("Added to Home Screen")}
@@ -4472,7 +4472,7 @@ function CloseRelaxApp() {
             <div className="p-6 border-b border-cream-border flex items-center justify-between bg-cream-card">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-gold-accent font-semibold">Live Interactive Sample</span>
-                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Liz Marks-Strauss Homeowner Hub</h3>
+                <h3 className="font-editorial text-2xl font-bold text-charcoal-deep">Ebony Yahsha'el Homeowner Hub</h3>
               </div>
               <button
                 onClick={() => setLiveDemoModalOpen(false)}
@@ -4489,29 +4489,29 @@ function CloseRelaxApp() {
               <div className="bg-cream-card p-5 rounded-2xl border border-cream-border flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                 <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gold-accent shrink-0">
                   <img
-                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80"
-                    alt="Liz Marks-Strauss"
+                    src="/images/ebony-yahshael.webp"
+                    alt="Ebony Yahsha'el"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h4 className="font-editorial text-2xl font-bold text-charcoal-deep">Liz Marks-Strauss</h4>
-                      <p className="text-xs text-charcoal-muted font-medium">Licensed Associate Broker • Sotheby's</p>
+                      <h4 className="font-editorial text-2xl font-bold text-charcoal-deep">Ebony Yahsha'el</h4>
+                      <p className="text-xs text-charcoal-muted font-medium">Licensed Associate Broker • Sample Realty</p>
                     </div>
                     <div className="flex gap-2 justify-center">
                       <button
-                        onClick={() => showToast("Calling Liz Marks-Strauss...")}
+                        onClick={() => showToast("Calling Ebony Yahsha'el...")}
                         className="text-xs bg-[#191816] text-[#FAF7F2] px-3.5 py-1.5 rounded-full font-medium shadow-sm"
                       >
-                        Call Liz
+                        Call Ebony
                       </button>
                       <button
-                        onClick={() => showToast("Messaging Liz Marks-Strauss...")}
+                        onClick={() => showToast("Messaging Ebony Yahsha'el...")}
                         className="text-xs bg-cream-subtle text-charcoal-deep border border-cream-border px-3.5 py-1.5 rounded-full font-medium"
                       >
-                        Text Liz
+                        Text Ebony
                       </button>
                     </div>
                   </div>
@@ -4546,7 +4546,7 @@ function CloseRelaxApp() {
                   Curated Local Partners (Live Sample)
                 </h5>
 
-                {LIZ_VENDORS.map((vendor, idx) => (
+                {EBONY_VENDORS.map((vendor, idx) => (
                   <div key={idx} className="bg-cream-card p-4 rounded-xl border border-cream-border shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <div>
@@ -4716,7 +4716,7 @@ function CloseRelaxApp() {
                         required
                         value={signupData.name}
                         onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
-                        placeholder="e.g. Liz Marks-Strauss"
+                        placeholder="e.g. Jordan Smith"
                         className="w-full text-sm px-4 py-2.5 rounded-xl bg-cream-card border border-cream-border focus:outline-none focus:border-gold-accent text-charcoal-deep"
                       />
                     </div>
