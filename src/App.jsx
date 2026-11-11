@@ -2861,9 +2861,9 @@ function CloseRelaxApp() {
           </div>
         </main>
       ) : currentView === 'dashboard' && user ? (
-        <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-6 sm:px-8 py-12 md:py-16 border-t border-[#3A3530]">
-          <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-8 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
-              <div className="-mx-8 sm:-mx-12 -mt-8 sm:-mt-12 mb-8 sm:mb-10 px-8 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
+        <main className="min-h-[calc(100vh-72px)] bg-[#24211E] px-3 sm:px-8 py-6 sm:py-10 md:py-16 border-t border-[#3A3530]">
+          <div className="max-w-6xl mx-auto bg-[#F8F5EF] rounded-3xl p-4 sm:p-12 border border-[#4B443D] shadow-[0_30px_80px_-36px_rgba(0,0,0,0.72),0_12px_30px_-18px_rgba(0,0,0,0.48)] mb-8">
+              <div className="-mx-4 sm:-mx-12 -mt-4 sm:-mt-12 mb-6 sm:mb-10 px-4 sm:px-12 py-5 rounded-t-3xl bg-[#2E2A26] border-b border-[#4B443D]">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#C8A873]">Close &amp; Relax</p>
@@ -2874,13 +2874,13 @@ function CloseRelaxApp() {
               </div>
             
             {/* Header / Welcome Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[#D4CBC0]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 pb-6 md:pb-8 border-b border-[#D4CBC0]">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E5DED5] border border-[#D4CBC0] text-xs font-medium text-charcoal-muted mb-3">
                   <span className="w-2 h-2 rounded-full bg-gold-accent"></span>
                   <span>Realtor Dashboard</span>
                 </div>
-                <h1 className="font-editorial text-3xl sm:text-4xl font-semibold text-charcoal-deep">
+                <h1 className="font-editorial text-2xl sm:text-4xl font-semibold text-charcoal-deep">
                   Welcome, {displayName}
                 </h1>
                 <p className="text-sm text-charcoal-muted mt-1">
