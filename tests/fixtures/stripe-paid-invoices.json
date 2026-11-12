@@ -1,0 +1,286 @@
+[
+  {
+    "subscription": "sub_1Uap4kEvcTt943uRgxyi0K8L",
+    "currentPrice": "price_1UambGEvcTt943uRCLAfS56N",
+    "invoice": {
+      "id": "in_1Uap4kEvcTt943uRfC6xwPsY",
+      "created": 1794455570,
+      "status": "paid",
+      "livemode": false,
+      "lines": {
+        "data": [
+          {
+            "amount": 2900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Uap4kEvcTt943uRgxyi0K8L",
+                "subscription_item": "si_Vc3BcGEFf5XPKm"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambGEvcTt943uRCLAfS56N",
+                "product": "prod_Vc0c5Lh1jXlAYd"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": "2900"
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "subscription": "sub_1Uap4kEvcTt943uRgxyi0K8L",
+    "currentPrice": "price_1UambJEvcTt943uR5KlvCFwX",
+    "invoice": {
+      "id": "in_1Uap5REvcTt943uRUdzaIhmm",
+      "created": 1794455570,
+      "status": "paid",
+      "livemode": false,
+      "lines": {
+        "data": [
+          {
+            "amount": -2900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": "ii_1Uap5REvcTt943uRA6TyK9mN",
+                "proration": true,
+                "proration_details": {
+                  "credited_items": {
+                    "invoice": "in_1Uap4kEvcTt943uRfC6xwPsY",
+                    "invoice_line_items": [
+                      "il_1Uap4AEvcTt943uRh2bC0GUJ"
+                    ]
+                  }
+                },
+                "subscription": "sub_1Uap4kEvcTt943uRgxyi0K8L",
+                "subscription_item": "si_Vc3BcGEFf5XPKm"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambGEvcTt943uRCLAfS56N",
+                "product": "prod_Vc0c5Lh1jXlAYd"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": null
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          },
+          {
+            "amount": 3900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": "ii_1Uap5REvcTt943uRVwrbm6fL",
+                "proration": true,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Uap4kEvcTt943uRgxyi0K8L",
+                "subscription_item": "si_Vc3BcGEFf5XPKm"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambJEvcTt943uR5KlvCFwX",
+                "product": "prod_Vc0cjDwB8Kj9Sj"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": null
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "subscription": "sub_1Uap4rEvcTt943uRcjBNxhDU",
+    "currentPrice": "price_1UambJEvcTt943uR5KlvCFwX",
+    "invoice": {
+      "id": "in_1Uap4rEvcTt943uRKcpI5ft9",
+      "created": 1794455570,
+      "status": "paid",
+      "livemode": false,
+      "lines": {
+        "data": [
+          {
+            "amount": 3900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Uap4rEvcTt943uRcjBNxhDU",
+                "subscription_item": "si_Vc3Bmx2L8OickG"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambJEvcTt943uR5KlvCFwX",
+                "product": "prod_Vc0cjDwB8Kj9Sj"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": "3900"
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "subscription": "sub_1Uap4rEvcTt943uRcjBNxhDU",
+    "currentPrice": "price_1UambGEvcTt943uRCLAfS56N",
+    "invoice": {
+      "id": "in_1Uap5WEvcTt943uRYDVSRyLx",
+      "created": 1794455570,
+      "status": "paid",
+      "livemode": false,
+      "lines": {
+        "data": [
+          {
+            "amount": -3900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": "ii_1Uap5WEvcTt943uRXrMRnCzd",
+                "proration": true,
+                "proration_details": {
+                  "credited_items": {
+                    "invoice": "in_1Uap4rEvcTt943uRKcpI5ft9",
+                    "invoice_line_items": [
+                      "il_1Uap4AEvcTt943uRgRttkVMa"
+                    ]
+                  }
+                },
+                "subscription": "sub_1Uap4rEvcTt943uRcjBNxhDU",
+                "subscription_item": "si_Vc3Bmx2L8OickG"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambJEvcTt943uR5KlvCFwX",
+                "product": "prod_Vc0cjDwB8Kj9Sj"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": null
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          },
+          {
+            "amount": 2900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": "ii_1Uap5WEvcTt943uRMzyIKUMY",
+                "proration": true,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Uap4rEvcTt943uRcjBNxhDU",
+                "subscription_item": "si_Vc3Bmx2L8OickG"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambGEvcTt943uRCLAfS56N",
+                "product": "prod_Vc0c5Lh1jXlAYd"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": null
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "subscription": "sub_1Uap4wEvcTt943uRikLvXiUC",
+    "currentPrice": "price_1UambIEvcTt943uR8W6MtdQ2",
+    "invoice": {
+      "id": "in_1Uap4wEvcTt943uRW8v3SPhF",
+      "created": 1794455570,
+      "status": "paid",
+      "livemode": false,
+      "lines": {
+        "data": [
+          {
+            "amount": 1900,
+            "quantity": 1,
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "sub_1Uap4wEvcTt943uRikLvXiUC",
+                "subscription_item": "si_Vc3Bvk5oiTEemm"
+              },
+              "type": "subscription_item_details"
+            },
+            "pricing": {
+              "price_details": {
+                "price": "price_1UambIEvcTt943uR8W6MtdQ2",
+                "product": "prod_Vc0c5Lh1jXlAYd"
+              },
+              "type": "price_details",
+              "unit_amount_decimal": "1900"
+            },
+            "period": {
+              "end": 1797047570,
+              "start": 1794455570
+            }
+          }
+        ]
+      }
+    }
+  }
+]
+

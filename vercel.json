@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "api/billing.js": { "maxDuration": 120 },
+    "api/stripe-webhook.js": { "maxDuration": 120 }
+  },
   "rewrites": [
     { "source": "/insurance", "destination": "/index.html" },
     { "source": "/insurance/", "destination": "/index.html" },

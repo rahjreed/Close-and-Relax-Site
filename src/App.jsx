@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from './lib/supabase';
+import BillingControls from './components/BillingControls';
 import PublicRealtorHubDesign from './components/PublicRealtorHub';
 import InsurancePage from './components/InsurancePage';
 import { isInsurancePath } from './lib/insuranceFunnel';
@@ -999,7 +1000,7 @@ function CloseRelaxApp() {
         email: authUser.email || '',
         brokerage: meta.brokerage || '',
         city: meta.market_city || '',
-        plan: meta.plan || 'partner',
+        plan: 'partner',
         is_published: false,
       };
 
@@ -1526,7 +1527,7 @@ function CloseRelaxApp() {
             full_name: signupData.name.trim(),
             brokerage: signupData.brokerage.trim(),
             market_city: signupData.marketCity.trim(),
-            plan: selectedPlan,
+            requested_plan: selectedPlan,
           },
         },
       });
@@ -1738,7 +1739,7 @@ function CloseRelaxApp() {
       return;
     }
 
-    const currentPlanConfig = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlanConfig = getPlanConfig(profile?.plan || 'partner');
     if (currentPlanConfig.allowsWelcomeVideo && welcomeVideoUrl && !isValidYouTubeUrl(welcomeVideoUrl)) {
       setProfileEditorError('Please paste a valid YouTube video, YouTube Shorts, or youtu.be link.');
       return;
@@ -2181,7 +2182,7 @@ function CloseRelaxApp() {
   };
 
   const handleOpenChecklistManager = async () => {
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsChecklist) {
       showToast('Advanced homeowner checklists are included with Pro.');
       return;
@@ -2208,7 +2209,7 @@ function CloseRelaxApp() {
     event.preventDefault();
     if (!user?.id || !profile?.id) return;
 
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsChecklist) {
       setChecklistError('Advanced homeowner checklists are a Pro feature.');
       return;
@@ -2283,7 +2284,7 @@ function CloseRelaxApp() {
   const handleDeleteChecklistItem = async (item) => {
     if (!user?.id || !profile?.id || !item?.id) return;
 
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsChecklist) {
       setChecklistError('Advanced homeowner checklists are a Pro feature.');
       return;
@@ -2331,7 +2332,7 @@ function CloseRelaxApp() {
   };
 
   const handleOpenCustomHubSectionsManager = async () => {
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsCustomSections) {
       showToast('Custom homeowner hub sections are included with Pro.');
       return;
@@ -2358,7 +2359,7 @@ function CloseRelaxApp() {
     event.preventDefault();
     if (!user?.id || !profile?.id) return;
 
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsCustomSections) {
       setCustomHubSectionError('Custom homeowner hub sections are a Pro feature.');
       return;
@@ -2449,7 +2450,7 @@ function CloseRelaxApp() {
   const handleDeleteCustomHubSection = async (section) => {
     if (!user?.id || !profile?.id || !section?.id) return;
 
-    const currentPlan = getPlanConfig(profile?.plan || user?.user_metadata?.plan || 'partner');
+    const currentPlan = getPlanConfig(profile?.plan || 'partner');
     if (!currentPlan.allowsCustomSections) {
       setCustomHubSectionError('Custom homeowner hub sections are a Pro feature.');
       return;
@@ -2487,7 +2488,7 @@ function CloseRelaxApp() {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Realtor';
   const displayBrokerage = profile?.brokerage || user?.user_metadata?.brokerage || 'Independent Real Estate';
-  const storedPlan = profile?.plan || user?.user_metadata?.plan || 'partner';
+  const storedPlan = profile?.plan || 'partner';
   const planConfig = getPlanConfig(storedPlan);
   const displayPlan = planConfig.internalPlan;
   const publicPlanName = planConfig.name;
@@ -3141,9 +3142,7 @@ function CloseRelaxApp() {
                   </div>
                 </div>
 
-                <p className="text-[10px] text-charcoal-muted mt-4">
-                  Billing controls will be connected near launch. Until then, plan changes remain admin-controlled.
-                </p>
+                <BillingControls userId={user.id} onRefresh={() => fetchOrCreateProfile(user)} />
               </div>
             </div>
 
